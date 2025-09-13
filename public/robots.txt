@@ -1,0 +1,20 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://guerrillamusic.netlify.app/sitemap.xml
+
+# Disallow sensitive areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /*.json$
+Disallow: /*?*
+
+# Allow important pages
+Allow: /sample-packs
+Allow: /midi-packs
+Allow: /acapellas
+Allow: /product/
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
