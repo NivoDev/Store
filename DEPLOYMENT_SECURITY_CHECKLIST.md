@@ -1,5 +1,5 @@
 # 🔒 DEPLOYMENT SECURITY CHECKLIST
-**Guerrilla Music Store - Pre-Production Security Verification**
+**Atomic Rose Tools Store - Pre-Production Security Verification**
 
 ---
 
