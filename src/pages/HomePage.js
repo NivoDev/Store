@@ -291,7 +291,7 @@ const HomePage = () => {
       <SEOHead 
         title="Premium Psytrance Sample Packs & MIDI Packs"
         description="Discover high-quality progressive psytrance sample packs, MIDI packs, and acapellas. Professional sounds for electronic music producers. Instant download available."
-        keywords="psytrance sample packs, progressive psytrance, MIDI packs, acapellas, electronic music, music production, psytrance sounds, Guerrilla Music"
+        keywords="psytrance sample packs, progressive psytrance, MIDI packs, acapellas, electronic music, music production, psytrance sounds, Atomic Rose Tools"
         type="website"
       />
       <HeroSection>

@@ -287,7 +287,7 @@ const Header = ({ onAuthClick }) => {
           <div className="logo-icon">
             <FiMusic size={20} />
           </div>
-          <span className="logo-text">Guerrilla</span>
+          <span className="logo-text">Atomic Rose</span>
         </Logo>
 
         <DesktopNav>

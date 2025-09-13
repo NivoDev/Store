@@ -1,11 +1,11 @@
-// Mock product data for the Guerrilla Music store
+// Mock product data for the Atomic Rose Tools store
 export const mockProducts = [
   // Sample Packs
   {
     id: 'sp001',
     type: 'sample-pack',
     title: 'Psychedelic Horizons',
-    artist: 'Guerrilla',
+    artist: 'Atomic Rose',
     description: 'A journey through progressive psytrance with deep basslines, ethereal pads, and hypnotic arpeggios. Perfect for creating atmospheric progressive tracks.',
     price: 24.99,
     originalPrice: 34.99,
@@ -37,7 +37,7 @@ export const mockProducts = [
     id: 'sp002',
     type: 'sample-pack',
     title: 'Neon Dreams',
-    artist: 'Guerrilla',
+    artist: 'Atomic Rose',
     description: 'Futuristic sounds meet classic psytrance elements. Featuring punchy kicks, rolling basslines, and cosmic leads.',
     price: 19.99,
     originalPrice: null,
@@ -69,7 +69,7 @@ export const mockProducts = [
     id: 'sp003',
     type: 'sample-pack',
     title: 'Forest Frequencies',
-    artist: 'Guerrilla',
+    artist: 'Atomic Rose',
     description: 'Organic psytrance with natural elements and forest atmospheres. Deep, groovy, and mystical.',
     price: 22.99,
     originalPrice: 29.99,
@@ -103,7 +103,7 @@ export const mockProducts = [
     id: 'mp001',
     type: 'midi-pack',
     title: 'Progressive Patterns',
-    artist: 'Guerrilla',
+    artist: 'Atomic Rose',
     description: 'Essential MIDI patterns for progressive psytrance production. Includes basslines, leads, arps, and percussion.',
     price: 14.99,
     originalPrice: null,
@@ -135,7 +135,7 @@ export const mockProducts = [
     id: 'mp002',
     type: 'midi-pack',
     title: 'Cosmic Sequences',
-    artist: 'Guerrilla',
+    artist: 'Atomic Rose',
     description: 'Space-inspired MIDI sequences perfect for creating otherworldly psytrance tracks.',
     price: 12.99,
     originalPrice: 17.99,
@@ -235,7 +235,7 @@ export const mockProducts = [
     id: 'sp004',
     type: 'sample-pack',
     title: 'Digital Rebellion',
-    artist: 'Guerrilla',
+    artist: 'Atomic Rose',
     description: 'Hard-hitting psytrance with digital glitches and aggressive synths. For producers who like it intense.',
     price: 26.99,
     originalPrice: null,
