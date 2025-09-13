@@ -229,31 +229,20 @@ const Footer = () => {
           </FooterSection>
 
           <FooterSection>
-            <FooterTitle>Support</FooterTitle>
-            <FooterLink to="/help">Help Center</FooterLink>
-            <FooterLink to="/contact">Contact Us</FooterLink>
-            <FooterLink to="/faq">FAQ</FooterLink>
-            <FooterLink to="/licensing">Licensing</FooterLink>
-            <FooterLink to="/refunds">Refunds</FooterLink>
-          </FooterSection>
-
-          <FooterSection>
-            <FooterTitle>Company</FooterTitle>
-            <FooterLink to="/about">About Us</FooterLink>
-            <FooterLink to="/artists">Artists</FooterLink>
-            <FooterLink to="/careers">Careers</FooterLink>
-            <FooterLink to="/press">Press</FooterLink>
-            <FooterLink to="/blog">Blog</FooterLink>
+            <FooterTitle>Legal</FooterTitle>
+            <FooterLink to="/privacy">Privacy Policy</FooterLink>
+            <FooterLink to="/terms">Terms of Service</FooterLink>
+            <FooterLink to="/cookies">Cookie Policy</FooterLink>
           </FooterSection>
 
           <FooterSection>
             <FooterTitle>Connect</FooterTitle>
             <FooterText>
-              Follow us for the latest releases and exclusive content from the progressive psytrance scene.
+              Follow us for the latest releases and exclusive content from Atomic Rose Tools.
             </FooterText>
             <SocialLinks>
               <SocialLink
-                href="https://instagram.com/guerrillamusic"
+                href="https://instagram.com/atomicrosetools"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.1, rotate: 5 }}
@@ -262,7 +251,7 @@ const Footer = () => {
                 <FiInstagram size={18} />
               </SocialLink>
               <SocialLink
-                href="https://twitter.com/guerrillamusic"
+                href="https://twitter.com/atomicrosetools"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.1, rotate: -5 }}
@@ -271,7 +260,7 @@ const Footer = () => {
                 <FiTwitter size={18} />
               </SocialLink>
               <SocialLink
-                href="https://facebook.com/guerrillamusic"
+                href="https://facebook.com/atomicrosetools"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.1, rotate: 5 }}
@@ -280,7 +269,7 @@ const Footer = () => {
                 <FiFacebook size={18} />
               </SocialLink>
               <SocialLink
-                href="https://youtube.com/guerrillamusic"
+                href="https://youtube.com/atomicrosetools"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.1, rotate: -5 }}
@@ -316,7 +305,7 @@ const Footer = () => {
         <FooterBottom>
           <Copyright>
             <FiMusic size={16} />
-            © 2025 Guerrilla Music. Made with
+            © 2025 Atomic Rose Tools. Made with
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
@@ -327,9 +316,8 @@ const Footer = () => {
           </Copyright>
 
           <LegalLinks>
-            <FooterLink to="/privacy">Privacy Policy</FooterLink>
-            <FooterLink to="/terms">Terms of Service</FooterLink>
-            <FooterLink to="/cookies">Cookie Policy</FooterLink>
+            <FooterLink to="/contact">Contact</FooterLink>
+            <FooterLink to="/support">Support</FooterLink>
           </LegalLinks>
         </FooterBottom>
       </FooterContent>

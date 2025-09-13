@@ -2,17 +2,17 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 const SEOHead = ({
-  title = "Guerrilla Music Store",
+  title = "Atomic Rose Tools Store",
   description = "Premium sample packs, MIDI packs, and acapellas for progressive psytrance producers. High-quality sounds for professional music production.",
-  keywords = "psytrance, sample packs, MIDI packs, acapellas, progressive psytrance, music production, electronic music, Guerrilla Music",
+  keywords = "psytrance, sample packs, MIDI packs, acapellas, progressive psytrance, music production, electronic music, Atomic Rose Tools",
   image = "/images/og-image.jpg",
   url = "https://guerrillamusic.netlify.app",
   type = "website",
-  author = "Guerrilla Music",
+  author = "Atomic Rose Tools",
   locale = "en_US",
-  siteName = "Guerrilla Music Store"
+  siteName = "Atomic Rose Tools Store"
 }) => {
-  const fullTitle = title === "Guerrilla Music Store" ? title : `${title} | Guerrilla Music Store`;
+  const fullTitle = title === "Atomic Rose Tools Store" ? title : `${title} | Atomic Rose Tools Store`;
   const canonicalUrl = url.endsWith('/') ? url.slice(0, -1) : url;
   
   return (

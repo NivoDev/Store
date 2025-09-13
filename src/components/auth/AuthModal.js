@@ -302,7 +302,7 @@ const AuthModal = ({ isOpen, onClose }) => {
 
             <Header>
               <Title>
-                {activeTab === 'signin' ? 'Welcome Back' : 'Join Guerrilla'}
+                {activeTab === 'signin' ? 'Welcome Back' : 'Join Atomic Rose'}
               </Title>
               <Subtitle>
                 {activeTab === 'signin' 
