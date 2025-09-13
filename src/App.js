@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from 'styled-components';
+import { HelmetProvider } from 'react-helmet-async';
 import { theme } from './theme';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { AuthProvider } from './contexts/AuthContext';
@@ -27,11 +28,12 @@ function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   return (
-    <ThemeProvider theme={theme}>
-      <GlobalStyles />
-      <AuthProvider>
-        <CartProvider>
-          <Router>
+    <HelmetProvider>
+      <ThemeProvider theme={theme}>
+        <GlobalStyles />
+        <AuthProvider>
+          <CartProvider>
+            <Router>
             <div className="App">
               <Header onAuthClick={() => setAuthModalOpen(true)} />
               
@@ -55,10 +57,11 @@ function App() {
                 onClose={() => setAuthModalOpen(false)} 
               />
             </div>
-          </Router>
-        </CartProvider>
-      </AuthProvider>
-    </ThemeProvider>
+            </Router>
+          </CartProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </HelmetProvider>
   );
 }
 
