@@ -317,7 +317,7 @@ const Footer = () => {
         <FooterBottom>
           <Copyright>
             <FiMusic size={16} />
-            © 2024 Guerrilla Music. Made with
+            © 2025 Guerrilla Music. Made with
             <motion.div
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
