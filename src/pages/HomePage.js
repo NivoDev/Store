@@ -12,7 +12,7 @@ import {
   FiMic
 } from 'react-icons/fi';
 import { theme } from '../theme';
-import { mockProducts, getFeaturedProducts, getBestsellers, getNewProducts } from '../data/mockProducts';
+import { getFeaturedProducts, getBestsellers, getNewProducts } from '../data/mockProducts';
 import ProductCard from '../components/product/ProductCard';
 import Button from '../components/common/Button';
 import SEOHead from '../components/common/SEOHead';

@@ -7,7 +7,6 @@ import {
   FiPause, 
   FiShoppingCart, 
   FiHeart, 
-  FiDownload,
   FiClock,
   FiMusic,
   FiTag
