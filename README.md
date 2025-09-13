@@ -1,4 +1,4 @@
-# Guerrilla Music Store
+# Atomic Rose Tools Store
 
 A modern, responsive ecommerce website for selling sample packs, MIDI packs, and acapellas with a progressive psytrance aesthetic.
 

@@ -1,5 +1,5 @@
 # 🚀 GitHub & Netlify Deployment Guide
-**Guerrilla Music Store - Production Deployment**
+**Atomic Rose Tools Store - Production Deployment**
 
 ---
 
@@ -307,7 +307,7 @@ git push origin production
 
 ---
 
-**🎵 Your Guerrilla Music Store is now ready for professional deployment! 🚀**
+**🎵 Your Atomic Rose Tools Store is now ready for professional deployment! 🚀**
 
 **Next Steps:**
 1. Create GitHub repository
