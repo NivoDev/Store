@@ -6,11 +6,7 @@
  */
 
 // API configuration
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://store-6ryk.onrender.com/api/v1'  // Your Render backend URL
-    : 'http://127.0.0.1:8000/api/v1'
-  );
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
 
 class APIService {
   constructor() {
@@ -66,13 +62,6 @@ class APIService {
         this.setToken(null);
         // Optionally redirect to login or dispatch logout action
         console.warn('Authentication failed, token cleared');
-      }
-
-      // Handle database connection errors
-      if (response.status === 503) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('🌐 API: Database unavailable:', errorData);
-        throw new Error('Database temporarily unavailable. Please try again later.');
       }
 
       if (!response.ok) {
