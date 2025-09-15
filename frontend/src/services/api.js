@@ -8,7 +8,7 @@
 // API configuration
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 
   (process.env.NODE_ENV === 'production' 
-    ? 'https://your-backend-url.com/api/v1'  // Update this to your actual backend URL
+    ? 'https://store-6ryk.onrender.com/api/v1'  // Your Render backend URL
     : 'http://127.0.0.1:8000/api/v1'
   );
 
