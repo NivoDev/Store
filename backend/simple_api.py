@@ -71,17 +71,6 @@ else:
 # Global database connection
 db_client = None
 db = None
-mongodb_connected = False
-
-def check_mongodb_connection():
-    """Check if MongoDB is connected and return appropriate response"""
-    if not mongodb_connected or not db_client:
-        return {
-            "error": "Database temporarily unavailable",
-            "message": "Our database is currently experiencing issues. Please try again later.",
-            "status": "database_error"
-        }
-    return None
 
 app = FastAPI(
     title="Atomic Rose Tools API",
@@ -101,7 +90,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Connect to MongoDB on startup"""
-    global db_client, db, mongodb_connected
+    global db_client, db
     try:
         print("🔄 Connecting to MongoDB...")
         db_client = AsyncIOMotorClient(MONGODB_URI)
@@ -109,15 +98,11 @@ async def startup_event():
         
         # Test connection
         await db_client.admin.command('ping')
-        mongodb_connected = True
         print("✅ Successfully connected to MongoDB")
         
     except Exception as e:
         print(f"❌ Failed to connect to MongoDB: {e}")
-        print("⚠️  Server will continue running but database operations will fail")
-        mongodb_connected = False
-        # Don't raise the exception - let the server start without MongoDB
-        # This allows the frontend to load even if the database is unavailable
+        raise
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -267,12 +252,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    db_status = "connected" if mongodb_connected else "disconnected"
-    return {
-        "status": "healthy",
-        "database": db_status,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 @app.options("/{path:path}")
 async def options_handler(path: str):
@@ -437,11 +417,6 @@ async def get_products(
     search: Optional[str] = None
 ):
     """Get all products with optional filtering"""
-    # Check MongoDB connection
-    db_error = check_mongodb_connection()
-    if db_error:
-        raise HTTPException(status_code=503, detail=db_error)
-    
     try:
         collection = db.products
         
