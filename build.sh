@@ -3,6 +3,9 @@
 
 echo "🔧 Starting build process..."
 
+# Check Python version
+python --version
+
 # Upgrade pip first
 pip install --upgrade pip
 
