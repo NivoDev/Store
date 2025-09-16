@@ -1214,8 +1214,9 @@ async def guest_checkout(checkout_data: dict):
         if not re.match(email_pattern, email):
             raise HTTPException(status_code=400, detail="Invalid email format")
         
-        # Generate verification token
+        # Generate verification token and OTP code
         verification_token = secrets.token_urlsafe(32)
+        otp_code = ''.join(secrets.choice('0123456789') for _ in range(6))
         
         # Create guest order
         order = {
@@ -1225,6 +1226,7 @@ async def guest_checkout(checkout_data: dict):
             "total_amount": sum(item["price"] * item["quantity"] for item in items),
             "status": "pending_verification",
             "verification_token": verification_token,
+            "otp_code": otp_code,
             "verification_expires": datetime.utcnow() + timedelta(hours=24),  # 24 hour expiry
             "downloads_remaining": 1,  # 1 download per guest order
             "created_at": datetime.utcnow(),
@@ -1242,6 +1244,7 @@ async def guest_checkout(checkout_data: dict):
                 email=email,
                 order_number=order["order_number"],
                 verification_token=verification_token,
+                otp_code=otp_code,
                 items=items,
                 total_amount=order["total_amount"]
             )
@@ -1266,6 +1269,53 @@ async def guest_checkout(checkout_data: dict):
     except Exception as e:
         print(f"❌ Error processing guest checkout: {e}")
         raise HTTPException(status_code=500, detail="Failed to process checkout")
+
+@app.post("/api/v1/guest/verify-otp")
+async def verify_guest_otp(verification_data: dict):
+    """Verify guest OTP code"""
+    try:
+        otp_code = verification_data.get("otp_code", "").strip()
+        email = verification_data.get("email", "").strip()
+        
+        if not otp_code or not email:
+            raise HTTPException(status_code=400, detail="OTP code and email are required")
+        
+        # Find the pending order by email and OTP code
+        order = await db.guest_orders.find_one({
+            "guest_email": email.lower(),
+            "otp_code": otp_code,
+            "status": "pending_verification",
+            "verification_expires": {"$gt": datetime.utcnow()}
+        })
+        
+        if not order:
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP code")
+        
+        # Update order status to email verified (but still pending checkout)
+        await db.guest_orders.update_one(
+            {"_id": order["_id"]},
+            {
+                "$set": {
+                    "email_verified": True,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        print(f"✅ Guest OTP verified for order: {order['order_number']}")
+        return {
+            "message": "OTP verified successfully",
+            "order_id": str(order["_id"]),
+            "order_number": order["order_number"],
+            "verification_token": order["verification_token"],
+            "verified": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error verifying guest OTP: {e}")
+        raise HTTPException(status_code=500, detail="OTP verification failed")
 
 @app.post("/api/v1/guest/verify-email")
 async def verify_guest_email(verification_data: dict):

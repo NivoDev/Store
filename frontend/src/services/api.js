@@ -491,6 +491,22 @@ class APIService {
     }
   }
 
+  async verifyGuestOtp(otpCode, email) {
+    try {
+      const response = await this.request('/guest/verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({
+          otp_code: otpCode,
+          email: email
+        })
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to verify guest OTP:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async verifyGuestEmail(verificationToken) {
     try {
       const response = await this.request('/guest/verify-email', {

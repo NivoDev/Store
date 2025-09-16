@@ -160,6 +160,7 @@ const CartPage = () => {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
+  const [otpCode, setOtpCode] = useState(''); // Separate OTP input
   const [orderData, setOrderData] = useState(null);
   const [verificationStep, setVerificationStep] = useState('email'); // 'email', 'verify', 'success'
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -326,8 +327,13 @@ const CartPage = () => {
   };
 
   const handleVerification = async () => {
-    if (!verificationToken) {
+    if (!otpCode) {
       alert('Please enter the verification code');
+      return;
+    }
+
+    if (otpCode.length !== 6) {
+      alert('Please enter a valid 6-digit code');
       return;
     }
 
@@ -341,28 +347,25 @@ const CartPage = () => {
 
     setIsProcessing(true);
     try {
-      const result = await apiService.verifyGuestOrder(verificationToken);
+      const result = await apiService.verifyGuestOtp(otpCode, guestEmail);
       
       if (result.success) {
+        // Store the verification token for the next step
+        setVerificationToken(result.data.verification_token);
         setOrderData(result.data);
         setVerificationStep('success');
-        // Clear cart after successful verification
-        clearCart();
         
         // Set up automatic redirect after 3 seconds
         const timer = setTimeout(() => {
-          // Store download links for the download page
-          if (result.data.download_links) {
-            localStorage.setItem('guest_download_links', JSON.stringify(result.data.download_links));
-          }
-          // Redirect to download page
-          navigate('/guest-downloads', { 
+          // Redirect to checkout page with order data
+          navigate('/checkout', { 
             state: { 
-              downloadLinks: result.data.download_links || [],
-              orderNumber: result.data.order_number
+              guestOrder: result.data,
+              fromVerification: true 
             }
           });
         }, 3000);
+        
         setRedirectTimer(timer);
       } else {
         alert(`Verification failed: ${result.error}`);
@@ -798,9 +801,10 @@ const CartPage = () => {
                 <Input
                   id="verification"
                   type="text"
-                  placeholder=""
-                  value={verificationToken}
-                  onChange={(e) => setVerificationToken(e.target.value)}
+                  placeholder="Enter 6-digit code from your email"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  maxLength={6}
                 />
               </FormGroup>
               

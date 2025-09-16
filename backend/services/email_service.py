@@ -20,7 +20,7 @@ class EmailService:
         self.from_email = os.getenv("FROM_EMAIL", "atomicrosetools@gmail.com")
         self.base_url = os.getenv("FRONTEND_URL", "https://atomic-rose-tools.netlify.app")
     
-    def send_guest_verification_email(self, email: str, order_number: str, verification_token: str, items: list, total_amount: float) -> bool:
+    def send_guest_verification_email(self, email: str, order_number: str, verification_token: str, otp_code: str, items: list, total_amount: float) -> bool:
         """
         Send guest verification email for purchase.
         
@@ -35,9 +35,6 @@ class EmailService:
             bool: True if email sent successfully, False otherwise
         """
         try:
-            # Generate OTP code (6 digits)
-            otp_code = self._generate_otp()
-            
             # Create verification URL
             verify_url = f"{self.base_url}/verify-guest-email?token={verification_token}"
             
