@@ -15,7 +15,7 @@ import os
 from dotenv import load_dotenv
 import hashlib
 import secrets
-import jwt
+from jose import jwt
 from passlib.context import CryptContext
 import boto3
 from botocore.exceptions import ClientError
