@@ -311,8 +311,12 @@ const CartPage = () => {
       const result = await apiService.guestCheckout(guestEmail, checkoutItems);
       
       if (result.success) {
-        // Redirect to email verification page
-        navigate(`/verify-guest-email?token=${result.data.verification_token}`);
+        // Close guest modal and show verification modal
+        setShowGuestModal(false);
+        setShowVerificationModal(true);
+        setVerificationStep('verify'); // Ensure we're in verify step, not success
+        setOrderData(result.data);
+        setOtpCode(''); // Clear any previous OTP code
       } else {
         alert(`Checkout failed: ${result.error}`);
       }
