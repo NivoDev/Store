@@ -437,6 +437,7 @@ async def get_products(
     search: Optional[str] = None
 ):
     """Get all products with optional filtering"""
+    global mongodb_connected
     try:
         # Check if database is connected
         if not mongodb_connected:
