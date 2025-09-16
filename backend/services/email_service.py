@@ -8,7 +8,6 @@ import string
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import resend
-from resend import ResendError
 
 # Initialize Resend
 resend.api_key = os.getenv("RESEND_API_KEY")
@@ -35,6 +34,11 @@ class EmailService:
             bool: True if email sent successfully, False otherwise
         """
         try:
+            print(f"📧 Attempting to send email to {email}")
+            print(f"🔑 Resend API Key present: {bool(resend.api_key)}")
+            print(f"📧 From email: {self.from_email}")
+            print(f"🔑 OTP Code: {otp_code}")
+            
             # Create verification URL
             verify_url = f"{self.base_url}/verify-guest-email?token={verification_token}"
             
@@ -53,6 +57,8 @@ class EmailService:
                 "ITEMS_COUNT": str(len(items))
             })
             
+            print(f"📧 HTML content length: {len(html_content)}")
+            
             # Send email via Resend
             r = resend.Emails.send({
                 "from": self.from_email,
@@ -61,14 +67,14 @@ class EmailService:
                 "html": html_content
             })
             
+            print(f"📧 Resend response: {r}")
             print(f"✅ Guest verification email sent to {email}")
             return True
             
-        except ResendError as e:
-            print(f"❌ Failed to send guest verification email to {email}: {e}")
-            return False
         except Exception as e:
-            print(f"❌ Unexpected error sending guest verification email to {email}: {e}")
+            print(f"❌ Failed to send guest verification email to {email}: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
             return False
     
     def _generate_otp(self, length: int = 6) -> str:
