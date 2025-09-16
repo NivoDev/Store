@@ -24,13 +24,13 @@ import time
 # Load environment variables
 load_dotenv()
 
+# Database connection status (defined early)
+mongodb_connected = False
+
 # MongoDB connection
 MONGODB_URI = os.getenv("MONGODB_URI")
 if not MONGODB_URI:
     raise ValueError("MONGODB_URI not found in environment variables")
-
-# Database connection status
-mongodb_connected = False
 
 # Database connection check function
 async def check_mongodb_connection():
