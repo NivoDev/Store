@@ -60,7 +60,7 @@
 # API proxy to backend
 [[redirects]]
   from = "/api/*"
-  to = "https://your-backend-domain.com/api/:splat"
+  to = "https://store-6ryk.onrender.com/api/:splat"
   status = 200
   force = true
   headers = {X-From = "Netlify"}
@@ -68,7 +68,7 @@
 # Health check proxy
 [[redirects]]
   from = "/health"
-  to = "https://your-backend-domain.com/health"
+  to = "https://store-6ryk.onrender.com/health"
   status = 200
   force = true
 
@@ -84,13 +84,13 @@
 [context.production.environment]
   NODE_ENV = "production"
   GENERATE_SOURCEMAP = "false"
-  REACT_APP_API_BASE_URL = "/api/v1"
+  REACT_APP_API_BASE_URL = "https://store-6ryk.onrender.com/api/v1"
   REACT_APP_FALLBACK_TO_MOCK = "false"
 
 # Production API proxy
 [[context.production.redirects]]
   from = "/api/*"
-  to = "https://api.atomicrosetools.com/api/:splat"
+  to = "https://store-6ryk.onrender.com/api/:splat"
   status = 200
   force = true
   headers = {X-From = "Netlify"}
