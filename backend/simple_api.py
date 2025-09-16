@@ -1275,6 +1275,10 @@ async def guest_checkout(checkout_data: dict):
         # Send verification email
         try:
             from services.email_service import email_service
+            print(f"📧 Attempting to send OTP email to {email}")
+            print(f"🔑 OTP Code: {otp_code}")
+            print(f"🔑 Resend API Key set: {bool(os.getenv('RESEND_API_KEY'))}")
+            
             email_sent = email_service.send_guest_verification_email(
                 email=email,
                 order_number=order["order_number"],
@@ -1283,10 +1287,14 @@ async def guest_checkout(checkout_data: dict):
                 items=items,
                 total_amount=order["total_amount"]
             )
-            if not email_sent:
-                print(f"⚠️ Warning: Failed to send guest verification email to {email}")
+            if email_sent:
+                print(f"✅ Guest verification email sent successfully to {email}")
+            else:
+                print(f"❌ Failed to send guest verification email to {email}")
         except Exception as e:
-            print(f"⚠️ Warning: Error sending guest verification email to {email}: {e}")
+            print(f"❌ Error sending guest verification email to {email}: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
         
         print(f"📧 Guest checkout created: {order['order_number']}")
         print(f"🔗 Verification token: {verification_token}")
@@ -1296,7 +1304,9 @@ async def guest_checkout(checkout_data: dict):
             "order_id": str(order_id),
             "order_number": order["order_number"],
             "verification_token": verification_token,
-            "message": "Please check your email to verify your email address before completing checkout"
+            "otp_code": otp_code,  # Include OTP in response for fallback
+            "message": "Please check your email to verify your email address before completing checkout",
+            "email_sent": email_sent if 'email_sent' in locals() else False
         }
         
     except HTTPException:
