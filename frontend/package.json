@@ -12,6 +12,10 @@
   "dependencies": {
     "@hookform/error-message": "^2.0.1",
     "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^20",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/styled-components": "^5.1.34",
     "framer-motion": "^12.23.13",
     "next": "^14.2.5",
     "react": "^18.2.0",
@@ -20,16 +24,12 @@
     "react-icons": "^5.5.0",
     "styled-components": "^6.1.19",
     "tailwindcss": "^4",
+    "typescript": "^5",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@types/node": "^20",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@types/styled-components": "^5.1.34",
     "eslint": "^9",
-    "eslint-config-next": "15.5.3",
-    "typescript": "^5"
+    "eslint-config-next": "15.5.3"
   }
 }
