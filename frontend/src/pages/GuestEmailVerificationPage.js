@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { FiMail, FiCheckCircle, FiXCircle, FiRefreshCw } from 'react-icons/fi';
 import { theme } from '../theme';
-import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
+import apiService from '../services/api';
 
 const Container = styled.div`
   min-height: 100vh;
@@ -66,78 +66,70 @@ const Message = styled.p`
   margin-bottom: ${theme.spacing[6]};
 `;
 
-const ResendSection = styled.div`
+const OrderDetails = styled.div`
   background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: ${theme.borderRadius.lg};
-  padding: ${theme.spacing[6]};
-  margin-top: ${theme.spacing[6]};
+  padding: ${theme.spacing[4]};
+  margin: ${theme.spacing[4]} 0;
+  text-align: left;
 `;
 
-const ResendTitle = styled.h3`
-  font-size: ${theme.typography.sizes.lg};
-  font-weight: ${theme.typography.weights.semibold};
-  color: ${theme.colors.dark[100]};
-  margin-bottom: ${theme.spacing[3]};
+const OrderDetailRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: ${theme.spacing[2]};
+  
+  &:last-child {
+    margin-bottom: 0;
+    font-weight: ${theme.typography.weights.semibold};
+    color: ${theme.colors.primary[400]};
+  }
 `;
 
-const ResendMessage = styled.p`
-  color: ${theme.colors.dark[400]};
-  font-size: ${theme.typography.sizes.sm};
-  margin-bottom: ${theme.spacing[4]};
-`;
-
-const EmailVerificationPage = () => {
-  const { token } = useParams();
+const GuestEmailVerificationPage = () => {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { verifyEmail, resendVerification, isVerifyingEmail, isResendingVerification, verificationMessage, error } = useAuth();
+  const token = searchParams.get('token');
   
   const [verificationStatus, setVerificationStatus] = useState('verifying'); // 'verifying', 'success', 'error'
-  const [userEmail, setUserEmail] = useState('');
-
-  useEffect(() => {
-    // Get email from location state if available
-    if (location.state?.email) {
-      setUserEmail(location.state.email);
-    }
-
-    // If we have a token, verify it
-    if (token) {
-      handleVerification(token);
-    }
-  }, [token, location.state]);
+  const [orderData, setOrderData] = useState(null);
+  const [error, setError] = useState('');
 
   const handleVerification = async (verificationToken) => {
     try {
-      const result = await verifyEmail(verificationToken);
+      const result = await apiService.verifyGuestEmail(verificationToken);
       if (result.success) {
         setVerificationStatus('success');
-        // Redirect to profile after 3 seconds
+        setOrderData(result.data);
+        // Redirect to checkout after 3 seconds
         setTimeout(() => {
-          navigate('/profile');
+          navigate('/checkout', { 
+            state: { 
+              guestOrder: result.data,
+              fromEmailVerification: true 
+            }
+          });
         }, 3000);
       } else {
         setVerificationStatus('error');
+        setError(result.error || 'Email verification failed');
       }
     } catch (error) {
       console.error('Verification error:', error);
       setVerificationStatus('error');
+      setError('Email verification failed. Please try again.');
     }
   };
 
-  const handleResendVerification = async () => {
-    if (!userEmail) {
-      // If no email available, redirect to login
-      navigate('/login');
-      return;
+  useEffect(() => {
+    if (token) {
+      handleVerification(token);
+    } else {
+      setVerificationStatus('error');
+      setError('No verification token provided');
     }
-
-    try {
-      await resendVerification(userEmail);
-    } catch (error) {
-      console.error('Resend verification error:', error);
-    }
-  };
+  }, [token, handleVerification]);
 
   const getStatusContent = () => {
     switch (verificationStatus) {
@@ -146,31 +138,31 @@ const EmailVerificationPage = () => {
           icon: <FiRefreshCw size={40} />,
           title: 'Verifying Email...',
           message: 'Please wait while we verify your email address.',
-          showResend: false
+          showDetails: false
         };
       
       case 'success':
         return {
           icon: <FiCheckCircle size={40} />,
           title: 'Email Verified!',
-          message: 'Your email has been successfully verified. You will be redirected to your profile shortly.',
-          showResend: false
+          message: 'Your email has been successfully verified. You will be redirected to complete your checkout shortly.',
+          showDetails: true
         };
       
       case 'error':
         return {
           icon: <FiXCircle size={40} />,
           title: 'Verification Failed',
-          message: error || 'The verification link is invalid or has expired. Please request a new verification email.',
-          showResend: true
+          message: error || 'The verification link is invalid or has expired.',
+          showDetails: false
         };
       
       default:
         return {
           icon: <FiMail size={40} />,
-          title: 'Email Verification',
-          message: 'Please check your email and click the verification link.',
-          showResend: true
+          title: 'Verify Your Email',
+          message: 'Please verify your email address to complete your purchase.',
+          showDetails: false
         };
     }
   };
@@ -194,28 +186,21 @@ const EmailVerificationPage = () => {
         <Title>{statusContent.title}</Title>
         <Message>{statusContent.message}</Message>
 
-        {verificationMessage && (
-          <Message style={{ color: theme.colors.success, marginBottom: theme.spacing[4] }}>
-            {verificationMessage}
-          </Message>
-        )}
-
-        {statusContent.showResend && (
-          <ResendSection>
-            <ResendTitle>Need a new verification email?</ResendTitle>
-            <ResendMessage>
-              Click the button below to resend the verification email to your inbox.
-            </ResendMessage>
-            <Button
-              variant="secondary"
-              size="lg"
-              fullWidth
-              loading={isResendingVerification}
-              onClick={handleResendVerification}
-            >
-              {isResendingVerification ? 'Sending...' : 'Resend Verification Email'}
-            </Button>
-          </ResendSection>
+        {statusContent.showDetails && orderData && (
+          <OrderDetails>
+            <OrderDetailRow>
+              <span>Order Number:</span>
+              <span>{orderData.order_number}</span>
+            </OrderDetailRow>
+            <OrderDetailRow>
+              <span>Email:</span>
+              <span>{orderData.guest_email}</span>
+            </OrderDetailRow>
+            <OrderDetailRow>
+              <span>Status:</span>
+              <span style={{ color: theme.colors.success }}>Email Verified</span>
+            </OrderDetailRow>
+          </OrderDetails>
         )}
 
         {verificationStatus === 'success' && (
@@ -223,9 +208,14 @@ const EmailVerificationPage = () => {
             variant="primary"
             size="lg"
             fullWidth
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate('/checkout', { 
+              state: { 
+                guestOrder: orderData,
+                fromEmailVerification: true 
+              }
+            })}
           >
-            Go to Profile
+            Complete Checkout
           </Button>
         )}
 
@@ -234,9 +224,9 @@ const EmailVerificationPage = () => {
             variant="secondary"
             size="lg"
             fullWidth
-            onClick={() => navigate('/login')}
+            onClick={() => navigate('/cart')}
           >
-            Back to Login
+            Back to Cart
           </Button>
         )}
       </Card>
@@ -244,4 +234,4 @@ const EmailVerificationPage = () => {
   );
 };
 
-export default EmailVerificationPage;
+export default GuestEmailVerificationPage;

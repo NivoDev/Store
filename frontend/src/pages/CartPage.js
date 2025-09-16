@@ -312,11 +312,8 @@ const CartPage = () => {
       const result = await apiService.guestCheckout(guestEmail, checkoutItems);
       
       if (result.success) {
-        setOrderData(result.data);
-        setVerificationToken(result.data.verification_token);
-        setShowGuestModal(false);
-        setShowVerificationModal(true);
-        setVerificationStep('verify');
+        // Redirect to email verification page
+        navigate(`/verify-guest-email?token=${result.data.verification_token}`);
       } else {
         alert(`Checkout failed: ${result.error}`);
       }

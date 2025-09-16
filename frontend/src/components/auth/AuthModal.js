@@ -272,10 +272,12 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
     } else {
       const result = await register(data);
       if (result.success) {
-        // Show verification message instead of immediately logging in
-        // The user will need to verify their email before they can log in
-        handleClose();
-        // You could show a toast notification here about checking email
+        // Call the callback if provided, otherwise just close
+        if (onSuccessfulLogin) {
+          onSuccessfulLogin();
+        } else {
+          handleClose();
+        }
       }
     }
   };

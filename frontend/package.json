@@ -2,7 +2,6 @@
   "name": "atomic-rose-tools-store",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://atomic-rose-tools.netlify.app",
   "engines": {
     "node": ">=20.x",
     "npm": ">=7.0.0"

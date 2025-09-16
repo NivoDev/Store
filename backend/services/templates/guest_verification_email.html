@@ -1,4 +1,4 @@
-<!-- Transactional: Email Verification -->
+<!-- Transactional: Guest Email Verification -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -36,7 +36,7 @@
 <body class="bg" style="margin:0;background:var(--brand-bg);">
   <!-- Preheader (hidden preview text) -->
   <div style="display:none;max-height:0;overflow:hidden;">
-    Verify your email to finish setting up your Atomic Rose Tools account.
+    Verify your email to complete your order {{ORDER_NUMBER}} at Atomic Rose Tools.
   </div>
 
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:var(--brand-bg);" bgcolor="#0b0b10">
@@ -65,12 +65,27 @@
                 <tr>
                   <td class="text" style="padding:32px;color:var(--brand-text);font:400 16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                     <h1 style="margin:0 0 12px;font:700 24px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);">
-                      Confirm your email
+                      Verify Your Email
                     </h1>
                     <p style="margin:0 0 16px;color:var(--muted);">
-                      Hi {{FIRST_NAME}}, thanks for signing up. Click the button below to verify that
-                      <span style="color:#fff;">{{EMAIL_ADDRESS}}</span> belongs to you.
+                      Thanks for your interest! Please verify your email address to complete your purchase and access your downloads.
                     </p>
+
+                    <!-- Order Details -->
+                    <div style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:20px;margin:20px 0;">
+                      <p style="margin:0 0 8px;font:600 16px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);">
+                        Order #{{ORDER_NUMBER}}
+                      </p>
+                      <p style="margin:0 0 8px;color:var(--muted);">
+                        Email: <span style="color:#fff;">{{EMAIL_ADDRESS}}</span>
+                      </p>
+                      <p style="margin:0 0 8px;color:var(--muted);">
+                        Items: {{ITEMS_COUNT}} product(s)
+                      </p>
+                      <p style="margin:0;font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-accent);">
+                        Total: {{TOTAL_AMOUNT}}
+                      </p>
+                    </div>
 
                     <!-- CTA (bulletproof) -->
                     <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
@@ -79,13 +94,13 @@
                           <!--[if mso]>
                             <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{VERIFY_URL}}" style="height:48px;v-text-anchor:middle;width:260px;" arcsize="12%" fillcolor="#ff2a6d" strokecolor="#ff2a6d">
                               <w:anchorlock/>
-                              <center style="color:#0b0b10;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Verify email</center>
+                              <center style="color:#0b0b10;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Verify Email</center>
                             </v:roundrect>
                           <![endif]-->
                           <![if !mso]>
                           <a href="{{VERIFY_URL}}" target="_blank" rel="noopener noreferrer"
                              style="display:inline-block;background:var(--brand-accent);color:var(--btn-text);text-decoration:none;font:700 16px/48px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:0 24px;border-radius:10px;min-width:200px;text-align:center;">
-                            Verify email
+                            Verify Email
                           </a>
                           <![endif]>
                         </td>
@@ -99,7 +114,7 @@
                     </p>
 
                     <p class="muted" style="margin:16px 0 0;color:var(--muted);font-size:13px;">
-                      This link expires in {{EXPIRES_IN_MINUTES}} minutes. If you didn't request this, you can ignore this email.
+                      This link expires in {{EXPIRES_IN_HOURS}} hours. If you didn't initiate this purchase, you can ignore this email.
                     </p>
                   </td>
                 </tr>
@@ -108,7 +123,7 @@
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px;">
                 <tr>
                   <td class="muted" style="color:var(--muted);font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                    You're receiving this secure, transactional email because a sign-up was initiated on Atomic Rose Tools.
+                    You're receiving this secure, transactional email because a purchase was initiated on Atomic Rose Tools.
                     Do not share this code or link with anyone.
                   </td>
                 </tr>
