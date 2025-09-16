@@ -274,6 +274,44 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
+@app.post("/api/v1/test-email")
+async def test_email(test_data: dict):
+    """Test email sending endpoint"""
+    try:
+        email = test_data.get("email", "nivroz93@gmail.com")
+        
+        # Test Resend API
+        from services.email_service import email_service
+        
+        # Send a simple test email
+        test_sent = email_service.send_guest_verification_email(
+            email=email,
+            order_number="TEST-123456",
+            verification_token="test-token",
+            otp_code="123456",
+            items=[{"title": "Test Product", "price": 9.99}],
+            total_amount=9.99
+        )
+        
+        return {
+            "message": "Test email sent",
+            "email": email,
+            "sent": test_sent,
+            "resend_api_key_set": bool(os.getenv("RESEND_API_KEY")),
+            "from_email": os.getenv("FROM_EMAIL", "atomicrosetools@gmail.com")
+        }
+        
+    except Exception as e:
+        print(f"❌ Test email error: {e}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return {
+            "message": "Test email failed",
+            "error": str(e),
+            "resend_api_key_set": bool(os.getenv("RESEND_API_KEY")),
+            "from_email": os.getenv("FROM_EMAIL", "atomicrosetools@gmail.com")
+        }
+
 @app.options("/{path:path}")
 async def options_handler(path: str):
     """Handle all OPTIONS requests for CORS preflight"""
