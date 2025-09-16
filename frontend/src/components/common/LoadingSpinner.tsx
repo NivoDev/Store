@@ -1,7 +1,7 @@
 'use client';
 
 import styled, { keyframes } from 'styled-components';
-import { theme } from '@/theme';
+import { theme } from '../../theme';
 
 const spin = keyframes`
   0% { transform: rotate(0deg); }

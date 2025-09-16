@@ -2,7 +2,7 @@
 
 import styled from 'styled-components';
 import Link from 'next/link';
-import { theme } from '@/theme';
+import { theme } from '../../theme';
 
 const FooterContainer = styled.footer`
   background: ${theme.colors.dark[900]};

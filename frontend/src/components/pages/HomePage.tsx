@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { theme } from '@/theme';
-import ProductCard from '@/components/product/ProductCard';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import { apiService } from '@/services/api';
+import { theme } from '../../theme';
+import ProductCard from '../product/ProductCard';
+import Header from '../layout/Header';
+import Footer from '../layout/Footer';
+import { apiService } from '../../services/api';
 
 const Container = styled.div`
   min-height: 100vh;

@@ -2,7 +2,7 @@
 
 import styled from 'styled-components';
 import Link from 'next/link';
-import { theme } from '@/theme';
+import { theme } from '../../theme';
 
 const Card = styled(Link)`
   background: ${theme.colors.gradients.card};

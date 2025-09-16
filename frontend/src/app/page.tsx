@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { Metadata } from 'next';
-import HomePage from '@/components/pages/HomePage';
-import LoadingSpinner from '@/components/common/LoadingSpinner';
+import HomePage from '../components/pages/HomePage';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 export const metadata: Metadata = {
   title: 'Atomic Rose Tools - Premium Psytrance Sample Packs & MIDI',

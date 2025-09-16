@@ -2,7 +2,7 @@
 
 import styled from 'styled-components';
 import Link from 'next/link';
-import { theme } from '@/theme';
+import { theme } from '../../theme';
 
 const HeaderContainer = styled.header`
   background: rgba(15, 23, 42, 0.95);
