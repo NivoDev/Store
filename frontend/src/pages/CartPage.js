@@ -162,7 +162,6 @@ const CartPage = () => {
   const [otpCode, setOtpCode] = useState(''); // Separate OTP input
   const [orderData, setOrderData] = useState(null);
   const [verificationStep, setVerificationStep] = useState('email'); // 'email', 'verify', 'success'
-  const [fallbackOtp, setFallbackOtp] = useState(''); // Fallback OTP if email fails
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [termsError, setTermsError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -318,7 +317,6 @@ const CartPage = () => {
         setVerificationStep('verify'); // Ensure we're in verify step, not success
         setOrderData(result.data);
         setOtpCode(''); // Clear any previous OTP code
-        setFallbackOtp(result.data.otp_code || ''); // Store fallback OTP
       } else {
         setTermsError(`Checkout failed: ${result.error}`);
       }
@@ -797,28 +795,6 @@ const CartPage = () => {
               <VerificationTitle>Verify Your Purchase</VerificationTitle>
               <VerificationMessage>
                 We've sent a verification code to your email. Please check your inbox and enter the code below to complete your purchase.
-                {fallbackOtp && (
-                  <div style={{
-                    marginTop: theme.spacing[4],
-                    padding: theme.spacing[3],
-                    background: 'rgba(59, 130, 246, 0.1)',
-                    border: '1px solid rgba(59, 130, 246, 0.3)',
-                    borderRadius: theme.borderRadius.md,
-                    textAlign: 'center'
-                  }}>
-                    <p style={{ margin: 0, fontSize: theme.typography.sizes.sm, color: theme.colors.primary[400] }}>
-                      <strong>If you didn't receive the email, use this code:</strong><br/>
-                      <span style={{ 
-                        fontFamily: 'monospace', 
-                        fontSize: theme.typography.sizes.lg, 
-                        fontWeight: 'bold',
-                        color: theme.colors.primary[500]
-                      }}>
-                        {fallbackOtp}
-                      </span>
-                    </p>
-                  </div>
-                )}
               </VerificationMessage>
               <FormGroup>
                 <Label htmlFor="verification">Verification Code</Label>

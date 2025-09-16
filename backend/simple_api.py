@@ -1342,7 +1342,6 @@ async def guest_checkout(checkout_data: dict):
             "order_id": str(order_id),
             "order_number": order["order_number"],
             "verification_token": verification_token,
-            "otp_code": otp_code,  # Include OTP in response for fallback
             "message": "Please check your email to verify your email address before completing checkout",
             "email_sent": email_sent if 'email_sent' in locals() else False
         }
