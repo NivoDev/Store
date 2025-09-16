@@ -214,7 +214,6 @@ const CartPage = () => {
       setShowTransferSuccessModal(false);
     }
     setGuestEmail('');
-    setVerificationToken('');
     setOrderData(null);
     setVerificationStep('email');
     setAcceptTerms(false);
@@ -349,8 +348,7 @@ const CartPage = () => {
       const result = await apiService.verifyGuestOtp(otpCode, guestEmail);
       
       if (result.success) {
-        // Store the verification token for the next step
-        setVerificationToken(result.data.verification_token);
+        // Store the order data for the next step
         setOrderData(result.data);
         setVerificationStep('success');
         
@@ -383,7 +381,6 @@ const CartPage = () => {
     setShowVerificationModal(false);
     setShowAuthModal(false);
     setGuestEmail('');
-    setVerificationToken('');
     setOrderData(null);
     setVerificationStep('email');
     setAcceptTerms(false);
