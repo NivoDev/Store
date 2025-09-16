@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
@@ -96,7 +96,7 @@ const GuestEmailVerificationPage = () => {
   const [orderData, setOrderData] = useState(null);
   const [error, setError] = useState('');
 
-  const handleVerification = async (verificationToken) => {
+  const handleVerification = useCallback(async (verificationToken) => {
     try {
       const result = await apiService.verifyGuestEmail(verificationToken);
       if (result.success) {
@@ -120,7 +120,7 @@ const GuestEmailVerificationPage = () => {
       setVerificationStatus('error');
       setError('Email verification failed. Please try again.');
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     if (token) {

@@ -159,7 +159,6 @@ const CartPage = () => {
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [guestEmail, setGuestEmail] = useState('');
-  const [verificationToken, setVerificationToken] = useState('');
   const [otpCode, setOtpCode] = useState(''); // Separate OTP input
   const [orderData, setOrderData] = useState(null);
   const [verificationStep, setVerificationStep] = useState('email'); // 'email', 'verify', 'success'
