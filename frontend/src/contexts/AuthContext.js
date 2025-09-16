@@ -12,7 +12,13 @@ const AUTH_ACTIONS = {
   REGISTER_SUCCESS: 'REGISTER_SUCCESS',
   REGISTER_FAILURE: 'REGISTER_FAILURE',
   CLEAR_ERROR: 'CLEAR_ERROR',
-  UPDATE_PROFILE: 'UPDATE_PROFILE'
+  UPDATE_PROFILE: 'UPDATE_PROFILE',
+  VERIFY_EMAIL_START: 'VERIFY_EMAIL_START',
+  VERIFY_EMAIL_SUCCESS: 'VERIFY_EMAIL_SUCCESS',
+  VERIFY_EMAIL_FAILURE: 'VERIFY_EMAIL_FAILURE',
+  RESEND_VERIFICATION_START: 'RESEND_VERIFICATION_START',
+  RESEND_VERIFICATION_SUCCESS: 'RESEND_VERIFICATION_SUCCESS',
+  RESEND_VERIFICATION_FAILURE: 'RESEND_VERIFICATION_FAILURE'
 };
 
 // Initial auth state
@@ -20,7 +26,10 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  error: null
+  error: null,
+  isVerifyingEmail: false,
+  isResendingVerification: false,
+  verificationMessage: null
 };
 
 // Auth reducer
@@ -73,6 +82,51 @@ const authReducer = (state, action) => {
       return {
         ...state,
         user: { ...state.user, ...action.payload }
+      };
+    
+    case AUTH_ACTIONS.VERIFY_EMAIL_START:
+      return {
+        ...state,
+        isVerifyingEmail: true,
+        error: null,
+        verificationMessage: null
+      };
+    
+    case AUTH_ACTIONS.VERIFY_EMAIL_SUCCESS:
+      return {
+        ...state,
+        isVerifyingEmail: false,
+        verificationMessage: action.payload.message,
+        user: { ...state.user, email_verified: true }
+      };
+    
+    case AUTH_ACTIONS.VERIFY_EMAIL_FAILURE:
+      return {
+        ...state,
+        isVerifyingEmail: false,
+        error: action.payload
+      };
+    
+    case AUTH_ACTIONS.RESEND_VERIFICATION_START:
+      return {
+        ...state,
+        isResendingVerification: true,
+        error: null,
+        verificationMessage: null
+      };
+    
+    case AUTH_ACTIONS.RESEND_VERIFICATION_SUCCESS:
+      return {
+        ...state,
+        isResendingVerification: false,
+        verificationMessage: action.payload.message
+      };
+    
+    case AUTH_ACTIONS.RESEND_VERIFICATION_FAILURE:
+      return {
+        ...state,
+        isResendingVerification: false,
+        error: action.payload
       };
     
     default:
@@ -223,13 +277,67 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  // Verify email function
+  const verifyEmail = async (token) => {
+    dispatch({ type: AUTH_ACTIONS.VERIFY_EMAIL_START });
+    
+    try {
+      const result = await apiService.verifyEmail(token);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Email verification failed');
+      }
+      
+      dispatch({
+        type: AUTH_ACTIONS.VERIFY_EMAIL_SUCCESS,
+        payload: { message: result.data.message }
+      });
+      
+      return { success: true };
+    } catch (error) {
+      dispatch({
+        type: AUTH_ACTIONS.VERIFY_EMAIL_FAILURE,
+        payload: error.message || 'Email verification failed'
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
+  // Resend verification email function
+  const resendVerification = async (email) => {
+    dispatch({ type: AUTH_ACTIONS.RESEND_VERIFICATION_START });
+    
+    try {
+      const result = await apiService.resendVerification(email);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to resend verification email');
+      }
+      
+      dispatch({
+        type: AUTH_ACTIONS.RESEND_VERIFICATION_SUCCESS,
+        payload: { message: result.data.message }
+      });
+      
+      return { success: true };
+    } catch (error) {
+      dispatch({
+        type: AUTH_ACTIONS.RESEND_VERIFICATION_FAILURE,
+        payload: error.message || 'Failed to resend verification email'
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     ...state,
     login,
     register,
     logout,
     clearError,
-    updateProfile
+    updateProfile,
+    verifyEmail,
+    resendVerification
   };
 
   return (

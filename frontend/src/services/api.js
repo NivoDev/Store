@@ -126,6 +126,41 @@ class APIService {
     }
   }
 
+  // Email verification methods
+  async verifyEmail(token) {
+    try {
+      const response = await this.request('/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ token }),
+      });
+      
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('Email verification failed:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Email verification failed' 
+      };
+    }
+  }
+
+  async resendVerification(email) {
+    try {
+      const response = await this.request('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+      
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('Resend verification failed:', error);
+      return { 
+        success: false, 
+        error: error.message || 'Failed to resend verification email' 
+      };
+    }
+  }
+
   async getCurrentUser() {
     try {
       const response = await this.request('/auth/me');

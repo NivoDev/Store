@@ -28,6 +28,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
 import GuestDownloadPage from './pages/GuestDownloadPage';
+import EmailVerificationPage from './pages/EmailVerificationPage';
 
 function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -57,6 +58,7 @@ function App() {
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/cookies" element={<CookiePolicyPage />} />
                   <Route path="/guest-downloads" element={<GuestDownloadPage />} />
+                  <Route path="/verify-email/:token" element={<EmailVerificationPage />} />
                 </Routes>
               </main>
 

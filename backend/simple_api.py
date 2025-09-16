@@ -293,12 +293,16 @@ async def register(user_data: dict):
         # Hash password
         password_hash = pwd_context.hash(password)
         
+        # Generate email verification token
+        verification_token = secrets.token_urlsafe(32)
+        verification_expires = datetime.utcnow() + timedelta(hours=1)
+        
         # Create user document
         user_doc = {
             "email": email,
             "password_hash": password_hash,
             "mfa_enabled": False,
-            "status": "active",
+            "status": "pending_verification",  # Changed from "active" to require verification
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
             "name": name,
@@ -309,12 +313,29 @@ async def register(user_data: dict):
             "failed_login_attempts": 0,
             "account_locked_until": None,
             "password_changed_at": datetime.utcnow(),
-            "last_login": None
+            "last_login": None,
+            # Email verification fields
+            "email_verified": False,
+            "verification_token": verification_token,
+            "verification_expires": verification_expires
         }
         
         # Insert user
         result = await db.users.insert_one(user_doc)
         user_id = result.inserted_id
+        
+        # Send verification email
+        try:
+            from services.email_service import email_service
+            email_sent = email_service.send_verification_email(
+                email=email,
+                first_name=name,
+                verification_token=verification_token
+            )
+            if not email_sent:
+                print(f"⚠️ Warning: Failed to send verification email to {email}")
+        except Exception as e:
+            print(f"⚠️ Warning: Error sending verification email to {email}: {e}")
         
         # Create JWT token
         access_token = create_access_token(data={"sub": str(user_id)})
@@ -357,6 +378,13 @@ async def login(credentials: dict):
         # Check if user is active
         if user.get("status") != "active":
             raise HTTPException(status_code=401, detail="Invalid credentials")
+        
+        # Check if email is verified
+        if not user.get("email_verified", False):
+            raise HTTPException(
+                status_code=403, 
+                detail="Please verify your email before logging in. Check your inbox for a verification email."
+            )
         
         # Verify password
         password_hash = user.get("password_hash")
@@ -403,6 +431,103 @@ async def logout():
 async def verify_token_endpoint(current_user: dict = Depends(get_current_user)):
     """Verify token validity"""
     return {"valid": True, "user": current_user}
+
+@app.post("/api/v1/auth/verify-email")
+async def verify_email(verification_data: dict):
+    """Verify user email with token"""
+    try:
+        token = verification_data.get("token", "").strip()
+        
+        if not token:
+            raise HTTPException(status_code=400, detail="Verification token is required")
+        
+        # Find user by verification token
+        user = await db.users.find_one({
+            "verification_token": token,
+            "verification_expires": {"$gt": datetime.utcnow()}
+        })
+        
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+        
+        # Update user to verified status
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "email_verified": True,
+                    "status": "active",
+                    "verification_token": None,
+                    "verification_expires": None,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        print(f"✅ Email verified for user: {user['email']}")
+        return {"message": "Email verified successfully", "verified": True}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error verifying email: {e}")
+        raise HTTPException(status_code=500, detail="Email verification failed")
+
+@app.post("/api/v1/auth/resend-verification")
+async def resend_verification_email(user_data: dict):
+    """Resend verification email"""
+    try:
+        email = user_data.get("email", "").lower().strip()
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Find user by email
+        user = await db.users.find_one({"email": email})
+        
+        if not user:
+            # Don't reveal if user exists or not for security
+            return {"message": "If an account with this email exists, a verification email has been sent"}
+        
+        if user.get("email_verified", False):
+            raise HTTPException(status_code=400, detail="Email is already verified")
+        
+        # Generate new verification token
+        verification_token = secrets.token_urlsafe(32)
+        verification_expires = datetime.utcnow() + timedelta(hours=1)
+        
+        # Update user with new token
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "verification_token": verification_token,
+                    "verification_expires": verification_expires,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Send verification email
+        try:
+            from services.email_service import email_service
+            email_sent = email_service.send_verification_email(
+                email=email,
+                first_name=user.get("name", "User"),
+                verification_token=verification_token
+            )
+            if not email_sent:
+                print(f"⚠️ Warning: Failed to resend verification email to {email}")
+        except Exception as e:
+            print(f"⚠️ Warning: Error resending verification email to {email}: {e}")
+        
+        return {"message": "If an account with this email exists, a verification email has been sent"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error resending verification email: {e}")
+        raise HTTPException(status_code=500, detail="Failed to resend verification email")
 
 # Products endpoints
 @app.get("/api/v1/products")
