@@ -487,7 +487,10 @@ async def get_products(
         
     except Exception as e:
         print(f"❌ Error getting products: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get products")
+        print(f"❌ Error type: {type(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Failed to get products: {str(e)}")
 
 @app.get("/api/v1/products/{product_id}")
 async def get_product(product_id: str):
