@@ -30,13 +30,15 @@ const CheckoutPage = () => {
   const [guestOrder, setGuestOrder] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
 
   useEffect(() => {
     // Check if we have a guest order from email verification
-    if (location.state?.guestOrder) {
+    if (location.state?.guestOrder && location.state?.fromVerification) {
       setGuestOrder(location.state.guestOrder);
+      setIsEmailVerified(true); // Only set verified if coming from verification flow
     } else {
-      // If no guest order, redirect to cart
+      // If no guest order or not from verification, redirect to cart
       navigate('/cart');
     }
   }, [location.state, navigate]);
@@ -118,21 +120,23 @@ const CheckoutPage = () => {
             </p>
           </div>
 
-          <div style={{
-            background: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            borderRadius: theme.borderRadius.lg,
-            padding: theme.spacing[4],
-            marginBottom: theme.spacing[4]
-          }}>
-            <p style={{ 
-              color: theme.colors.success, 
-              margin: 0,
-              fontSize: theme.typography.sizes.sm
+          {isEmailVerified && (
+            <div style={{
+              background: 'rgba(34, 197, 94, 0.1)',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              borderRadius: theme.borderRadius.lg,
+              padding: theme.spacing[4],
+              marginBottom: theme.spacing[4]
             }}>
-              ✅ Email verified successfully
-            </p>
-          </div>
+              <p style={{ 
+                color: theme.colors.success, 
+                margin: 0,
+                fontSize: theme.typography.sizes.sm
+              }}>
+                ✅ Email verified successfully
+              </p>
+            </div>
+          )}
 
           {error && (
             <div style={{
