@@ -418,6 +418,17 @@ async def get_products(
 ):
     """Get all products with optional filtering"""
     try:
+        # Check if database is connected
+        if not mongodb_connected:
+            print("❌ Database not connected, returning empty products")
+            return {
+                "products": [],
+                "total": 0,
+                "skip": skip,
+                "limit": limit,
+                "message": "Database temporarily unavailable"
+            }
+        
         collection = db.products
         
         # Build filter
