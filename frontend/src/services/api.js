@@ -87,10 +87,8 @@ class APIService {
         body: JSON.stringify(userData),
       });
       
-      if (response.access_token) {
-        this.setToken(response.access_token);
-      }
-      
+      // Registration now requires email verification
+      // Don't set token until email is verified
       return { success: true, data: response };
     } catch (error) {
       return { success: false, error: error.message };
@@ -107,6 +105,36 @@ class APIService {
       if (response.access_token) {
         this.setToken(response.access_token);
       }
+      
+      return { success: true, data: response };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  async verifyUserEmail(otpCode, email) {
+    try {
+      const response = await this.request('/auth/verify-email', {
+        method: 'POST',
+        body: JSON.stringify({ otp_code: otpCode, email: email }),
+      });
+      
+      if (response.access_token) {
+        this.setToken(response.access_token);
+      }
+      
+      return { success: true, data: response };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  async resendUserVerification(email) {
+    try {
+      const response = await this.request('/auth/resend-verification', {
+        method: 'POST',
+        body: JSON.stringify({ email: email }),
+      });
       
       return { success: true, data: response };
     } catch (error) {

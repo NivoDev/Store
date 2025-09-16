@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { theme } from '../../theme';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
+import { apiService } from '../../services/api';
 
 const Overlay = styled(motion.div)`
   position: fixed;
@@ -249,12 +250,18 @@ const SocialButton = styled(motion.button)`
 const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
   const [activeTab, setActiveTab] = useState('signin');
   const [showPassword, setShowPassword] = useState(false);
+  const [verificationStep, setVerificationStep] = useState('form'); // 'form', 'verify'
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
   const { login, register, isLoading, error } = useAuth();
   
   const { register: registerField, handleSubmit, formState: { errors }, reset } = useForm();
 
   const handleClose = () => {
     reset();
+    setVerificationStep('form');
+    setVerificationEmail('');
+    setOtpCode('');
     onClose();
   };
 
@@ -272,19 +279,43 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
     } else {
       const result = await register(data);
       if (result.success) {
-        // Call the callback if provided, otherwise just close
-        if (onSuccessfulLogin) {
-          onSuccessfulLogin();
-        } else {
-          handleClose();
-        }
+        // Show verification step instead of closing
+        setVerificationEmail(data.email);
+        setVerificationStep('verify');
       }
     }
   };
 
   const switchTab = (tab) => {
     setActiveTab(tab);
+    setVerificationStep('form');
+    setVerificationEmail('');
+    setOtpCode('');
     reset();
+  };
+
+  const handleVerification = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      return;
+    }
+    
+    try {
+      const result = await apiService.verifyUserEmail(otpCode, verificationEmail);
+      
+      if (result.success) {
+        // Call the callback if provided, otherwise just close
+        if (onSuccessfulLogin) {
+          onSuccessfulLogin();
+        } else {
+          handleClose();
+        }
+      } else {
+        // Handle verification error
+        console.error('Verification failed:', result.error);
+      }
+    } catch (error) {
+      console.error('Verification error:', error);
+    }
   };
 
   return (
@@ -312,36 +343,81 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
 
             <Header>
               <Title>
-                {activeTab === 'signin' ? 'Welcome Back' : 'Join Atomic Rose'}
+                {verificationStep === 'verify' 
+                  ? 'Verify Your Email' 
+                  : activeTab === 'signin' 
+                    ? 'Welcome Back' 
+                    : 'Join Atomic Rose'
+                }
               </Title>
               <Subtitle>
-                {activeTab === 'signin' 
-                  ? 'Sign in to access your account and continue your musical journey'
-                  : 'Create your account to start exploring premium psytrance content'
+                {verificationStep === 'verify'
+                  ? `We've sent a verification code to ${verificationEmail}. Please check your inbox and enter the code below.`
+                  : activeTab === 'signin' 
+                    ? 'Sign in to access your account and continue your musical journey'
+                    : 'Create your account to start exploring premium psytrance content'
                 }
               </Subtitle>
             </Header>
 
-            <TabContainer>
-              <Tab
-                className={activeTab === 'signin' ? 'active' : ''}
-                onClick={() => switchTab('signin')}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Sign In
-              </Tab>
-              <Tab
-                className={activeTab === 'signup' ? 'active' : ''}
-                onClick={() => switchTab('signup')}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Sign Up
-              </Tab>
-            </TabContainer>
+            {verificationStep === 'form' && (
+              <TabContainer>
+                <Tab
+                  className={activeTab === 'signin' ? 'active' : ''}
+                  onClick={() => switchTab('signin')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Sign In
+                </Tab>
+                <Tab
+                  className={activeTab === 'signup' ? 'active' : ''}
+                  onClick={() => switchTab('signup')}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Sign Up
+                </Tab>
+              </TabContainer>
+            )}
 
-            <Form onSubmit={handleSubmit(onSubmit)}>
+            {verificationStep === 'verify' ? (
+              <Form>
+                <InputGroup>
+                  <Input
+                    type="text"
+                    placeholder="Enter 6-digit code from your email"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    maxLength={6}
+                  />
+                  <InputIcon>
+                    <FiMail size={18} />
+                  </InputIcon>
+                </InputGroup>
+
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  onClick={handleVerification}
+                  disabled={!otpCode || otpCode.length !== 6}
+                >
+                  Verify Email
+                </Button>
+
+                <ForgotPassword
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setVerificationStep('form')}
+                >
+                  Back to Sign Up
+                </ForgotPassword>
+              </Form>
+            ) : (
+              <Form onSubmit={handleSubmit(onSubmit)}>
               {activeTab === 'signup' && (
                 <InputGroup>
                   <Input
@@ -491,6 +567,7 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
               </svg>
               Continue with Google
             </SocialButton>
+            )}
           </Modal>
         </Overlay>
       )}
