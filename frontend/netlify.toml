@@ -1,42 +1,117 @@
 [build]
-  command = "npm run build"
   publish = ".next"
+  command = "npm run build"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_VERSION = "10"
 
+# Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+# CSP Header
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = '''
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
+      img-src 'self' data: https: blob:;
+      font-src 'self' https://fonts.gstatic.com;
+      connect-src 'self' https:;
+      media-src 'self' https: blob:;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+    '''
+
+# Cache Next.js static assets
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache images
+[[headers]]
+  for = "*.jpg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+# API proxy to backend
 [[redirects]]
   from = "/api/*"
   to = "https://store-6ryk.onrender.com/api/:splat"
   status = 200
   force = true
+  headers = {X-From = "Netlify"}
 
+# Health check proxy
 [[redirects]]
   from = "/health"
   to = "https://store-6ryk.onrender.com/health"
   status = 200
   force = true
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-    Permissions-Policy = "geolocation=(), microphone=(), camera=(), payment=()"
+# Next.js routing (handled by Next.js internally)
 
-[[headers]]
-  for = "/_next/static/*"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+# Production branch
+[context.production]
+  command = "npm run build"
+  
+[context.production.environment]
+  NODE_ENV = "production"
+  NEXT_PUBLIC_API_BASE_URL = "https://store-6ryk.onrender.com/api/v1"
+  REACT_APP_API_BASE_URL = "https://store-6ryk.onrender.com/api/v1"
 
-[[headers]]
-  for = "/*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+# Production API proxy
+[[context.production.redirects]]
+  from = "/api/*"
+  to = "https://store-6ryk.onrender.com/api/:splat"
+  status = 200
+  force = true
+  headers = {X-From = "Netlify"}
 
-[[headers]]
-  for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+# Staging branch
+[context.staging]
+  command = "npm run build"
+  
+[context.staging.environment]
+  NODE_ENV = "staging"
+  NEXT_PUBLIC_API_BASE_URL = "/api/v1"
+  REACT_APP_API_BASE_URL = "/api/v1"
+
+# Staging API proxy
+[[context.staging.redirects]]
+  from = "/api/*"
+  to = "https://api-staging.atomicrosetools.com/api/:splat"
+  status = 200
+  force = true
+  headers = {X-From = "Netlify"}
+
+# Deploy previews
+[context.deploy-preview]
+  command = "npm run build"
+
+[context.branch-deploy]
+  command = "npm run build"
+
