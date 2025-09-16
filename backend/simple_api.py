@@ -29,6 +29,24 @@ MONGODB_URI = os.getenv("MONGODB_URI")
 if not MONGODB_URI:
     raise ValueError("MONGODB_URI not found in environment variables")
 
+# Database connection status
+mongodb_connected = False
+
+# Database connection check function
+async def check_mongodb_connection():
+    """Check if MongoDB is connected"""
+    global mongodb_connected
+    try:
+        # Try to ping the database
+        await db.admin.command('ping')
+        mongodb_connected = True
+        print("✅ MongoDB connection successful")
+        return True
+    except Exception as e:
+        mongodb_connected = False
+        print(f"❌ MongoDB connection failed: {e}")
+        return False
+
 # JWT configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "your-super-secret-jwt-key-change-this-in-production-32-characters-minimum")
 JWT_ALGORITHM = "HS256"
@@ -90,7 +108,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Connect to MongoDB on startup"""
-    global db_client, db
+    global db_client, db, mongodb_connected
     try:
         print("🔄 Connecting to MongoDB...")
         db_client = AsyncIOMotorClient(MONGODB_URI)
@@ -98,11 +116,13 @@ async def startup_event():
         
         # Test connection
         await db_client.admin.command('ping')
+        mongodb_connected = True
         print("✅ Successfully connected to MongoDB")
         
     except Exception as e:
+        mongodb_connected = False
         print(f"❌ Failed to connect to MongoDB: {e}")
-        raise
+        # Don't raise - let the app start without database
 
 @app.on_event("shutdown")
 async def shutdown_event():
