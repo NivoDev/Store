@@ -298,7 +298,7 @@ async def test_email(test_data: dict):
             "email": email,
             "sent": test_sent,
             "resend_api_key_set": bool(os.getenv("RESEND_API_KEY")),
-            "from_email": os.getenv("FROM_EMAIL", "atomicrosetools@gmail.com")
+            "from_email": os.getenv("FROM_EMAIL")
         }
         
     except Exception as e:
@@ -309,7 +309,7 @@ async def test_email(test_data: dict):
             "message": "Test email failed",
             "error": str(e),
             "resend_api_key_set": bool(os.getenv("RESEND_API_KEY")),
-            "from_email": os.getenv("FROM_EMAIL", "atomicrosetools@gmail.com")
+            "from_email": os.getenv("FROM_EMAIL")
         }
 
 @app.options("/{path:path}")
