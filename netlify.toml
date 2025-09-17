@@ -11,8 +11,9 @@
   NODE_ENV = "production"
   REACT_APP_API_BASE_URL = "https://store-6ryk.onrender.com/api/v1"
   GENERATE_SOURCEMAP = "false"
-  # Helps older deps on Node 18 and avoids ESLint CI fails
+  # Only needed if you hit the OpenSSL build error; safe to keep.
   NODE_OPTIONS = "--openssl-legacy-provider"
+  # Optional: avoid CRA eslint plugin failures in CI
   DISABLE_ESLINT_PLUGIN = "true"
 
 # Security Headers
@@ -55,10 +56,12 @@
   for = "*.jpg"
   [headers.values]
     Cache-Control = "public, max-age=31536000"
+
 [[headers]]
   for = "*.png"
   [headers.values]
     Cache-Control = "public, max-age=31536000"
+
 [[headers]]
   for = "*.webp"
   [headers.values]
