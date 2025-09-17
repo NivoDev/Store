@@ -333,44 +333,40 @@ async def register(user_data: dict):
         email = user_data.get("email", "").lower().strip()
         password = user_data.get("password", "")
         name = user_data.get("name", "").strip()
-        
+
         print(f"📧 Email: {email}, Name: {name}")
-        
+
         # Validation
         if not email or not password or not name:
             raise HTTPException(status_code=400, detail="Email, name, and password are required")
-        
-        if not email or "@" not in email:
+        if "@" not in email:
             raise HTTPException(status_code=400, detail="Invalid email format")
-        
         if len(password) < 6:
             raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-        
         if len(name) < 2:
             raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
-        
-        # Store email directly for development/investigation
-        # Check if user already exists
+
+        # Existing user?
         existing_user = await db.users.find_one({"email": email})
         if existing_user:
             raise HTTPException(status_code=400, detail="User already exists")
-        
+
         # Hash password
         password_hash = pwd_context.hash(password)
-        
-        # Generate verification token and OTP code
+
+        # Generate verification materials
         verification_token = secrets.token_urlsafe(32)
         otp_code = ''.join(secrets.choice('0123456789') for _ in range(6))
-        
-        # Create user document (unverified initially)
+
+        # Insert user — keep status valid for schema; gate access with email_verified
         user_doc = {
             "email": email,
             "password_hash": password_hash,
             "mfa_enabled": False,
-            "status": "pending_verification",  # Changed from "active" to require verification
-            "email_verified": False,
+            "status": "active",                  # ✅ stays valid per enum
+            "email_verified": False,             # ⛔ blocks login until verified
             "verification_token": verification_token,
-            "verification_expires": datetime.utcnow() + timedelta(hours=24),  # 24 hour expiry
+            "verification_expires": datetime.utcnow() + timedelta(hours=24),
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
             "name": name,
@@ -383,12 +379,10 @@ async def register(user_data: dict):
             "password_changed_at": datetime.utcnow(),
             "last_login": None
         }
-        
-        # Insert user
+
         result = await db.users.insert_one(user_doc)
-        user_id = result.inserted_id
-        
-        # Send verification email
+
+        # Send verification email (best-effort)
         try:
             from services.email_service import email_service
             email_sent = email_service.send_user_verification_email(
@@ -400,77 +394,81 @@ async def register(user_data: dict):
             print(f"📧 User verification email sent: {email_sent}")
         except Exception as e:
             print(f"⚠️ Warning: Error sending user verification email to {email}: {e}")
-            import traceback
-            traceback.print_exc()
+            import traceback; traceback.print_exc()
             email_sent = False
-        
+
         return {
             "message": "Registration successful! Please check your email to verify your account.",
             "email": email,
             "verification_required": True,
             "email_sent": email_sent,
-            "otp_code": otp_code  # Include OTP for testing (remove in production)
+            "otp_code": otp_code  # (include for testing only)
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
         print(f"❌ Error during registration: {e}")
-        import traceback
-        traceback.print_exc()
+        import traceback; traceback.print_exc()
         raise HTTPException(status_code=500, detail="Registration failed")
 
 @app.post("/api/v1/auth/login")
 async def login(credentials: dict):
-    """Login user"""
+    """Login user (Option A: gate by email_verified, status can remain 'active')."""
     try:
         email = credentials.get("email", "").lower().strip()
         password = credentials.get("password", "")
-        
-        # Validation
+
+        # Basic validation
         if not email or not password:
             raise HTTPException(status_code=400, detail="Email and password are required")
-        
-        # Find user by email
+
+        # Find user
         user = await db.users.find_one({"email": email})
         if not user:
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        # Check if user is active and email is verified
-        if user.get("status") != "active":
-            if user.get("status") == "pending_verification":
-                raise HTTPException(status_code=403, detail="Please verify your email before logging in. Check your inbox for a verification code.")
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        
-        # Check if email is verified
+
+        # Block if account not usable
+        status_val = user.get("status", "active")
+        if status_val == "suspended":
+            raise HTTPException(status_code=403, detail="Your account is suspended")
+        if status_val == "deleted":
+            raise HTTPException(status_code=403, detail="This account has been deleted")
+
+        # Require verified email (core of Option A)
         if not user.get("email_verified", False):
-            raise HTTPException(status_code=403, detail="Please verify your email before logging in. Check your inbox for a verification code.")
-        
+            raise HTTPException(
+                status_code=403,
+                detail="Please verify your email before logging in. Check your inbox for a verification code."
+            )
+
         # Verify password
         password_hash = user.get("password_hash")
         if not password_hash or not pwd_context.verify(password, password_hash):
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        
+
         # Update last login
         await db.users.update_one(
             {"_id": user["_id"]},
             {"$set": {"last_login": datetime.utcnow()}}
         )
-        
-        # Create JWT token
+
+        # Issue token
         access_token = create_access_token(data={"sub": str(user["_id"])})
-        
-        # Format user for response
+
+        # Prepare user payload
         user_response = format_user_for_frontend(user)
         user_response["id"] = str(user["_id"])
         user_response["email"] = user.get("email", email)
-        
+        user_response["email_verified"] = True
+        user_response["status"] = status_val
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
             "user": user_response
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -498,31 +496,27 @@ async def verify_user_email(verification_data: dict):
     try:
         otp_code = verification_data.get("otp_code", "").strip()
         email = verification_data.get("email", "").strip()
-        
+
         if not otp_code or not email:
             raise HTTPException(status_code=400, detail="OTP code and email are required")
-        
-        # Find user by email
-        user = await db.users.find_one({
-            "email": email.lower(),
-            "status": "pending_verification",
-            "verification_expires": {"$gt": datetime.utcnow()}
-        })
-        
-        if not user:
-            raise HTTPException(status_code=400, detail="Invalid or expired verification request")
-        
-        # For now, we'll use a simple OTP check (in production, store OTP in database)
-        # This is a simplified version - in production you'd store the OTP in the user document
         if len(otp_code) != 6 or not otp_code.isdigit():
             raise HTTPException(status_code=400, detail="Invalid OTP format")
-        
-        # Update user to verified status
+
+        # Find unverified, still-valid user
+        user = await db.users.find_one({
+            "email": email.lower(),
+            "email_verified": False,
+            "verification_expires": {"$gt": datetime.utcnow()},
+            "status": "active"
+        })
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification request")
+
+        # Mark verified
         await db.users.update_one(
             {"_id": user["_id"]},
             {
                 "$set": {
-                    "status": "active",
                     "email_verified": True,
                     "updated_at": datetime.utcnow()
                 },
@@ -532,17 +526,17 @@ async def verify_user_email(verification_data: dict):
                 }
             }
         )
-        
-        # Create JWT token for immediate login
+
+        # Issue token
         access_token = create_access_token(data={"sub": str(user["_id"])})
-        
-        # Format user for response
         user_response = format_user_for_frontend(user)
-        user_response["id"] = str(user["_id"])
-        user_response["email"] = user.get("email")
-        user_response["status"] = "active"
-        user_response["email_verified"] = True
-        
+        user_response.update({
+            "id": str(user["_id"]),
+            "email": user.get("email"),
+            "status": "active",
+            "email_verified": True
+        })
+
         return {
             "message": "Email verified successfully! You can now log in.",
             "access_token": access_token,
@@ -550,7 +544,7 @@ async def verify_user_email(verification_data: dict):
             "user": user_response,
             "verified": True
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -562,24 +556,20 @@ async def resend_user_verification(resend_data: dict):
     """Resend verification email for user"""
     try:
         email = resend_data.get("email", "").strip()
-        
         if not email:
             raise HTTPException(status_code=400, detail="Email is required")
-        
-        # Find user
+
         user = await db.users.find_one({
             "email": email.lower(),
-            "status": "pending_verification"
+            "status": "active",
+            "email_verified": False
         })
-        
         if not user:
             raise HTTPException(status_code=404, detail="No pending verification found for this email")
-        
-        # Generate new verification token and OTP
+
         verification_token = secrets.token_urlsafe(32)
         otp_code = ''.join(secrets.choice('0123456789') for _ in range(6))
-        
-        # Update user with new verification data
+
         await db.users.update_one(
             {"_id": user["_id"]},
             {
@@ -590,8 +580,7 @@ async def resend_user_verification(resend_data: dict):
                 }
             }
         )
-        
-        # Send verification email
+
         try:
             from services.email_service import email_service
             email_sent = email_service.send_user_verification_email(
@@ -604,14 +593,14 @@ async def resend_user_verification(resend_data: dict):
         except Exception as e:
             print(f"⚠️ Warning: Error resending user verification email to {email}: {e}")
             email_sent = False
-        
+
         return {
             "message": "Verification email sent successfully",
             "email": email,
             "email_sent": email_sent,
-            "otp_code": otp_code  # Include OTP for testing (remove in production)
+            "otp_code": otp_code  # (testing only)
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
