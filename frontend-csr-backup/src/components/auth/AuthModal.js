@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { theme } from '../../theme';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
-import { apiService } from '../../services/api';
+import apiService from '../../services/api';
 
 const Overlay = styled(motion.div)`
   position: fixed;
