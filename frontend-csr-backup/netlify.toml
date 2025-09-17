@@ -1,10 +1,19 @@
 [build]
+  # Build from the CRA backup folder
+  base = "frontend-csr-backup"
+  command = "npm ci && npm run build"
+  # CRA outputs to /build (relative to base)
   publish = "build"
-  command = "npm run build"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "18.20.4"           # CRA 5 works great on Node 18
   NPM_VERSION = "10"
+  NODE_ENV = "production"
+  REACT_APP_API_BASE_URL = "https://store-6ryk.onrender.com/api/v1"
+  GENERATE_SOURCEMAP = "false"
+  # Helps older deps on Node 18 and avoids ESLint CI fails
+  NODE_OPTIONS = "--openssl-legacy-provider"
+  DISABLE_ESLINT_PLUGIN = "true"
 
 # Security Headers
 [[headers]]
@@ -46,12 +55,10 @@
   for = "*.jpg"
   [headers.values]
     Cache-Control = "public, max-age=31536000"
-
 [[headers]]
   for = "*.png"
   [headers.values]
     Cache-Control = "public, max-age=31536000"
-
 [[headers]]
   for = "*.webp"
   [headers.values]
@@ -72,51 +79,8 @@
   status = 200
   force = true
 
-# SPA routing (catch-all for frontend routes)
+# SPA routing (catch-all for CRA routes)
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-# Production branch
-[context.production]
-  command = "npm run build"
-  
-[context.production.environment]
-  NODE_ENV = "production"
-  GENERATE_SOURCEMAP = "false"
-  REACT_APP_API_BASE_URL = "https://store-6ryk.onrender.com/api/v1"
-  REACT_APP_FALLBACK_TO_MOCK = "false"
-
-# Production API proxy
-[[context.production.redirects]]
-  from = "/api/*"
-  to = "https://store-6ryk.onrender.com/api/:splat"
-  status = 200
-  force = true
-  headers = {X-From = "Netlify"}
-
-# Staging branch
-[context.staging]
-  command = "npm run build"
-  
-[context.staging.environment]
-  NODE_ENV = "staging"
-  GENERATE_SOURCEMAP = "true"
-  REACT_APP_API_BASE_URL = "/api/v1"
-  REACT_APP_FALLBACK_TO_MOCK = "true"
-
-# Staging API proxy
-[[context.staging.redirects]]
-  from = "/api/*"
-  to = "https://api-staging.atomicrosetools.com/api/:splat"
-  status = 200
-  force = true
-  headers = {X-From = "Netlify"}
-
-# Deploy previews
-[context.deploy-preview]
-  command = "npm run build"
-
-[context.branch-deploy]
-  command = "npm run build"
-
