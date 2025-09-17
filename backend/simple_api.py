@@ -19,6 +19,8 @@ from jose import jwt
 from passlib.context import CryptContext
 import boto3
 from botocore.exceptions import ClientError
+from botocore.config import Config
+from urllib.parse import urlparse, unquote
 import time
 
 # Load environment variables
@@ -73,13 +75,18 @@ r2_client = None
 if R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_ACCOUNT_ID:
     try:
         r2_client = boto3.client(
-            's3',
-            endpoint_url=f'https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com',
+            "s3",
+            endpoint_url=f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
             aws_access_key_id=R2_ACCESS_KEY_ID,
             aws_secret_access_key=R2_SECRET_ACCESS_KEY,
-            region_name='auto'
+            region_name="auto",
+            config=Config(
+                signature_version="s3v4",
+                s3={"addressing_style": "path"},
+                retries={"max_attempts": 3, "mode": "standard"},
+            ),
         )
-        print("✅ R2 client initialized successfully")
+        print("✅ R2 client initialized successfully (s3v4, path-style)")
     except Exception as e:
         print(f"❌ Failed to initialize R2 client: {e}")
         r2_client = None
@@ -869,336 +876,74 @@ async def get_sessions(skip: int = 0, limit: int = 20):
         print(f"❌ Error getting sessions: {e}")
         raise HTTPException(status_code=500, detail="Failed to get sessions")
 
-# User Profile Endpoints
-@app.get("/api/v1/user/liked-products")
-async def get_user_liked_products(current_user: dict = Depends(get_current_user)):
-    """Get user's liked products"""
-    try:
-        user_id = current_user["id"]
-        
-        # Get user's liked product IDs
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        liked_product_ids = user.get("liked_products", [])
-        
-        if not liked_product_ids:
-            return {
-                "products": [],
-                "total": 0
-            }
-        
-        # liked_product_ids are already ObjectIds, no conversion needed
-        object_ids = liked_product_ids
-        
-        # Get products
-        cursor = db.products.find({"_id": {"$in": object_ids}})
-        products = await cursor.to_list(length=None)
-        
-        # Convert to frontend format
-        formatted_products = []
-        for product in products:
-            formatted_product = {
-                "id": str(product["_id"]),
-                "sku": product.get("sku", ""),
-                "title": product.get("title", ""),
-                "description": product.get("description", ""),
-                "price": product.get("price", 0),
-                "original_price": product.get("original_price", 0),
-                "discount_percentage": product.get("discount_percentage", 0),
-                "bpm": product.get("bpm", ""),
-                "key": product.get("key", ""),
-                "genre": product.get("genre", ""),
-                "tags": product.get("tags", []),
-                "sample_count": product.get("sample_count", 0),
-                "total_duration": product.get("total_duration", ""),
-                "formats": product.get("formats", []),
-                "total_size": product.get("total_size", ""),
-                "cover_image_url": product.get("cover_image_url", ""),
-                "preview_audio_url": product.get("preview_audio_url", ""),
-                "featured": product.get("featured", False),
-                "bestseller": product.get("bestseller", False),
-                "new": product.get("new", False),
-                "has_stems": product.get("has_stems", False),
-                "contents": product.get("contents", []),
-                "slug": product.get("slug", ""),
-                "view_count": product.get("view_count", 0),
-                "like_count": product.get("like_count", 0),
-                "purchase_count": product.get("purchase_count", 0),
-                "is_free": product.get("is_free", False),
-                "created_at": product.get("created_at", ""),
-                "release_date": product.get("release_date", ""),
-                "savings": product.get("savings", 0),
-                "status": product.get("status", ""),
-                "type": product.get("type", "")
-            }
-            formatted_products.append(formatted_product)
-        
-        return {
-            "products": formatted_products,
-            "total": len(formatted_products)
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error getting liked products: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get liked products")
+# ---------- R2 PRESIGN HELPERS ----------
 
-@app.get("/api/v1/user/purchased-products")
-async def get_user_purchased_products(current_user: dict = Depends(get_current_user)):
-    """Get user's purchased products"""
-    try:
-        user_id = current_user["id"]
-        
-        # Get user's purchased product IDs
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        purchased_product_ids = user.get("purchased_products", [])
-        
-        if not purchased_product_ids:
-            return {
-                "products": [],
-                "total": 0
-            }
-        
-        # Convert string IDs to ObjectIds
-        object_ids = [ObjectId(pid) for pid in purchased_product_ids]
-        
-        # Get products
-        cursor = db.products.find({"_id": {"$in": object_ids}})
-        products = await cursor.to_list(length=None)
-        
-        # Convert to frontend format
-        formatted_products = []
-        for product in products:
-            formatted_product = {
-                "id": str(product["_id"]),
-                "sku": product.get("sku", ""),
-                "title": product.get("title", ""),
-                "description": product.get("description", ""),
-                "price": product.get("price", 0),
-                "original_price": product.get("original_price", 0),
-                "discount_percentage": product.get("discount_percentage", 0),
-                "bpm": product.get("bpm", ""),
-                "key": product.get("key", ""),
-                "genre": product.get("genre", ""),
-                "tags": product.get("tags", []),
-                "sample_count": product.get("sample_count", 0),
-                "total_duration": product.get("total_duration", ""),
-                "formats": product.get("formats", []),
-                "total_size": product.get("total_size", ""),
-                "cover_image_url": product.get("cover_image_url", ""),
-                "preview_audio_url": product.get("preview_audio_url", ""),
-                "featured": product.get("featured", False),
-                "bestseller": product.get("bestseller", False),
-                "new": product.get("new", False),
-                "has_stems": product.get("has_stems", False),
-                "contents": product.get("contents", []),
-                "slug": product.get("slug", ""),
-                "view_count": product.get("view_count", 0),
-                "like_count": product.get("like_count", 0),
-                "purchase_count": product.get("purchase_count", 0),
-                "is_free": product.get("is_free", False),
-                "created_at": product.get("created_at", ""),
-                "release_date": product.get("release_date", ""),
-                "savings": product.get("savings", 0),
-                "status": product.get("status", ""),
-                "type": product.get("type", "")
-            }
-            formatted_products.append(formatted_product)
-        
-        return {
-            "products": formatted_products,
-            "total": len(formatted_products)
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error getting purchased products: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get purchased products")
+def _normalize_r2_key(raw_key: str) -> str:
+    """
+    Normalize bucket key so the signed key exactly matches the object:
+    - decode percent-encoding
+    - strip bucket prefix if a full URL/path was saved
+    - remove leading slash
+    - convert single leading 'products:File.zip' → 'products/File.zip'
+    """
+    if not raw_key:
+        return raw_key
 
-@app.post("/api/v1/user/like-product/{product_id}")
-async def like_product(product_id: str, current_user: dict = Depends(get_current_user)):
-    """Like or unlike a product (toggle)"""
-    try:
-        user_id = current_user["id"]
-        
-        # Validate product exists
-        product = await db.products.find_one({"_id": ObjectId(product_id)})
-        if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
-        
-        # Check if product is already liked
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        liked_products = user.get("liked_products", [])
-        product_object_id = ObjectId(product_id)
-        
-        if product_object_id in liked_products:
-            # Unlike the product
-            await db.users.update_one(
-                {"_id": ObjectId(user_id)},
-                {"$pull": {"liked_products": product_object_id}}
-            )
-            
-            # Decrement product like count
-            await db.products.update_one(
-                {"_id": ObjectId(product_id)},
-                {"$inc": {"like_count": -1}}
-            )
-            
-            return {"message": "Product unliked successfully", "liked": False}
-        else:
-            # Like the product
-            await db.users.update_one(
-                {"_id": ObjectId(user_id)},
-                {"$addToSet": {"liked_products": product_object_id}}
-            )
-            
-            # Increment product like count
-            await db.products.update_one(
-                {"_id": ObjectId(product_id)},
-                {"$inc": {"like_count": 1}}
-            )
-            
-            return {"message": "Product liked successfully", "liked": True}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error toggling like: {e}")
-        raise HTTPException(status_code=500, detail="Failed to toggle like")
+    key = unquote(raw_key.strip())
 
-@app.delete("/api/v1/user/like-product/{product_id}")
-async def unlike_product(product_id: str, current_user: dict = Depends(get_current_user)):
-    """Unlike a product"""
-    try:
-        user_id = current_user["id"]
-        
-        # Remove from user's liked products (remove as ObjectId)
-        result = await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$pull": {"liked_products": ObjectId(product_id)}}
-        )
-        
-        if result.modified_count == 0:
-            return {"message": "Product was not liked"}
-        
-        # Decrement product like count
-        await db.products.update_one(
-            {"_id": ObjectId(product_id)},
-            {"$inc": {"like_count": -1}}
-        )
-        
-        return {"message": "Product unliked successfully"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error unliking product: {e}")
-        raise HTTPException(status_code=500, detail="Failed to unlike product")
+    # If a URL got saved in DB, reduce to just the key
+    if key.startswith("http://") or key.startswith("https://"):
+        parsed = urlparse(key)
+        path = parsed.path.lstrip("/")
+        if path.startswith(f"{R2_BUCKET_NAME}/"):
+            path = path[len(R2_BUCKET_NAME) + 1 :]
+        key = path
 
-@app.put("/api/v1/user/change-password")
-async def change_password(password_data: dict, current_user: dict = Depends(get_current_user)):
-    """Change user password"""
-    try:
-        user_id = current_user["id"]
-        old_password = password_data.get("old_password")
-        new_password = password_data.get("new_password")
-        
-        if not old_password or not new_password:
-            raise HTTPException(status_code=400, detail="Old password and new password are required")
-        
-        if len(new_password) < 6:
-            raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
-        
-        # Get user and verify old password
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Verify old password
-        if not pwd_context.verify(old_password, user.get("password_hash", "")):
-            raise HTTPException(status_code=401, detail="Invalid old password")
-        
-        # Hash new password
-        new_password_hash = pwd_context.hash(new_password)
-        
-        # Update password
-        result = await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {
-                "$set": {
-                    "password_hash": new_password_hash,
-                    "password_changed_at": datetime.utcnow(),
-                    "updated_at": datetime.utcnow()
-                }
-            }
-        )
-        
-        if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        return {"message": "Password changed successfully"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error changing password: {e}")
-        raise HTTPException(status_code=500, detail="Failed to change password")
+    key = key.lstrip("/")
 
-@app.delete("/api/v1/user/delete-account")
-async def delete_account(current_user: dict = Depends(get_current_user)):
-    """Delete (deactivate) user account"""
-    try:
-        user_id = current_user["id"]
-        
-        # Update user status to "deleted" instead of actually deleting
-        result = await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {
-                "$set": {
-                    "status": "deleted",
-                    "updated_at": datetime.utcnow(),
-                    "deleted_at": datetime.utcnow()
-                }
-            }
-        )
-        
-        if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        return {"message": "Account deactivated successfully"}
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error deleting account: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete account")
+    # If the first segment is colon separated, switch first colon to slash
+    if ":" in key and "/" not in key.split(":")[0]:
+        key = key.replace(":", "/", 1)
 
-# Download endpoints
+    return key
+
+
+def _expires_info(seconds: int):
+    now = datetime.utcnow()
+    return {
+        "now": now.isoformat() + "Z",
+        "expires_in": seconds,
+        "expires_at": (now + timedelta(seconds=seconds)).isoformat() + "Z",
+    }
+
+
 def generate_download_url(object_key: str, expiration: int = 3600) -> str:
-    """Generate a presigned URL for R2 download"""
+    """Generate a presigned URL for R2 download (path-style, s3v4)."""
     if not r2_client:
         raise HTTPException(status_code=500, detail="R2 not configured")
-    
+
+    key = _normalize_r2_key(object_key)
+
+    info = _expires_info(expiration)
+    print(
+        f"🔐 Presign R2 URL | bucket={R2_BUCKET_NAME} key='{key}' "
+        f"now={info['now']} expires_in={info['expires_in']}s expires_at={info['expires_at']}"
+    )
+
     try:
-        response = r2_client.generate_presigned_url(
-            'get_object',
-            Params={'Bucket': R2_BUCKET_NAME, 'Key': object_key},
-            ExpiresIn=expiration
+        url = r2_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": R2_BUCKET_NAME, "Key": key},
+            ExpiresIn=expiration,
         )
-        return response
+        return url
     except ClientError as e:
-        print(f"❌ Error generating download URL: {e}")
+        code = getattr(e, "response", {}).get("Error", {}).get("Code")
+        msg = getattr(e, "response", {}).get("Error", {}).get("Message")
+        print(f"❌ Error generating download URL: code={code} msg={msg} key='{key}'")
         raise HTTPException(status_code=500, detail="Failed to generate download URL")
+
+# ---------- END R2 HELPERS ----------
 
 async def check_user_downloads(user_id: str) -> dict:
     """Check user's download count and remaining downloads"""
@@ -1265,13 +1010,15 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
             raise HTTPException(status_code=404, detail="Product not found")
         
         print(f"📋 Product found: {product.get('title')}")
-        print(f"📁 File path: {product.get('file_path')}")
+        print(f"📁 File path (raw): {product.get('file_path')}")
+
+        # Generate download URL
+        raw_key = product.get("file_path", f"products/{product_id}.zip")
+        object_key = _normalize_r2_key(raw_key)
+        print(f"🔗 Generating download URL for normalized key: {object_key}")
         
-        # Generate download URL (assuming product has a file_path field)
-        file_path = product.get("file_path", f"products/{product_id}.zip")
-        print(f"🔗 Generating download URL for: {file_path}")
-        
-        download_url = generate_download_url(file_path)
+        expiration_seconds = 3600
+        download_url = generate_download_url(object_key, expiration=expiration_seconds)
         print(f"✅ Download URL generated successfully")
         
         # Log download event
@@ -1292,7 +1039,8 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         
         return {
             "download_url": download_url,
-            "expires_in": 3600,
+            "expires_in": expiration_seconds,
+            "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z",
             "product_title": product.get("title", "Unknown Product"),
             "download_info": {
                 "total_downloads": updated_download_info["total_downloads"],
@@ -1627,32 +1375,29 @@ async def verify_guest_order(verification_data: dict):
             }
         )
         
-        # Generate one-time download links for immediate download
+        # Generate one-time download links for immediate download (short window)
         immediate_download_links = []
         for item in order["items"]:
             product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
             if product:
-                file_path = product.get("file_path", f"products/{item['product_id']}.zip")
-                # Generate one-time download URL (1 hour expiry)
-                download_url = generate_download_url(file_path, expiration=3600)
-                
+                raw_key = product.get("file_path", f"products/{item['product_id']}.zip")
+                object_key = _normalize_r2_key(raw_key)
+                download_url = generate_download_url(object_key, expiration=900)  # 15 minutes
                 immediate_download_links.append({
                     "product_title": product.get("title", "Unknown Product"),
                     "download_url": download_url,
-                    "expires_in": 3600,
+                    "expires_in": 900,
                     "type": "immediate"
                 })
         
-        # TODO: Prepare email download links (1 total download for guests)
-        # For now, we'll just log that email would be sent
+        # Prepare email download links (longer window)
         email_download_links = []
         for item in order["items"]:
             product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
             if product:
-                # Generate 1 download link for email (24 hour expiry)
-                file_path = product.get("file_path", f"products/{item['product_id']}.zip")
-                download_url = generate_download_url(file_path, expiration=86400)  # 24 hours
-                
+                raw_key = product.get("file_path", f"products/{item['product_id']}.zip")
+                object_key = _normalize_r2_key(raw_key)
+                download_url = generate_download_url(object_key, expiration=86400)  # 24 hours
                 email_download_links.append({
                     "product_title": product.get("title", "Unknown Product"),
                     "download_url": download_url,
@@ -1660,9 +1405,9 @@ async def verify_guest_order(verification_data: dict):
                     "type": "email"
                 })
         
-        # TODO: Send email with download links
+        # TODO: Send email with email_download_links to order['guest_email']
         print(f"✅ Guest order verified: {order['order_number']}")
-        print(f"📧 Would send {len(email_download_links)} download link to: {order['guest_email']}")
+        print(f"📧 Would send {len(email_download_links)} download link(s) to: {order['guest_email']}")
         print(f"🔗 Immediate download links: {len(immediate_download_links)}")
         
         return {
@@ -1703,8 +1448,10 @@ async def get_guest_download(order_id: str, verification_token: str):
             raise HTTPException(status_code=404, detail="Product not found")
         
         # Generate download URL
-        file_path = product.get("file_path", f"products/{product_id}.zip")
-        download_url = generate_download_url(file_path)
+        raw_key = product.get("file_path", f"products/{product_id}.zip")
+        object_key = _normalize_r2_key(raw_key)
+        expiration_seconds = 3600
+        download_url = generate_download_url(object_key, expiration=expiration_seconds)
         
         # Update download count
         await db.guest_orders.update_one(
@@ -1717,7 +1464,8 @@ async def get_guest_download(order_id: str, verification_token: str):
         
         return {
             "download_url": download_url,
-            "expires_in": 3600,
+            "expires_in": expiration_seconds,
+            "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z",
             "product_title": product.get("title", "Unknown Product"),
             "downloads_remaining": order["downloads_remaining"] - 1
         }
