@@ -36,7 +36,7 @@
 <body class="bg" style="margin:0;background:var(--brand-bg);">
   <!-- Preheader (hidden preview text) -->
   <div style="display:none;max-height:0;overflow:hidden;">
-    Verify your email to complete your order {{ORDER_NUMBER}} at Atomic Rose Tools.
+    Verify your email to proceed with your order at Atomic Rose Tools.
   </div>
 
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:var(--brand-bg);" bgcolor="#0b0b10">
@@ -68,7 +68,7 @@
                       Verify Your Email
                     </h1>
                     <p style="margin:0 0 16px;color:var(--muted);">
-                      Thanks for your interest! Please verify your email address to complete your purchase and access your downloads.
+                      Thanks for your interest! Please verify your email address to proceed with your purchase and access your downloads.
                     </p>
 
                     <!-- Order Details -->
@@ -109,9 +109,18 @@
 
                     <!-- Optional backup code (e.g., OTP) -->
                     <p class="muted" style="margin:0 0 4px;color:var(--muted);">Or paste this code in the app:</p>
-                    <p style="margin:0 0 16px;font:600 18px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;background:#0f0f17;border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:inline-block;">
-                      {{OTP_CODE}}
-                    </p>
+                    <p style="margin:0 0 16px;
+          font:600 18px/1.2 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace;
+          background-color:#0f0f17;
+          color:#ffffff;                 /* <-- set text color */
+          border:1px solid var(--border, #2a2a3a); /* fallback if --border isn't defined */
+          border-radius:8px;
+          padding:10px 12px;
+          display:inline-block;"
+   dir="ltr">                            <!-- helpful if your page is RTL -->
+  {{OTP_CODE}}
+</p>
+
 
                     <p class="muted" style="margin:16px 0 0;color:var(--muted);font-size:13px;">
                       This link expires in {{EXPIRES_IN_HOURS}} hours. If you didn't initiate this purchase, you can ignore this email.
