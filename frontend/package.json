@@ -6,10 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@hookform/error-message": "^2.0.1",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^20",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "framer-motion": "^12.23.13",
     "next": "^14.2.5",
     "react": "^18.2.0",
@@ -17,25 +22,16 @@
     "react-hook-form": "^7.62.0",
     "react-icons": "^5.5.0",
     "styled-components": "^6.1.19",
+    "tailwindcss": "^4",
+    "typescript": "^5",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "eslint": "^9",
-    "eslint-config-next": "^14.2.5",
-    "@tailwindcss/postcss": "^4.1.13",
-    "tailwindcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "typescript": "^5"
-  },
-  "postcss": {
-    "plugins": {
-      "@tailwindcss/postcss": {}
-    }
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.5"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": ">=18.17"
   }
 }
