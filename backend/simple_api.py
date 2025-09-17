@@ -1101,55 +1101,72 @@ async def get_download_history(current_user: dict = Depends(get_current_user)):
 # Purchase endpoint
 @app.post("/api/v1/orders/purchase")
 async def purchase_product(order_data: dict, current_user: dict = Depends(get_current_user)):
-    """Purchase a product (mock purchase for now)"""
+    """Purchase a product and return an immediate download link."""
     try:
         user_id = current_user["id"]
         product_id = order_data.get("product_id")
-        
+
         if not product_id:
             raise HTTPException(status_code=400, detail="Product ID is required")
-        
-        # Get product details from database
+
+        # Validate + fetch product
         try:
-            product = await db.products.find_one({"_id": ObjectId(product_id)})
-            if not product:
-                raise HTTPException(status_code=404, detail="Product not found")
-            product_object_id = ObjectId(product_id)
-        except Exception as e:
-            print(f"❌ Error processing purchase: {e}")
+            product_oid = ObjectId(product_id)
+        except Exception:
             raise HTTPException(status_code=400, detail="Invalid product ID format")
-        
-        # Add product to user's purchased products
+
+        product = await db.products.find_one({"_id": product_oid})
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        # Add to purchased products
         await db.users.update_one(
             {"_id": ObjectId(user_id)},
-            {"$addToSet": {"purchased_products": product_object_id}}
+            {"$addToSet": {"purchased_products": product_oid}}
         )
-        
+
         # Create order record
         order = {
             "user_id": ObjectId(user_id),
             "order_number": f"ORD-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
             "items": [{
-                "product_id": product_object_id,
+                "product_id": product_oid,
                 "quantity": 1,
-                "price": product.get("price", 0)
+                "price": product.get("price", 0),
             }],
             "total_amount": product.get("price", 0),
             "status": "completed",
             "payment_method": "mock",
             "payment_id": f"mock_{datetime.utcnow().timestamp()}",
             "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "updated_at": datetime.utcnow(),
+            "is_fulfilled": True,
+            "fulfillment_date": datetime.utcnow(),
         }
-        
         await db.orders.insert_one(order)
-        
+
+        # Generate a presigned download url (1h)
+        file_path = product.get("file_path", f"products/{product_id}.zip")
+        download_url = generate_download_url(file_path, expiration=3600)
+
+        # Log download event (first download right away is optional)
+        await db.download_events.insert_one({
+            "user_id": ObjectId(user_id),
+            "product_id": product_oid,
+            "download_url": download_url,
+            "ip_address": "127.0.0.1",
+            "user_agent": "Atomic Rose Tools App",
+            "created_at": datetime.utcnow(),
+        })
+
         return {
             "message": "Purchase successful",
             "order_number": order["order_number"],
-            "product_title": product.get("title", "Unknown Product")
+            "product_title": product.get("title", "Unknown Product"),
+            "download_url": download_url,
+            "expires_in": 3600,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
