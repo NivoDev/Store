@@ -363,6 +363,16 @@ const CartPage = () => {
         setOrderData(result.data);
         setVerificationStep('success');
         
+        // Debug: Log the response data
+        console.log('🎉 Guest verification successful:', result.data);
+        console.log('📥 Download links:', result.data.download_links);
+        
+        // Store download links in localStorage as backup
+        if (result.data.download_links && result.data.download_links.length > 0) {
+          localStorage.setItem('guest_download_links', JSON.stringify(result.data.download_links));
+          console.log('💾 Stored download links in localStorage as backup');
+        }
+        
         // Set up automatic redirect after 3 seconds
         const timer = setTimeout(() => {
           // Redirect to guest download page with order data

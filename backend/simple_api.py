@@ -1319,6 +1319,24 @@ async def verify_guest_otp(verification_data: dict):
             }
         )
         
+        # Send thank you email with download links
+        try:
+            from services.email_service import email_service
+            print(f"📧 Sending thank you email to {order['guest_email']}")
+            thank_you_sent = email_service.send_guest_thank_you_email(
+                email=order['guest_email'],
+                order_number=order['order_number'],
+                download_links=download_links
+            )
+            if thank_you_sent:
+                print(f"✅ Thank you email sent successfully to {order['guest_email']}")
+            else:
+                print(f"❌ Failed to send thank you email to {order['guest_email']}")
+        except Exception as e:
+            print(f"❌ Error sending thank you email to {order['guest_email']}: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+        
         print(f"✅ Guest purchase completed for order: {order['order_number']}")
         return {
             "success": True,

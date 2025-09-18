@@ -280,18 +280,32 @@ const GuestDownloadPage = () => {
   useEffect(() => {
     // Get download links from URL state or localStorage
     const state = location.state;
-    if (state && state.downloadLinks) {
+    console.log('🔍 GuestDownloadPage - Location state:', state);
+    console.log('🔍 GuestDownloadPage - Download links from state:', state?.downloadLinks);
+    
+    if (state && state.downloadLinks && state.downloadLinks.length > 0) {
+      console.log('✅ Using download links from state');
       setDownloadLinks(state.downloadLinks);
       setLoading(false);
     } else {
       // Try to get from localStorage as fallback
       const storedLinks = localStorage.getItem('guest_download_links');
+      console.log('🔍 GuestDownloadPage - Stored links from localStorage:', storedLinks);
       if (storedLinks) {
         try {
-          setDownloadLinks(JSON.parse(storedLinks));
+          const parsedLinks = JSON.parse(storedLinks);
+          console.log('✅ Using download links from localStorage:', parsedLinks);
+          if (parsedLinks && parsedLinks.length > 0) {
+            setDownloadLinks(parsedLinks);
+          } else {
+            setError('No download links found. Please complete your purchase first.');
+          }
         } catch (e) {
           console.error('Error parsing stored download links:', e);
+          setError('Invalid download data. Please complete your purchase again.');
         }
+      } else {
+        setError('No download links found. Please complete your purchase first.');
       }
       setLoading(false);
     }
