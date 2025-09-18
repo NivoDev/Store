@@ -401,8 +401,7 @@ async def register(user_data: dict):
             "message": "Registration successful! Please check your email to verify your account.",
             "email": email,
             "verification_required": True,
-            "email_sent": email_sent,
-            "otp_code": otp_code  # (include for testing only)
+            "email_sent": email_sent
         }
 
     except HTTPException:
@@ -1217,8 +1216,6 @@ async def guest_checkout(checkout_data: dict):
         try:
             from services.email_service import email_service
             print(f"📧 Attempting to send OTP email to {email}")
-            print(f"🔑 OTP Code: {otp_code}")
-            print(f"🔑 Resend API Key set: {bool(os.getenv('RESEND_API_KEY'))}")
             
             email_sent = email_service.send_guest_verification_email(
                 email=email,
@@ -1276,23 +1273,59 @@ async def verify_guest_otp(verification_data: dict):
         if not order:
             raise HTTPException(status_code=400, detail="Invalid or expired OTP code")
         
-        # Update order status to email verified (but still pending checkout)
+        # Complete the purchase and generate download links
+        download_links = []
+        
+        # Generate download links for each item
+        for item in order["items"]:
+            try:
+                product_id = item["product_id"]
+                product = await db.products.find_one({"_id": ObjectId(product_id)})
+                
+                if product:
+                    # Generate R2 download URL
+                    raw_key = product.get("file_path", f"products/{product_id}.zip")
+                    object_key = _normalize_r2_key(raw_key)
+                    expiration_seconds = 3600  # 1 hour
+                    download_url = generate_download_url(object_key, expiration=expiration_seconds)
+                    
+                    download_links.append({
+                        "product_id": product_id,
+                        "title": item["title"],
+                        "artist": product.get("artist", "Unknown Artist"),
+                        "price": f"${item['price']:.2f}",
+                        "download_url": download_url,
+                        "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg")
+                    })
+                    
+                    print(f"✅ Generated download link for {item['title']}")
+                else:
+                    print(f"❌ Product not found: {product_id}")
+                    
+            except Exception as e:
+                print(f"❌ Error generating download link for {item['title']}: {e}")
+        
+        # Update order status to completed
         await db.guest_orders.update_one(
             {"_id": order["_id"]},
             {
                 "$set": {
+                    "status": "completed",
                     "email_verified": True,
+                    "download_links": download_links,
+                    "completed_at": datetime.utcnow(),
                     "updated_at": datetime.utcnow()
                 }
             }
         )
         
-        print(f"✅ Guest OTP verified for order: {order['order_number']}")
+        print(f"✅ Guest purchase completed for order: {order['order_number']}")
         return {
-            "message": "OTP verified successfully",
+            "success": True,
+            "message": "Purchase completed successfully",
             "order_id": str(order["_id"]),
             "order_number": order["order_number"],
-            "verification_token": order["verification_token"],
+            "download_links": download_links,
             "verified": True
         }
         

@@ -32,9 +32,7 @@ class EmailService:
         """
         try:
             print(f"📧 Attempting to send email to {email}")
-            print(f"🔑 Resend API Key present: {bool(resend.api_key)}")
             print(f"📧 From email: {self.from_email}")
-            print(f"🔑 OTP Code: {otp_code}")
             
             # Create verification URL
             verify_url = f"{self.base_url}/verify-guest-email?token={verification_token}"
@@ -89,9 +87,7 @@ class EmailService:
         """
         try:
             print(f"📧 Attempting to send user verification email to {email}")
-            print(f"🔑 Resend API Key present: {bool(resend.api_key)}")
             print(f"📧 From email: {self.from_email}")
-            print(f"🔑 OTP Code: {otp_code}")
             
             # Create verification URL
             verify_url = f"{self.base_url}/verify-user-email?token={verification_token}"

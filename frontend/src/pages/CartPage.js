@@ -265,6 +265,8 @@ const CartPage = () => {
 
     setIsProcessing(true);
     try {
+      const purchaseResults = [];
+      
       // Purchase each item in the cart
       for (const item of items) {
         const result = await apiService.purchaseProduct(item.id);
@@ -272,6 +274,11 @@ const CartPage = () => {
           alert(`Failed to purchase ${item.title}: ${result.error}`);
           return;
         }
+        purchaseResults.push({
+          ...item,
+          download_url: result.download_url,
+          order_number: result.order_number
+        });
       }
       
       // Clear cart after successful purchase
@@ -358,11 +365,12 @@ const CartPage = () => {
         
         // Set up automatic redirect after 3 seconds
         const timer = setTimeout(() => {
-          // Redirect to checkout page with order data
-          navigate('/checkout', { 
+          // Redirect to guest download page with order data
+          navigate('/guest-downloads', { 
             state: { 
-              guestOrder: result.data,
-              fromVerification: true 
+              downloadLinks: result.data.download_links || [],
+              orderNumber: result.data.order_number,
+              orderId: result.data.order_id
             }
           });
         }, 3000);
