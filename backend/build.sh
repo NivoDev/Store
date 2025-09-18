@@ -15,3 +15,4 @@ echo "📦 Installing Python dependencies..."
 pip install --only-binary=all -r requirements.txt
 
 echo "✅ Build completed successfully!"
+

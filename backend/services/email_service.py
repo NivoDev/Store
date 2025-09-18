@@ -1,12 +1,9 @@
-"""
-Email service using Resend for transactional emails.
-Handles email verification, purchase confirmations, etc.
-"""
+
 import os
 import secrets
 import string
-from datetime import datetime, timedelta
-from typing import Optional, Dict, Any
+from datetime import datetime
+from typing import Dict
 import resend
 
 # Initialize Resend
