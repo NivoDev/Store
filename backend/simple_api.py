@@ -889,9 +889,10 @@ def _normalize_r2_key(raw_key: str) -> str:
 
     key = key.lstrip("/")
 
-    # If the first segment is colon separated, switch first colon to slash
-    if ":" in key and "/" not in key.split(":")[0]:
-        key = key.replace(":", "/", 1)
+    # For R2, keep colons as they are since files are stored with colons
+    # Don't convert colons to slashes for R2 compatibility
+    # if ":" in key and "/" not in key.split(":")[0]:
+    #     key = key.replace(":", "/", 1)
 
     return key
 
