@@ -1002,12 +1002,13 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
 
         # Generate download URL
         raw_key = product.get("file_path", f"products/{product_id}.zip")
+        print(f"📁 Raw file path from DB: '{raw_key}'")
         object_key = _normalize_r2_key(raw_key)
-        print(f"🔗 Generating download URL for normalized key: {object_key}")
+        print(f"🔗 Normalized key: '{object_key}'")
         
         expiration_seconds = 3600
         download_url = generate_download_url(object_key, expiration=expiration_seconds)
-        print(f"✅ Download URL generated successfully")
+        print(f"✅ Download URL generated: {download_url}")
         
         # Log download event
         download_event = {
@@ -1478,9 +1479,12 @@ async def verify_guest_otp(verification_data: dict):
                 if product:
                     # Generate R2 download URL
                     raw_key = product.get("file_path", f"products/{product_id}.zip")
+                    print(f"📁 Guest - Raw file path from DB: '{raw_key}'")
                     object_key = _normalize_r2_key(raw_key)
+                    print(f"🔗 Guest - Normalized key: '{object_key}'")
                     expiration_seconds = 3600  # 1 hour
                     download_url = generate_download_url(object_key, expiration=expiration_seconds)
+                    print(f"✅ Guest - Download URL generated: {download_url}")
                     
                     download_links.append({
                         "product_id": product_id,
@@ -1646,8 +1650,11 @@ async def verify_guest_order(verification_data: dict):
             product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
             if product:
                 raw_key = product.get("file_path", f"products/{item['product_id']}.zip")
+                print(f"📁 Email - Raw file path from DB: '{raw_key}'")
                 object_key = _normalize_r2_key(raw_key)
+                print(f"🔗 Email - Normalized key: '{object_key}'")
                 download_url = generate_download_url(object_key, expiration=86400)  # 24 hours
+                print(f"✅ Email - Download URL generated: {download_url}")
                 email_download_links.append({
                     "product_title": product.get("title", "Unknown Product"),
                     "download_url": download_url,
