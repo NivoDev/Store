@@ -469,6 +469,8 @@ const CartPage = () => {
         // Check if transfer was successful
         if (transferSuccess && validItems.length > 0) {
           console.log('✅ Cart transfer completed successfully');
+          // Close auth modal and show success message
+          setShowAuthModal(false);
           // Show success modal with a small delay to ensure state is set
           setTimeout(() => {
             setShowTransferSuccessModal(true);
@@ -975,7 +977,11 @@ const CartPage = () => {
             <Button 
               variant="primary" 
               size="lg"
-              onClick={() => setShowTransferSuccessModal(false)}
+              onClick={() => {
+                setShowTransferSuccessModal(false);
+                // Refresh the page to show the updated cart
+                window.location.reload();
+              }}
               style={{
                 background: theme.colors.gradients.neon,
                 border: 'none',
@@ -986,7 +992,7 @@ const CartPage = () => {
                 minWidth: '200px'
               }}
             >
-              Continue
+              Continue to Cart
             </Button>
           </div>
         </ModalContent>

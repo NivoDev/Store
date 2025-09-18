@@ -1097,6 +1097,164 @@ async def get_download_history(current_user: dict = Depends(get_current_user)):
         print(f"❌ Error getting download history: {e}")
         raise HTTPException(status_code=500, detail="Failed to get download history")
 
+@app.get("/api/v1/user/liked-products")
+async def get_liked_products(current_user: dict = Depends(get_current_user)):
+    """Get user's liked products"""
+    try:
+        user_id = current_user["id"]
+        
+        # Get user's liked products
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        liked_product_ids = user.get("liked_products", [])
+        
+        # Get product details for liked products
+        liked_products = []
+        for product_id in liked_product_ids:
+            product = await db.products.find_one({"_id": product_id})
+            if product:
+                liked_products.append({
+                    "id": str(product["_id"]),
+                    "title": product.get("title", "Unknown Product"),
+                    "artist": product.get("artist", "Unknown Artist"),
+                    "price": product.get("price", 0),
+                    "description": product.get("description", ""),
+                    "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg"),
+                    "type": product.get("type", "sample-pack"),
+                    "created_at": product.get("created_at", datetime.utcnow()).isoformat()
+                })
+        
+        return {
+            "products": liked_products,
+            "total": len(liked_products)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting liked products: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get liked products")
+
+@app.get("/api/v1/user/purchased-products")
+async def get_purchased_products(current_user: dict = Depends(get_current_user)):
+    """Get user's purchased products"""
+    try:
+        user_id = current_user["id"]
+        
+        # Get user's purchased products
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        purchased_product_ids = user.get("purchased_products", [])
+        
+        # Get product details for purchased products
+        purchased_products = []
+        for product_id in purchased_product_ids:
+            product = await db.products.find_one({"_id": product_id})
+            if product:
+                # Get download info for this product
+                download_info = await check_user_downloads(user_id)
+                
+                purchased_products.append({
+                    "id": str(product["_id"]),
+                    "title": product.get("title", "Unknown Product"),
+                    "artist": product.get("artist", "Unknown Artist"),
+                    "price": product.get("price", 0),
+                    "description": product.get("description", ""),
+                    "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg"),
+                    "type": product.get("type", "sample-pack"),
+                    "created_at": product.get("created_at", datetime.utcnow()).isoformat(),
+                    "can_download": download_info["can_download"],
+                    "downloads_remaining": download_info["downloads_remaining"]
+                })
+        
+        return {
+            "products": purchased_products,
+            "total": len(purchased_products)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting purchased products: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get purchased products")
+
+@app.post("/api/v1/user/like-product")
+async def like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
+    """Like a product"""
+    try:
+        user_id = current_user["id"]
+        product_id = product_data.get("product_id")
+        
+        if not product_id:
+            raise HTTPException(status_code=400, detail="Product ID is required")
+        
+        # Validate product ID
+        try:
+            product_oid = ObjectId(product_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid product ID format")
+        
+        # Check if product exists
+        product = await db.products.find_one({"_id": product_oid})
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Add to user's liked products
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$addToSet": {"liked_products": product_oid}}
+        )
+        
+        return {
+            "message": "Product liked successfully",
+            "product_id": product_id,
+            "liked": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error liking product: {e}")
+        raise HTTPException(status_code=500, detail="Failed to like product")
+
+@app.post("/api/v1/user/unlike-product")
+async def unlike_product(product_data: dict, current_user: dict = Depends(get_current_user)):
+    """Unlike a product"""
+    try:
+        user_id = current_user["id"]
+        product_id = product_data.get("product_id")
+        
+        if not product_id:
+            raise HTTPException(status_code=400, detail="Product ID is required")
+        
+        # Validate product ID
+        try:
+            product_oid = ObjectId(product_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid product ID format")
+        
+        # Remove from user's liked products
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$pull": {"liked_products": product_oid}}
+        )
+        
+        return {
+            "message": "Product unliked successfully",
+            "product_id": product_id,
+            "liked": False
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error unliking product: {e}")
+        raise HTTPException(status_code=500, detail="Failed to unlike product")
+
 # Purchase endpoint
 @app.post("/api/v1/orders/purchase")
 async def purchase_product(order_data: dict, current_user: dict = Depends(get_current_user)):
@@ -1158,7 +1316,42 @@ async def purchase_product(order_data: dict, current_user: dict = Depends(get_cu
             "created_at": datetime.utcnow(),
         })
 
+        # Send thank you email with download link
+        try:
+            from services.email_service import email_service
+            print(f"📧 Sending user thank you email to {current_user['email']}")
+            
+            # Get user details
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            user_name = user.get("name", "User") if user else "User"
+            
+            # Create download link object
+            download_links = [{
+                "product_id": str(product_oid),
+                "title": product.get("title", "Unknown Product"),
+                "artist": product.get("artist", "Unknown Artist"),
+                "price": f"${product.get('price', 0):.2f}",
+                "download_url": download_url,
+                "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg")
+            }]
+            
+            thank_you_sent = email_service.send_user_thank_you_email(
+                email=current_user["email"],
+                name=user_name,
+                order_number=order["order_number"],
+                download_links=download_links
+            )
+            if thank_you_sent:
+                print(f"✅ User thank you email sent successfully to {current_user['email']}")
+            else:
+                print(f"❌ Failed to send user thank you email to {current_user['email']}")
+        except Exception as e:
+            print(f"❌ Error sending user thank you email to {current_user['email']}: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+
         return {
+            "success": True,
             "message": "Purchase successful",
             "order_number": order["order_number"],
             "product_title": product.get("title", "Unknown Product"),
