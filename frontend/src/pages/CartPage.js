@@ -688,7 +688,7 @@ const CartPage = () => {
       </Container>
 
       {/* Choice Modal for Guest Users */}
-      <Modal isOpen={showChoiceModal && !isAuthenticated} onClose={handleCloseModals}>
+      <Modal isOpen={showChoiceModal && !isAuthenticated} onClose={handleCloseModals} preventClose={false}>
         <ModalContent>
           <ModalTitle>Complete Your Purchase</ModalTitle>
           <VerificationMessage style={{ marginBottom: theme.spacing[6] }}>
@@ -779,7 +779,7 @@ const CartPage = () => {
       </Modal>
 
       {/* Guest Checkout Modal */}
-      <Modal isOpen={showGuestModal} onClose={handleCloseModals}>
+      <Modal isOpen={showGuestModal} onClose={handleCloseModals} preventClose={false}>
         <ModalContent>
           <ModalTitle>Guest Checkout</ModalTitle>
           <FormGroup>
@@ -808,7 +808,7 @@ const CartPage = () => {
       </Modal>
 
       {/* Verification Modal */}
-      <Modal isOpen={showVerificationModal} onClose={handleCloseModals}>
+      <Modal isOpen={showVerificationModal} onClose={verificationStep === 'verify' ? undefined : handleCloseModals} preventClose={verificationStep === 'verify'}>
         <ModalContent>
           {verificationStep === 'verify' && (
             <VerificationModal>

@@ -68,18 +68,18 @@ const Content = styled.div`
   padding: ${theme.spacing[6]};
 `;
 
-const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'medium', preventClose = false }) => {
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) {
+    if (e.target === e.currentTarget && !preventClose) {
       onClose();
     }
   };
 
   const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && !preventClose) {
       onClose();
     }
-  }, [onClose]);
+  }, [onClose, preventClose]);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -116,13 +116,15 @@ const Modal = ({ isOpen, onClose, title, children, size = 'medium' }) => {
           >
             <Header>
               {title && <Title>{title}</Title>}
-              <CloseButton
-                onClick={onClose}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <FiX size={20} />
-              </CloseButton>
+              {!preventClose && (
+                <CloseButton
+                  onClick={onClose}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <FiX size={20} />
+                </CloseButton>
+              )}
             </Header>
             <Content>
               {children}
