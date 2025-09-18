@@ -269,9 +269,13 @@ const CartPage = () => {
       
       // Purchase each item in the cart
       for (const item of items) {
+        console.log(`🛒 Purchasing item: ${item.title} (ID: ${item.id})`);
         const result = await apiService.purchaseProduct(item.id);
+        console.log(`🛒 Purchase result for ${item.title}:`, result);
+        
         if (!result.success) {
           alert(`Failed to purchase ${item.title}: ${result.error}`);
+          setIsProcessing(false);
           return;
         }
         purchaseResults.push({
@@ -280,6 +284,8 @@ const CartPage = () => {
           order_number: result.order_number
         });
       }
+      
+      console.log(`🛒 All purchases successful. Results:`, purchaseResults);
       
       // Clear cart after successful purchase
       clearCart();

@@ -297,7 +297,7 @@ class APIService {
 
   async getPurchasedProducts() {
     try {
-      const response = await this.request('/user/purchased-products');
+      const response = await this.request('/profile/purchased-products');
       return { success: true, data: response };
     } catch (error) {
       return { success: false, error: error.message };
@@ -319,7 +319,7 @@ class APIService {
   // Account endpoints
   async getLikedProducts() {
     try {
-      const response = await this.request('/user/liked-products');
+      const response = await this.request('/profile/liked-products');
       return { success: true, data: response };
     } catch (error) {
       return { success: false, error: error.message };
@@ -397,8 +397,12 @@ class APIService {
 
   async likeProduct(productId) {
     try {
-      const response = await this.request(`/user/like-product/${productId}`, {
-        method: 'POST'
+      const response = await this.request('/profile/like-product', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ product_id: productId }),
       });
       return { 
         success: true, 
@@ -413,8 +417,12 @@ class APIService {
 
   async unlikeProduct(productId) {
     try {
-      const response = await this.request(`/user/like-product/${productId}`, {
-        method: 'DELETE'
+      const response = await this.request('/profile/unlike-product', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ product_id: productId }),
       });
       return { success: true, data: response };
     } catch (error) {

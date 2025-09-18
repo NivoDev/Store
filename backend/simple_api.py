@@ -1044,7 +1044,7 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to get download URL")
 
-@app.get("/api/v1/user/download-info")
+@app.get("/api/v1/profile/download-info")
 async def get_user_download_info(current_user: dict = Depends(get_current_user)):
     """Get user's download count and remaining downloads"""
     try:
@@ -1062,7 +1062,7 @@ async def get_user_download_info(current_user: dict = Depends(get_current_user))
         print(f"❌ Error getting download info: {e}")
         raise HTTPException(status_code=500, detail="Failed to get download info")
 
-@app.get("/api/v1/user/download-history")
+@app.get("/api/v1/profile/download-history")
 async def get_download_history(current_user: dict = Depends(get_current_user)):
     """Get user's download history"""
     try:
@@ -1097,7 +1097,7 @@ async def get_download_history(current_user: dict = Depends(get_current_user)):
         print(f"❌ Error getting download history: {e}")
         raise HTTPException(status_code=500, detail="Failed to get download history")
 
-@app.get("/api/v1/user/liked-products")
+@app.get("/api/v1/profile/liked-products")
 async def get_liked_products(current_user: dict = Depends(get_current_user)):
     """Get user's liked products"""
     try:
@@ -1137,7 +1137,7 @@ async def get_liked_products(current_user: dict = Depends(get_current_user)):
         print(f"❌ Error getting liked products: {e}")
         raise HTTPException(status_code=500, detail="Failed to get liked products")
 
-@app.get("/api/v1/user/purchased-products")
+@app.get("/api/v1/profile/purchased-products")
 async def get_purchased_products(current_user: dict = Depends(get_current_user)):
     """Get user's purchased products"""
     try:
@@ -1182,7 +1182,7 @@ async def get_purchased_products(current_user: dict = Depends(get_current_user))
         print(f"❌ Error getting purchased products: {e}")
         raise HTTPException(status_code=500, detail="Failed to get purchased products")
 
-@app.post("/api/v1/user/like-product")
+@app.post("/api/v1/profile/like-product")
 async def like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
     """Like a product"""
     try:
@@ -1221,7 +1221,7 @@ async def like_product(product_data: dict, current_user: dict = Depends(get_curr
         print(f"❌ Error liking product: {e}")
         raise HTTPException(status_code=500, detail="Failed to like product")
 
-@app.post("/api/v1/user/unlike-product")
+@app.post("/api/v1/profile/unlike-product")
 async def unlike_product(product_data: dict, current_user: dict = Depends(get_current_user)):
     """Unlike a product"""
     try:
