@@ -113,9 +113,15 @@ const GoogleCallbackPage = () => {
         
         // Verify state parameter for CSRF protection
         const storedState = localStorage.getItem('google_oauth_state');
+        console.log('🔍 State validation:', { 
+          receivedState: state, 
+          storedState: storedState, 
+          match: state === storedState 
+        });
+        
         if (state !== storedState) {
           setStatus('error');
-          setMessage('Invalid state parameter. Please try signing in again.');
+          setMessage(`Invalid state parameter. Please try signing in again. (Received: ${state}, Stored: ${storedState})`);
           return;
         }
         

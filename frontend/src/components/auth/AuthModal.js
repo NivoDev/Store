@@ -264,6 +264,7 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
       
       if (result.success) {
         // Store state for CSRF protection
+        console.log('🔍 Storing state:', result.data.state);
         localStorage.setItem('google_oauth_state', result.data.state);
         
         // Redirect to Google OAuth
