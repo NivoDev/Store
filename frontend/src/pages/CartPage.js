@@ -254,55 +254,10 @@ const CartPage = () => {
 
   const handlePurchase = async () => {
     console.log('🛒 HandlePurchase called, isAuthenticated:', isAuthenticated);
-    if (!isAuthenticated) {
-      // Show choice modal for guest users
-      console.log('🛒 User not authenticated, showing choice modal');
-      setShowChoiceModal(true);
-      return;
-    }
     
-    console.log('🛒 User is authenticated, proceeding with purchase');
-
-    setIsProcessing(true);
-    try {
-      const purchaseResults = [];
-      
-      // Purchase each item in the cart
-      for (const item of items) {
-        console.log(`🛒 Purchasing item: ${item.title} (ID: ${item.id})`);
-        const result = await apiService.purchaseProduct(item.id);
-        console.log(`🛒 Purchase result for ${item.title}:`, result);
-        
-        if (!result.success) {
-          alert(`Failed to purchase ${item.title}: ${result.error}`);
-          setIsProcessing(false);
-          return;
-        }
-        purchaseResults.push({
-          ...item,
-          download_url: result.download_url,
-          order_number: result.order_number
-        });
-      }
-      
-      console.log(`🛒 All purchases successful. Results:`, purchaseResults);
-      
-      // Clear cart after successful purchase
-      clearCart();
-      setShowPurchaseSuccessModal(true);
-      
-      // Set up automatic redirect to profile after 3 seconds
-      const timer = setTimeout(() => {
-        setShowPurchaseSuccessModal(false);
-        navigate('/profile');
-      }, 3000);
-      setRedirectTimer(timer);
-    } catch (error) {
-      console.error('Purchase error:', error);
-      alert('Purchase failed. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
+    // Redirect to checkout page for both authenticated and guest users
+    console.log('🛒 Redirecting to checkout page');
+    navigate('/checkout');
   };
 
   const handleGuestCheckout = async () => {

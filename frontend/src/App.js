@@ -31,6 +31,8 @@ import CookiePolicyPage from './pages/CookiePolicyPage';
 import GuestDownloadPage from './pages/GuestDownloadPage';
 import GuestEmailVerificationPage from './pages/GuestEmailVerificationPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
+import CheckoutPage from './pages/CheckoutPage';
+import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 
 function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -74,6 +76,8 @@ function App() {
                   <Route path="/guest-downloads" element={<GuestDownloadPage />} />
                   <Route path="/verify-guest-email" element={<GuestEmailVerificationPage />} />
                   <Route path="/verify-email" element={<EmailVerificationPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                 </Routes>
               </main>
 
