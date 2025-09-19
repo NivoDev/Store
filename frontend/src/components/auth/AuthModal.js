@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiX, FiEye, FiEyeOff, FiMail, FiLock, FiUser } from 'react-icons/fi';
@@ -238,6 +239,7 @@ const SwitchInline = styled.button`
 `;
 
 const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [verificationStep, setVerificationStep] = useState('form'); // 'form' | 'verify'
@@ -500,7 +502,15 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
 
                   {activeTab === 'signin' ? (
                     <>
-                      <ForgotPassword type="button" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <ForgotPassword 
+                        type="button" 
+                        whileHover={{ scale: 1.05 }} 
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          onClose();
+                          navigate('/forgot-password');
+                        }}
+                      >
                         Forgot your password?
                       </ForgotPassword>
                       <SwitchInline onClick={() => switchTab('signup')}>

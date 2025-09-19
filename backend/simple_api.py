@@ -1282,6 +1282,171 @@ async def get_purchased_products(current_user: dict = Depends(get_current_user))
         print(f"❌ Error getting purchased products: {e}")
         raise HTTPException(status_code=500, detail="Failed to get purchased products")
 
+@app.put("/api/v1/user/change-password")
+async def change_password(password_data: dict, current_user: dict = Depends(get_current_user)):
+    """Change user password"""
+    try:
+        old_password = password_data.get("old_password")
+        new_password = password_data.get("new_password")
+        
+        if not old_password or not new_password:
+            raise HTTPException(status_code=400, detail="Old password and new password are required")
+        
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="New password must be at least 8 characters long")
+        
+        # Get user from database
+        user_id = current_user["id"]
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Verify old password
+        if not pwd_context.verify(old_password, user.get("password_hash")):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+        
+        # Hash new password
+        new_password_hash = pwd_context.hash(new_password)
+        
+        # Update password
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {
+                "$set": {
+                    "password_hash": new_password_hash,
+                    "password_changed_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        return {
+            "message": "Password changed successfully",
+            "password_changed_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error changing password: {e}")
+        raise HTTPException(status_code=500, detail="Failed to change password")
+
+@app.post("/api/v1/auth/forgot-password")
+async def forgot_password(request_data: dict):
+    """Send password reset email"""
+    try:
+        email = request_data.get("email", "").strip().lower()
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email is required")
+        
+        # Check if user exists
+        user = await db.users.find_one({"email": email, "email_verified": True})
+        if not user:
+            # Don't reveal if user exists or not for security
+            return {
+                "message": "If an account with that email exists, a password reset link has been sent.",
+                "email_sent": True
+            }
+        
+        # Generate reset token
+        reset_token = secrets.token_urlsafe(32)
+        reset_expires = datetime.utcnow() + timedelta(hours=1)  # 1 hour expiry
+        
+        # Store reset token
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "password_reset_token": reset_token,
+                    "password_reset_expires": reset_expires,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # Send reset email
+        try:
+            from services.email_service import email_service
+            reset_url = f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/reset-password?token={reset_token}"
+            
+            email_sent = email_service.send_password_reset_email(
+                email=email,
+                name=user.get("name", "User"),
+                reset_url=reset_url
+            )
+            
+            if email_sent:
+                print(f"✅ Password reset email sent to {email}")
+            else:
+                print(f"❌ Failed to send password reset email to {email}")
+        except Exception as e:
+            print(f"❌ Error sending password reset email: {e}")
+        
+        return {
+            "message": "If an account with that email exists, a password reset link has been sent.",
+            "email_sent": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in forgot password: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process password reset request")
+
+@app.post("/api/v1/auth/reset-password")
+async def reset_password(reset_data: dict):
+    """Reset password with token"""
+    try:
+        token = reset_data.get("token")
+        new_password = reset_data.get("new_password")
+        
+        if not token or not new_password:
+            raise HTTPException(status_code=400, detail="Token and new password are required")
+        
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="New password must be at least 8 characters long")
+        
+        # Find user with valid reset token
+        user = await db.users.find_one({
+            "password_reset_token": token,
+            "password_reset_expires": {"$gt": datetime.utcnow()},
+            "email_verified": True
+        })
+        
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        
+        # Hash new password
+        new_password_hash = pwd_context.hash(new_password)
+        
+        # Update password and clear reset token
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "password_hash": new_password_hash,
+                    "password_changed_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                },
+                "$unset": {
+                    "password_reset_token": "",
+                    "password_reset_expires": ""
+                }
+            }
+        )
+        
+        return {
+            "message": "Password reset successfully. You can now log in with your new password.",
+            "password_changed_at": datetime.utcnow().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error resetting password: {e}")
+        raise HTTPException(status_code=500, detail="Failed to reset password")
+
 @app.post("/api/v1/profile/toggle-like")
 async def toggle_like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
     """Toggle like status for a product"""

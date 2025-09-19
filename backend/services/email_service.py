@@ -149,6 +149,16 @@ class EmailService:
             # Fallback to inline template if file not found
             return self._get_user_fallback_template()
     
+    def _load_password_reset_template(self) -> str:
+        """Load the password reset HTML template."""
+        template_path = os.path.join(os.path.dirname(__file__), "templates", "password_reset_email.html")
+        try:
+            with open(template_path, 'r', encoding='utf-8') as file:
+                return file.read()
+        except FileNotFoundError:
+            # Fallback to inline template if file not found
+            return self._get_password_reset_fallback_template()
+    
     def _customize_guest_template(self, template: str, variables: Dict[str, str]) -> str:
         """Replace guest template variables with actual values."""
         for key, value in variables.items():
@@ -157,6 +167,12 @@ class EmailService:
     
     def _customize_user_template(self, template: str, variables: Dict[str, str]) -> str:
         """Replace user template variables with actual values."""
+        for key, value in variables.items():
+            template = template.replace(f"{{{{{key}}}}}", str(value))
+        return template
+    
+    def _customize_password_reset_template(self, template: str, variables: Dict[str, str]) -> str:
+        """Replace password reset template variables with actual values."""
         for key, value in variables.items():
             template = template.replace(f"{{{{{key}}}}}", str(value))
         return template
@@ -244,6 +260,86 @@ class EmailService:
         </html>
         """
     
+    def _get_password_reset_fallback_template(self) -> str:
+        """Fallback password reset template if file not found."""
+        return """
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0b0b10; color: #f4f6f8; }
+                .card { background: #161622; border: 1px solid #26263a; border-radius: 12px; padding: 32px; margin: 20px 0; }
+                .btn { background: #ff2a6d; color: #0b0b10; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
+                .muted { color: #9aa0a6; }
+                .warning { background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); border-radius: 8px; padding: 16px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>Reset Your Password</h1>
+                <p>Hi {{FIRST_NAME}},</p>
+                <p>We received a request to reset your password for your Atomic Rose Tools account.</p>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{{RESET_URL}}" class="btn">Reset Password</a>
+                </div>
+                
+                <div class="warning">
+                    <p><strong>⚠️ Important:</strong> This link will expire in 1 hour for security reasons.</p>
+                </div>
+                
+                <p class="muted">If you didn't request this password reset, you can safely ignore this email. Your password will not be changed.</p>
+                
+                <p class="muted">If you have any questions, please contact us at support@atomicrosetools.com</p>
+            </div>
+        </body>
+        </html>
+        """
+    
+    def send_password_reset_email(self, email: str, name: str, reset_url: str) -> bool:
+        """
+        Send password reset email to user.
+        
+        Args:
+            email: User's email address
+            name: User's name
+            reset_url: Password reset URL
+            
+        Returns:
+            bool: True if email sent successfully, False otherwise
+        """
+        try:
+            print(f"📧 Attempting to send password reset email to {email}")
+            print(f"📧 From email: {self.from_email}")
+            
+            # Load and customize password reset template
+            html_content = self._load_password_reset_template()
+            html_content = self._customize_password_reset_template(html_content, {
+                "FIRST_NAME": name.split()[0] if name else "User",
+                "EMAIL_ADDRESS": email,
+                "RESET_URL": reset_url,
+                "YEAR": str(datetime.now().year),
+                "HELP_URL": f"{self.base_url}/support"
+            })
+            
+            r = self.resend_client.emails.send({
+                "from": self.from_email,
+                "to": [email],
+                "subject": "Reset Your Password - Atomic Rose Tools",
+                "html": html_content
+            })
+            
+            print(f"📧 Resend response: {r}")
+            print(f"✅ Password reset email sent to {email}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Failed to send password reset email to {email}: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            return False
+
     def send_guest_thank_you_email(self, email: str, order_number: str, download_links: list) -> bool:
         """
         Send thank you email with download links to guest user.

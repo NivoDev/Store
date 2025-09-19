@@ -33,6 +33,8 @@ import GuestEmailVerificationPage from './pages/GuestEmailVerificationPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import CheckoutPage from './pages/CheckoutPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -78,6 +80,8 @@ function App() {
                   <Route path="/verify-email" element={<EmailVerificationPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
                 </Routes>
               </main>
 

@@ -494,6 +494,35 @@ class APIService {
     }
   }
 
+  async forgotPassword(email) {
+    try {
+      const response = await this.request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify({ email: email }),
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to send password reset:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async resetPassword(token, newPassword) {
+    try {
+      const response = await this.request('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          token: token,
+          new_password: newPassword 
+        }),
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to reset password:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async deleteAccount() {
     try {
       const response = await this.request('/user/delete-account', {
