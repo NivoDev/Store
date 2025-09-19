@@ -524,7 +524,7 @@ class APIService {
 
   async getDownloadInfo() {
     try {
-      const response = await this.request('/user/download-info');
+      const response = await this.request('/profile/download-info');
       return { success: true, data: response };
     } catch (error) {
       console.error('❌ API: Failed to get download info:', error);

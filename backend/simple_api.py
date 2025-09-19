@@ -189,6 +189,7 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "id": str(user_doc.get("_id")),
         "name": user_doc.get("name"),
+        "email": user_doc.get("email"),
         "avatar_url": user_doc.get("avatar_url"),
         "bio": user_doc.get("bio"),
         "mfa_enabled": user_doc.get("mfa_enabled", False),
@@ -279,6 +280,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="User not found")
     
     return format_user_for_frontend(user)
+
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {"message": "Atomic Rose Tools API", "status": "running", "timestamp": datetime.utcnow().isoformat()}
 
 # Health check endpoint
 @app.get("/health")
