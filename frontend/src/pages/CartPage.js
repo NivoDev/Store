@@ -457,7 +457,17 @@ const CartPage = () => {
           try {
             console.log(`🔄 Transferring item: ${item.title} (ID: ${item.id})`);
             console.log(`🔄 Item details:`, item);
-            addItem(item, item.quantity || 1);
+            
+            // Convert guest cart item to product format for regular cart
+            const product = {
+              id: item.id,
+              title: item.title,
+              artist: item.artist,
+              price: item.price,
+              cover_image_url: item.cover_image_url
+            };
+            
+            addItem(product, item.quantity || 1);
             console.log(`✅ Successfully called addItem for ${item.title}`);
           } catch (error) {
             console.error(`❌ Failed to add ${item.title} to cart:`, error);

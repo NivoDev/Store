@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   FiPlay, 
   FiArrowRight, 
@@ -246,7 +246,8 @@ const CategoryCount = styled.div`
   font-weight: ${theme.typography.weights.semibold};
 `;
 
-const HomePage = () => {
+const HomePage = ({ onAuthClick }) => {
+  const navigate = useNavigate();
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
@@ -340,7 +341,9 @@ const HomePage = () => {
   };
 
   const handleAddToCart = (product) => {
-    console.log('Add to cart:', product);
+    console.log('Product added to cart:', product);
+    // Redirect to cart page
+    navigate('/cart');
   };
 
   const handleDownload = (productId) => {
@@ -466,6 +469,8 @@ const HomePage = () => {
                 product={product}
                 onPlay={handlePlay}
                 isPlaying={currentlyPlaying === product.id}
+                onAuthClick={onAuthClick}
+                onAddToCart={handleAddToCart}
               />
             ))}
           </ProductGrid>
@@ -498,6 +503,8 @@ const HomePage = () => {
                 product={product}
                 onPlay={handlePlay}
                 isPlaying={currentlyPlaying === product.id}
+                onAuthClick={onAuthClick}
+                onAddToCart={handleAddToCart}
               />
             ))}
           </ProductGrid>
@@ -529,6 +536,7 @@ const HomePage = () => {
                 isLiked={product.isLiked}
                 showDownload={product.isPurchased}
                 isDownloading={downloading[product.id]}
+                onAuthClick={onAuthClick}
                 canDownload={product.canDownload}
                 downloadsRemaining={product.downloadsRemaining}
               />

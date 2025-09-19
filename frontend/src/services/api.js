@@ -32,9 +32,11 @@ class APIService {
     return localStorage.getItem('auth_token');
   }
 
-  // HTTP request wrapper with error handling
-  async request(endpoint, options = {}) {
+  // HTTP request wrapper with error handling and retry logic
+  async request(endpoint, options = {}, retryCount = 0) {
     const url = `${this.baseURL}${endpoint}`;
+    const maxRetries = 3;
+    const retryDelay = 1000 * (retryCount + 1); // Exponential backoff
     
     const config = {
       headers: {
@@ -51,6 +53,9 @@ class APIService {
 
     console.log('🌐 API: Making request to:', url);
     console.log('🌐 API: Request config:', config);
+    if (retryCount > 0) {
+      console.log(`🔄 API: Retry attempt ${retryCount}/${maxRetries}`);
+    }
 
     try {
       const response = await fetch(url, config);
@@ -75,6 +80,19 @@ class APIService {
       return data;
     } catch (error) {
       console.error(`🌐 API: Request failed: ${endpoint}`, error);
+      
+      // Check if it's a network error that we should retry
+      const isNetworkError = error.name === 'TypeError' && 
+        (error.message.includes('Failed to fetch') || 
+         error.message.includes('ERR_NETWORK_CHANGED') ||
+         error.message.includes('ERR_INTERNET_DISCONNECTED'));
+      
+      if (isNetworkError && retryCount < maxRetries) {
+        console.log(`🔄 API: Network error detected, retrying in ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return this.request(endpoint, options, retryCount + 1);
+      }
+      
       throw error;
     }
   }
@@ -125,6 +143,14 @@ class APIService {
       
       return { success: true, data: response };
     } catch (error) {
+      // Handle specific error cases
+      if (error.message.includes('Verification token has expired')) {
+        return { 
+          success: false, 
+          error: error.message,
+          expired: true // Flag to indicate token expired
+        };
+      }
       return { success: false, error: error.message };
     }
   }
@@ -138,6 +164,37 @@ class APIService {
       
       return { success: true, data: response };
     } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  async verifyUserEmailToken(verificationToken) {
+    try {
+      const response = await this.request(`/auth/verify-email-token/${verificationToken}`, {
+        method: 'GET',
+      });
+      
+      if (response.access_token) {
+        this.setToken(response.access_token);
+      }
+      
+      return { success: true, data: response };
+    } catch (error) {
+      // Handle specific error cases
+      if (error.message.includes('already verified')) {
+        return { 
+          success: true, 
+          data: { message: error.message, already_verified: true },
+          already_verified: true
+        };
+      }
+      if (error.message.includes('Verification token has expired')) {
+        return { 
+          success: false, 
+          error: error.message,
+          expired: true
+        };
+      }
       return { success: false, error: error.message };
     }
   }
@@ -395,9 +452,9 @@ class APIService {
 
   // User Profile Methods
 
-  async likeProduct(productId) {
+  async toggleLikeProduct(productId) {
     try {
-      const response = await this.request('/profile/like-product', {
+      const response = await this.request('/profile/toggle-like', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -410,26 +467,16 @@ class APIService {
         liked: response.liked // Include the liked status from backend
       };
     } catch (error) {
-      console.error('❌ API: Failed to like product:', error);
+      console.error('❌ API: Failed to toggle like:', error);
       return { success: false, error: error.message };
     }
   }
 
-  async unlikeProduct(productId) {
-    try {
-      const response = await this.request('/profile/unlike-product', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ product_id: productId }),
-      });
-      return { success: true, data: response };
-    } catch (error) {
-      console.error('❌ API: Failed to unlike product:', error);
-      return { success: false, error: error.message };
-    }
+  // Keep the old method for backward compatibility
+  async likeProduct(productId) {
+    return this.toggleLikeProduct(productId);
   }
+
 
   async changePassword(oldPassword, newPassword) {
     try {

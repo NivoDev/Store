@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { FiFilter, FiSearch, FiGrid, FiList } from 'react-icons/fi';
 import { theme } from '../theme';
 import apiService from '../services/api';
@@ -184,7 +185,8 @@ const ProductGrid = styled.div`
   }
 `;
 
-const SamplePacksPage = () => {
+const SamplePacksPage = ({ onAuthClick }) => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
@@ -276,6 +278,12 @@ const SamplePacksPage = () => {
       setCurrentlyPlaying(product.id);
       // Audio preview functionality would be implemented here
     }
+  };
+
+  const handleAddToCart = (product) => {
+    console.log('Product added to cart:', product);
+    // Redirect to cart page
+    navigate('/cart');
   };
 
   const handleFilterChange = (category, value) => {
@@ -409,6 +417,8 @@ const SamplePacksPage = () => {
               product={product}
               onPlay={handlePlay}
               isPlaying={currentlyPlaying === product.id}
+              onAuthClick={onAuthClick}
+              onAddToCart={handleAddToCart}
             />
           ))}
         </ProductGrid>

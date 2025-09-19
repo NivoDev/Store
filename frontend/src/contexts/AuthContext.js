@@ -104,6 +104,37 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Function to refresh user data
+  const refreshUserData = async () => {
+    if (state.isAuthenticated && state.user) {
+      try {
+        const result = await apiService.getCurrentUser();
+        if (result.success) {
+          const updatedUser = result.data;
+          secureStorage.setItem('user', updatedUser);
+          dispatch({
+            type: AUTH_ACTIONS.UPDATE_PROFILE,
+            payload: updatedUser
+          });
+        }
+      } catch (error) {
+        console.error('Error refreshing user data:', error);
+      }
+    }
+  };
+
+  // Listen for user data update events
+  useEffect(() => {
+    const handleUserDataUpdate = () => {
+      refreshUserData();
+    };
+
+    window.addEventListener('userDataUpdated', handleUserDataUpdate);
+    return () => {
+      window.removeEventListener('userDataUpdated', handleUserDataUpdate);
+    };
+  }, [state.isAuthenticated, state.user]);
+
   // Login function with API integration
   const login = async (email, password) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });

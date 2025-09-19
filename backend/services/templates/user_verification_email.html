@@ -1,4 +1,4 @@
-<!-- Transactional: Guest Email Verification -->
+<!-- User Email Verification -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,24 +7,26 @@
   <meta name="x-apple-disable-message-reformatting">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
-  <title>Verify your email</title>
+  <title>Verify Your Email - Welcome to Atomic Rose Tools</title>
   <style>
     :root{
       --brand-bg:#0b0b10;
       --brand-card:#161622;
-      --brand-accent:#ff2a6d; /* tweak to match your brand */
+      --brand-accent:#ff2a6d;
       --brand-text:#f4f6f8;
       --muted:#9aa0a6;
       --border:#26263a;
       --btn-text:#0b0b10;
       --radius:12px;
+      --otp-bg:#1a1a2e;
+      --otp-text:#00ffff;
+      --otp-border:#00ffff;
     }
     @media (max-width:600px){
       .container{width:100% !important}
       .px{padding-left:20px !important;padding-right:20px !important}
       .stack{display:block !important;width:100% !important}
     }
-    /* Dark-mode hints for clients that support it */
     @media (prefers-color-scheme:dark){
       .bg{background:var(--brand-bg) !important}
       .card{background:var(--brand-card) !important}
@@ -36,7 +38,7 @@
 <body class="bg" style="margin:0;background:var(--brand-bg);">
   <!-- Preheader (hidden preview text) -->
   <div style="display:none;max-height:0;overflow:hidden;">
-    Verify your email to proceed with your order at Atomic Rose Tools.
+    Welcome to Atomic Rose Tools! Please verify your email to complete your registration.
   </div>
 
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:var(--brand-bg);" bgcolor="#0b0b10">
@@ -65,29 +67,27 @@
                 <tr>
                   <td class="text" style="padding:32px;color:var(--brand-text);font:400 16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                     <h1 style="margin:0 0 12px;font:700 24px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);">
-                      Verify Your Email
+                      Welcome to Atomic Rose Tools! 🎵
                     </h1>
                     <p style="margin:0 0 16px;color:var(--muted);">
-                      Thanks for your interest! Please verify your email address to proceed with your purchase and access your downloads.
+                      Hi {{FIRST_NAME}}! Thanks for signing up. Please verify your email address to complete your registration and access all features.
                     </p>
 
-                    <!-- Order Details -->
-                    <div style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:20px;margin:20px 0;">
-                      <p style="margin:0 0 8px;font:600 16px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);">
-                        Order #{{ORDER_NUMBER}}
-                      </p>
-                      <p style="margin:0 0 8px;color:var(--muted);">
-                        Email: <span style="color:#fff;">{{EMAIL_ADDRESS}}</span>
-                      </p>
-                      <p style="margin:0 0 8px;color:var(--muted);">
-                        Items: {{ITEMS_COUNT}} product(s)
-                      </p>
-                      <p style="margin:0;font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-accent);">
-                        Total: {{TOTAL_AMOUNT}}
-                      </p>
+                    <!-- Account Benefits Preview -->
+                    <div style="background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.2);border-radius:8px;padding:20px;margin:20px 0;">
+                      <h3 style="margin:0 0 12px;color:var(--brand-text);font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                        🎯 What you'll get:
+                      </h3>
+                      <ul style="margin:0;padding-left:20px;color:var(--muted);font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                        <li><strong>3 downloads per product</strong> (vs 1 for guests)</li>
+                        <li>Access to your <strong>purchased products</strong> anytime</li>
+                        <li>Download history and management</li>
+                        <li>Exclusive content and updates</li>
+                        <li>Save your favorite products</li>
+                      </ul>
                     </div>
 
-                    <!-- CTA (bulletproof) -->
+                    <!-- CTA Button -->
                     <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
                       <tr>
                         <td>
@@ -108,23 +108,31 @@
                     </table>
 
                     <!-- OTP Code Section with High Visibility -->
-                    <div style="margin:24px 0;padding:20px;background:#1a1a2e;border:2px solid #00ffff;border-radius:12px;text-align:center;">
+                    <div style="margin:24px 0;padding:20px;background:var(--otp-bg);border:2px solid var(--otp-border);border-radius:12px;text-align:center;">
                       <p style="margin:0 0 12px;color:var(--muted);font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                         Or copy and paste this verification code in the app:
                       </p>
-                      <div style="display:inline-block;background:#1a1a2e;border:2px solid #00ffff;border-radius:8px;padding:16px 24px;margin:8px 0;">
-                        <span style="font:700 24px/1.2 'Courier New', Courier, monospace;color:#00ffff;letter-spacing:4px;text-shadow:0 0 10px rgba(0,255,255,0.3);">
+                      <div style="display:inline-block;background:var(--otp-bg);border:2px solid var(--otp-border);border-radius:8px;padding:16px 24px;margin:8px 0;">
+                        <span style="font:700 24px/1.2 'Courier New', Courier, monospace;color:var(--otp-text);letter-spacing:4px;text-shadow:0 0 10px rgba(0,255,255,0.3);">
                           {{OTP_CODE}}
                         </span>
                       </div>
                       <p style="margin:12px 0 0;color:var(--muted);font:500 12px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                        This code expires in {{EXPIRES_IN_HOURS}} hours
+                        This code expires in {{EXPIRES_IN_MINUTES}} minutes
                       </p>
                     </div>
 
+                    <!-- Security Notice -->
+                    <div style="margin:24px 0;padding:16px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
+                      <p style="margin:0;color:#ffc107;font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                        🔒 <strong>Security:</strong> Never share this verification code with anyone. 
+                        If you didn't create this account, you can safely ignore this email.
+                      </p>
+                    </div>
 
                     <p class="muted" style="margin:16px 0 0;color:var(--muted);font-size:13px;">
-                      This link expires in {{EXPIRES_IN_HOURS}} hours. If you didn't initiate this purchase, you can ignore this email.
+                      This verification link expires in {{EXPIRES_IN_MINUTES}} minutes. 
+                      If you need a new code, you can request one from the app.
                     </p>
                   </td>
                 </tr>
@@ -133,7 +141,7 @@
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px;">
                 <tr>
                   <td class="muted" style="color:var(--muted);font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                    You're receiving this secure, transactional email because a purchase was initiated on Atomic Rose Tools.
+                    You're receiving this email because you signed up for an account on Atomic Rose Tools.
                     Do not share this code or link with anyone.
                   </td>
                 </tr>
@@ -160,5 +168,3 @@
   </table>
 </body>
 </html>
-
-

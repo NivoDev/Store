@@ -90,7 +90,7 @@ class EmailService:
             print(f"📧 From email: {self.from_email}")
             
             # Create verification URL
-            verify_url = f"{self.base_url}/verify-user-email?token={verification_token}"
+            verify_url = f"{self.base_url}/verify-email?token={verification_token}"
             
             # Load and customize user verification template
             html_content = self._load_user_verification_template()
@@ -165,16 +165,34 @@ class EmailService:
         """Fallback guest template if file not found."""
         return """
         <html>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1>Verify Your Email</h1>
-            <p>Order Number: {{ORDER_NUMBER}}</p>
-            <p>Total: {{TOTAL_AMOUNT}}</p>
-            <p>Please click the link below to verify your email address:</p>
-            <a href="{{VERIFY_URL}}" style="background: #ff2a6d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-                Verify Email
-            </a>
-            <p>Or use this code: {{OTP_CODE}}</p>
-            <p>This link expires in {{EXPIRES_IN_HOURS}} hours.</p>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0b0b10; color: #f4f6f8; }
+                .card { background: #161622; border: 1px solid #26263a; border-radius: 12px; padding: 32px; margin: 20px 0; }
+                .otp-code { background: #1a1a2e; border: 2px solid #00ffff; border-radius: 8px; padding: 16px 24px; text-align: center; margin: 20px 0; }
+                .otp-text { font: 700 24px/1.2 'Courier New', Courier, monospace; color: #00ffff; letter-spacing: 4px; }
+                .btn { background: #ff2a6d; color: #0b0b10; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
+                .muted { color: #9aa0a6; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>Verify Your Email</h1>
+                <p>Order Number: <strong>{{ORDER_NUMBER}}</strong></p>
+                <p>Total: <strong>{{TOTAL_AMOUNT}}</strong></p>
+                <p>Please click the link below to verify your email address:</p>
+                <a href="{{VERIFY_URL}}" class="btn">Verify Email</a>
+                
+                <div class="otp-code">
+                    <p class="muted">Or copy and paste this verification code:</p>
+                    <div class="otp-text">{{OTP_CODE}}</div>
+                    <p class="muted">This code expires in {{EXPIRES_IN_HOURS}} hours</p>
+                </div>
+                
+                <p class="muted">If you didn't initiate this purchase, you can ignore this email.</p>
+            </div>
         </body>
         </html>
         """
@@ -183,16 +201,45 @@ class EmailService:
         """Fallback user template if file not found."""
         return """
         <html>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1>Welcome to Atomic Rose Tools!</h1>
-            <p>Hi {{FIRST_NAME}}, thanks for signing up.</p>
-            <p>Please click the link below to verify your email address:</p>
-            <a href="{{VERIFY_URL}}" style="background: #ff2a6d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
-                Verify Email
-            </a>
-            <p>Or use this code: {{OTP_CODE}}</p>
-            <p>This link expires in {{EXPIRES_IN_MINUTES}} minutes.</p>
-            <p>If you didn't request this, you can ignore this email.</p>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0b0b10; color: #f4f6f8; }
+                .card { background: #161622; border: 1px solid #26263a; border-radius: 12px; padding: 32px; margin: 20px 0; }
+                .otp-code { background: #1a1a2e; border: 2px solid #00ffff; border-radius: 8px; padding: 16px 24px; text-align: center; margin: 20px 0; }
+                .otp-text { font: 700 24px/1.2 'Courier New', Courier, monospace; color: #00ffff; letter-spacing: 4px; }
+                .btn { background: #ff2a6d; color: #0b0b10; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
+                .muted { color: #9aa0a6; }
+                .benefits { background: rgba(0,255,255,0.05); border: 1px solid rgba(0,255,255,0.2); border-radius: 8px; padding: 20px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>Welcome to Atomic Rose Tools! 🎵</h1>
+                <p>Hi {{FIRST_NAME}}, thanks for signing up!</p>
+                <p>Please verify your email address to complete your registration and access all features.</p>
+                
+                <div class="benefits">
+                    <h3>🎯 What you'll get:</h3>
+                    <ul>
+                        <li><strong>3 downloads per product</strong> (vs 1 for guests)</li>
+                        <li>Access to your <strong>purchased products</strong> anytime</li>
+                        <li>Download history and management</li>
+                        <li>Exclusive content and updates</li>
+                    </ul>
+                </div>
+                
+                <a href="{{VERIFY_URL}}" class="btn">Verify Email</a>
+                
+                <div class="otp-code">
+                    <p class="muted">Or copy and paste this verification code:</p>
+                    <div class="otp-text">{{OTP_CODE}}</div>
+                    <p class="muted">This code expires in {{EXPIRES_IN_MINUTES}} minutes</p>
+                </div>
+                
+                <p class="muted">If you didn't request this, you can ignore this email.</p>
+            </div>
         </body>
         </html>
         """

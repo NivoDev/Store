@@ -182,6 +182,10 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
     Convert MongoDB user document to frontend format.
     Matches the new validation rules structure.
     """
+    # Convert ObjectId to string for liked_products
+    liked_products = user_doc.get("liked_products", [])
+    liked_products_str = [str(product_id) for product_id in liked_products]
+    
     return {
         "id": str(user_doc.get("_id")),
         "name": user_doc.get("name"),
@@ -191,7 +195,8 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
         "status": user_doc.get("status", "active"),
         "created_at": user_doc.get("created_at").isoformat() if user_doc.get("created_at") else None,
         "last_login": user_doc.get("last_login").isoformat() if user_doc.get("last_login") else None,
-        "liked_products_count": len(user_doc.get("liked_products", [])),
+        "liked_products": liked_products_str,
+        "liked_products_count": len(liked_products),
         "purchased_products_count": len(user_doc.get("purchased_products", []))
     }
 
@@ -489,6 +494,84 @@ async def verify_token_endpoint(current_user: dict = Depends(get_current_user)):
     """Verify token validity"""
     return {"valid": True, "user": current_user}
 
+@app.get("/api/v1/auth/verify-email-token/{verification_token}")
+async def verify_user_email_token(verification_token: str):
+    """Verify user email with token from email link"""
+    try:
+        if not verification_token:
+            raise HTTPException(status_code=400, detail="Verification token is required")
+        
+        # Find user with this verification token
+        user = await db.users.find_one({
+            "verification_token": verification_token,
+            "email_verified": False,
+            "status": "active"
+        })
+        
+        if not user:
+            # Check if user is already verified
+            already_verified = await db.users.find_one({
+                "verification_token": verification_token,
+                "email_verified": True
+            })
+            
+            if already_verified:
+                return {
+                    "message": "Email already verified! You can now log in to your account.",
+                    "already_verified": True,
+                    "user": format_user_for_frontend(already_verified)
+                }
+            else:
+                raise HTTPException(status_code=400, detail="Invalid or expired verification token")
+        
+        # Check if verification token has expired
+        if user.get("verification_expires") and user["verification_expires"] < datetime.utcnow():
+            # Token has expired, delete the user record to allow re-registration
+            await db.users.delete_one({"_id": user["_id"]})
+            raise HTTPException(
+                status_code=410, 
+                detail="Verification token has expired. Please register again with the same email address."
+            )
+        
+        # Mark user as verified
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {
+                "$set": {
+                    "email_verified": True,
+                    "updated_at": datetime.utcnow()
+                },
+                "$unset": {
+                    "verification_token": "",
+                    "verification_expires": ""
+                }
+            }
+        )
+        
+        # Issue token
+        access_token = create_access_token(data={"sub": str(user["_id"])})
+        user_response = format_user_for_frontend(user)
+        user_response.update({
+            "id": str(user["_id"]),
+            "email": user.get("email"),
+            "status": "active",
+            "email_verified": True
+        })
+        
+        return {
+            "message": "Email verified successfully! You can now log in to your account.",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user_response,
+            "verified": True
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error verifying user email token: {e}")
+        raise HTTPException(status_code=500, detail="Email verification failed")
+
 @app.post("/api/v1/auth/verify-email")
 async def verify_user_email(verification_data: dict):
     """Verify user email with OTP code"""
@@ -501,15 +584,23 @@ async def verify_user_email(verification_data: dict):
         if len(otp_code) != 6 or not otp_code.isdigit():
             raise HTTPException(status_code=400, detail="Invalid OTP format")
 
-        # Find unverified, still-valid user
+        # Find unverified user (check both valid and expired tokens)
         user = await db.users.find_one({
             "email": email.lower(),
             "email_verified": False,
-            "verification_expires": {"$gt": datetime.utcnow()},
             "status": "active"
         })
         if not user:
-            raise HTTPException(status_code=400, detail="Invalid or expired verification request")
+            raise HTTPException(status_code=400, detail="No pending verification found for this email")
+        
+        # Check if verification token has expired
+        if user.get("verification_expires") and user["verification_expires"] < datetime.utcnow():
+            # Token has expired, delete the user record to allow re-registration
+            await db.users.delete_one({"_id": user["_id"]})
+            raise HTTPException(
+                status_code=410, 
+                detail="Verification token has expired. Please register again with the same email address."
+            )
 
         # Mark verified
         await db.users.update_one(
@@ -1184,9 +1275,9 @@ async def get_purchased_products(current_user: dict = Depends(get_current_user))
         print(f"❌ Error getting purchased products: {e}")
         raise HTTPException(status_code=500, detail="Failed to get purchased products")
 
-@app.post("/api/v1/profile/like-product")
-async def like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
-    """Like a product"""
+@app.post("/api/v1/profile/toggle-like")
+async def toggle_like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
+    """Toggle like status for a product"""
     try:
         user_id = current_user["id"]
         product_id = product_data.get("product_id")
@@ -1205,57 +1296,43 @@ async def like_product(product_data: dict, current_user: dict = Depends(get_curr
         if not product:
             raise HTTPException(status_code=404, detail="Product not found")
         
-        # Add to user's liked products
-        await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$addToSet": {"liked_products": product_oid}}
-        )
+        # Get current user to check if product is already liked
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        liked_products = user.get("liked_products", [])
+        is_liked = product_oid in liked_products
+        
+        if is_liked:
+            # Remove from liked products
+            await db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$pull": {"liked_products": product_oid}}
+            )
+            liked = False
+            message = "Product unliked successfully"
+        else:
+            # Add to liked products
+            await db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$addToSet": {"liked_products": product_oid}}
+            )
+            liked = True
+            message = "Product liked successfully"
         
         return {
-            "message": "Product liked successfully",
+            "message": message,
             "product_id": product_id,
-            "liked": True
+            "liked": liked
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error liking product: {e}")
-        raise HTTPException(status_code=500, detail="Failed to like product")
+        print(f"❌ Error toggling like: {e}")
+        raise HTTPException(status_code=500, detail="Failed to toggle like")
 
-@app.post("/api/v1/profile/unlike-product")
-async def unlike_product(product_data: dict, current_user: dict = Depends(get_current_user)):
-    """Unlike a product"""
-    try:
-        user_id = current_user["id"]
-        product_id = product_data.get("product_id")
-        
-        if not product_id:
-            raise HTTPException(status_code=400, detail="Product ID is required")
-        
-        # Validate product ID
-        try:
-            product_oid = ObjectId(product_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid product ID format")
-        
-        # Remove from user's liked products
-        await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$pull": {"liked_products": product_oid}}
-        )
-        
-        return {
-            "message": "Product unliked successfully",
-            "product_id": product_id,
-            "liked": False
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error unliking product: {e}")
-        raise HTTPException(status_code=500, detail="Failed to unlike product")
 
 # Purchase endpoint
 @app.post("/api/v1/orders/purchase")
@@ -1663,7 +1740,7 @@ async def verify_guest_order(verification_data: dict):
                     "type": "email"
                 })
         
-        # TODO: Send email with email_download_links to order['guest_email']
+        # Email with download links is sent via the email service
         print(f"✅ Guest order verified: {order['order_number']}")
         print(f"📧 Would send {len(email_download_links)} download link(s) to: {order['guest_email']}")
         print(f"🔗 Immediate download links: {len(immediate_download_links)}")
@@ -1733,6 +1810,58 @@ async def get_guest_download(order_id: str, verification_token: str):
     except Exception as e:
         print(f"❌ Error getting guest download: {e}")
         raise HTTPException(status_code=500, detail="Failed to get download")
+
+@app.get("/api/v1/guest-downloads/{order_number}")
+async def get_guest_download_links(order_number: str):
+    """Get all download links for a guest order with validation"""
+    try:
+        # Get order details
+        order = await db.guest_orders.find_one({"order_number": order_number})
+        
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        # Check if order is verified
+        if order.get("status") != "verified":
+            raise HTTPException(status_code=400, detail="Order not verified yet")
+        
+        # Check download limit
+        if order["downloads_remaining"] <= 0:
+            raise HTTPException(status_code=429, detail="Download limit reached for this order")
+        
+        download_links = []
+        
+        for item in order["items"]:
+            product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
+            if product:
+                raw_key = product.get("file_path", f"products/{item['product_id']}.zip")
+                object_key = _normalize_r2_key(raw_key)
+                expiration_seconds = 3600  # 1 hour
+                download_url = generate_download_url(object_key, expiration=expiration_seconds)
+                
+                download_links.append({
+                    "product_id": item["product_id"],
+                    "title": item["title"],
+                    "artist": product.get("artist", "Unknown Artist"),
+                    "price": f"${item['price']:.2f}",
+                    "download_url": download_url,
+                    "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg"),
+                    "expires_in": expiration_seconds,
+                    "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z"
+                })
+        
+        return {
+            "order_number": order["order_number"],
+            "download_links": download_links,
+            "downloads_remaining": order["downloads_remaining"],
+            "total_items": len(order["items"])
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting guest download links: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 if __name__ == "__main__":
     import uvicorn

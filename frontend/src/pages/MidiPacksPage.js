@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 import { theme } from '../theme';
 import apiService from '../services/api';
 import ProductCard from '../components/product/ProductCard';
@@ -30,7 +31,8 @@ const ProductGrid = styled.div`
   margin-top: ${theme.spacing[8]};
 `;
 
-const MidiPacksPage = () => {
+const MidiPacksPage = ({ onAuthClick }) => {
+  const navigate = useNavigate();
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [midiPacks, setMidiPacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +61,12 @@ const MidiPacksPage = () => {
 
   const handlePlay = (product) => {
     setCurrentlyPlaying(currentlyPlaying === product.id ? null : product.id);
+  };
+
+  const handleAddToCart = (product) => {
+    console.log('Product added to cart:', product);
+    // Redirect to cart page
+    navigate('/cart');
   };
 
   return (
@@ -92,6 +100,8 @@ const MidiPacksPage = () => {
                 product={product}
                 onPlay={handlePlay}
                 isPlaying={currentlyPlaying === product.id}
+                onAuthClick={onAuthClick}
+                onAddToCart={handleAddToCart}
               />
             ))}
           </ProductGrid>

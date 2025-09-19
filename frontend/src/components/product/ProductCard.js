@@ -249,7 +249,7 @@ const Actions = styled.div`
   gap: ${theme.spacing[2]};
 `;
 
-const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, canDownload = true, downloadsRemaining = 0 }) => {
+const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, canDownload = true, downloadsRemaining = 0, onAuthClick, onAddToCart }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -334,6 +334,11 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
     e.preventDefault();
     e.stopPropagation();
     addItem(product);
+    
+    // Call the callback if provided (for redirect functionality)
+    if (onAddToCart) {
+      onAddToCart(product);
+    }
   };
 
   const handleFavorite = async (e) => {
@@ -355,6 +360,10 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
         if (onLikeToggle) {
           onLikeToggle(product.id);
         }
+        
+        // Refresh user data to get updated liked_products
+        // This will trigger a re-render with the correct like status
+        window.dispatchEvent(new CustomEvent('userDataUpdated'));
       }
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -390,6 +399,11 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
       
       // Debug cart state
       guestCartService.debugCart();
+      
+      // Call the callback if provided (for redirect functionality)
+      if (onAddToCart) {
+        onAddToCart(product);
+      }
     } catch (error) {
       console.error(`❌ Error adding product to guest cart:`, error);
     }
@@ -669,8 +683,12 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
             variant="primary" 
             onClick={() => {
               setShowLoginPrompt(false);
-              // This would trigger the auth modal - you'll need to pass this as a prop
-              window.location.href = '/#auth';
+              if (onAuthClick) {
+                onAuthClick();
+              } else {
+                // Fallback to URL redirect if no callback provided
+                window.location.href = '/#auth';
+              }
             }}
           >
             Sign In

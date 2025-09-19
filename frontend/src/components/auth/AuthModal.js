@@ -286,6 +286,16 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
         if (onSuccessfulLogin) onSuccessfulLogin(); else handleClose();
       } else {
         console.error('Verification failed:', result.error);
+        
+        // If token expired, show a message and allow re-registration
+        if (result.expired) {
+          alert('Your verification code has expired. Please register again with the same email address.');
+          // Reset to registration form
+          setActiveTab('signup');
+          setVerificationStep('form');
+          setVerificationEmail('');
+          setOtpCode('');
+        }
       }
     } catch (e) {
       console.error('Verification error:', e);

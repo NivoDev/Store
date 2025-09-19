@@ -276,6 +276,39 @@ const GuestDownloadPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState({});
+  const [orderNumber, setOrderNumber] = useState('');
+  const [downloadsRemaining, setDownloadsRemaining] = useState(0);
+
+  const fetchDownloadLinks = async (orderNumber) => {
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching fresh download links for order:', orderNumber);
+      
+      const response = await fetch(`https://store-6ryk.onrender.com/api/v1/guest-downloads/${orderNumber}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Fresh download links fetched:', data);
+      
+      if (data.download_links && data.download_links.length > 0) {
+        setDownloadLinks(data.download_links);
+        setOrderNumber(data.order_number);
+        setDownloadsRemaining(data.downloads_remaining);
+        setError(null);
+      } else {
+        setError('No download links available for this order.');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching download links:', error);
+      setError(`Failed to load download links: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Get download links from URL state or localStorage
@@ -283,7 +316,10 @@ const GuestDownloadPage = () => {
     console.log('🔍 GuestDownloadPage - Location state:', state);
     console.log('🔍 GuestDownloadPage - Download links from state:', state?.downloadLinks);
     
-    if (state && state.downloadLinks && state.downloadLinks.length > 0) {
+    // If we have an order number, fetch fresh download links
+    if (state?.orderNumber) {
+      fetchDownloadLinks(state.orderNumber);
+    } else if (state && state.downloadLinks && state.downloadLinks.length > 0) {
       console.log('✅ Using download links from state');
       setDownloadLinks(state.downloadLinks);
       setLoading(false);
@@ -315,6 +351,12 @@ const GuestDownloadPage = () => {
     setDownloading(prev => ({ ...prev, [productId]: true }));
     
     try {
+      // Check if we have downloads remaining
+      if (downloadsRemaining <= 0) {
+        setError('No downloads remaining for this order.');
+        return;
+      }
+      
       // Create a temporary link and trigger download
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -332,6 +374,20 @@ const GuestDownloadPage = () => {
             : link
         )
       );
+      
+      // Decrease downloads remaining
+      setDownloadsRemaining(prev => prev - 1);
+      
+      console.log(`✅ Download started for product ${productId}`);
+      
+      // If no downloads remaining, refresh the page to get updated status
+      if (downloadsRemaining <= 1) {
+        setTimeout(() => {
+          if (orderNumber) {
+            fetchDownloadLinks(orderNumber);
+          }
+        }, 2000);
+      }
     } catch (err) {
       console.error('Download error:', err);
       setError('Failed to download file. Please try again.');
@@ -428,6 +484,26 @@ const GuestDownloadPage = () => {
             📧 A download link has been sent to your email address for additional access. 
             Check your inbox and spam folder.
           </InfoText>
+          {downloadsRemaining > 0 && (
+            <InfoText style={{ 
+              marginTop: '16px', 
+              color: '#00ffff',
+              fontSize: theme.typography.sizes.base,
+              fontWeight: theme.typography.weights.medium
+            }}>
+              ⬇️ Downloads remaining: {downloadsRemaining}
+            </InfoText>
+          )}
+          {downloadsRemaining === 0 && (
+            <InfoText style={{ 
+              marginTop: '16px', 
+              color: '#ff6b6b',
+              fontSize: theme.typography.sizes.base,
+              fontWeight: theme.typography.weights.medium
+            }}>
+              ⚠️ No downloads remaining for this order
+            </InfoText>
+          )}
         </DownloadInfo>
 
         {downloadLinks.map((link) => (
@@ -450,7 +526,7 @@ const GuestDownloadPage = () => {
             <DownloadSection>
               <DownloadButton
                 onClick={() => handleDownload(link.product_id, link.download_url)}
-                disabled={link.downloaded || downloading[link.product_id]}
+                disabled={link.downloaded || downloading[link.product_id] || downloadsRemaining <= 0}
               >
                 {downloading[link.product_id] ? (
                   <>
@@ -459,6 +535,8 @@ const GuestDownloadPage = () => {
                   </>
                 ) : link.downloaded ? (
                   'Downloaded ✓'
+                ) : downloadsRemaining <= 0 ? (
+                  'No Downloads Remaining'
                 ) : (
                   'Download Now'
                 )}
