@@ -148,7 +148,7 @@ const GoogleCallbackPage = () => {
         
         if (result.success) {
           // Update auth context using OAuth login
-          const loginResult = loginWithOAuth(result.data.user, result.data.access_token);
+          const loginResult = await loginWithOAuth(result.data.user, result.data.access_token);
           
           if (loginResult.success) {
             setStatus('success');

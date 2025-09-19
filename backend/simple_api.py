@@ -2072,6 +2072,68 @@ async def get_guest_download(order_id: str, verification_token: str):
         print(f"❌ Error getting guest download: {e}")
         raise HTTPException(status_code=500, detail="Failed to get download")
 
+@app.post("/api/v1/user/transfer-guest-orders")
+async def transfer_guest_orders_to_user(transfer_data: dict, current_user: dict = Depends(get_current_user)):
+    """Transfer guest orders to user account based on email"""
+    try:
+        user_id = current_user["id"]
+        user_email = current_user["email"]
+        
+        # Find all guest orders with this email
+        guest_orders = await db.guest_orders.find({
+            "guest_email": user_email.lower(),
+            "status": "verified"
+        }).to_list(length=None)
+        
+        if not guest_orders:
+            return {
+                "message": "No guest orders found for this email",
+                "transferred_orders": 0
+            }
+        
+        # Get user's current purchased products
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        current_purchased = set(user.get("purchased_products", []))
+        transferred_products = set()
+        
+        # Process each guest order
+        for order in guest_orders:
+            for item in order.get("items", []):
+                product_id = ObjectId(item["product_id"])
+                if product_id not in current_purchased:
+                    transferred_products.add(product_id)
+        
+        # Update user's purchased products
+        if transferred_products:
+            await db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$addToSet": {"purchased_products": {"$each": list(transferred_products)}}}
+            )
+        
+        # Mark guest orders as transferred
+        order_ids = [order["_id"] for order in guest_orders]
+        await db.guest_orders.update_many(
+            {"_id": {"$in": order_ids}},
+            {"$set": {"transferred_to_user": ObjectId(user_id), "transferred_at": datetime.utcnow()}}
+        )
+        
+        print(f"✅ Transferred {len(transferred_products)} products from {len(guest_orders)} guest orders to user {user_id}")
+        
+        return {
+            "message": f"Successfully transferred {len(transferred_products)} products from {len(guest_orders)} guest orders",
+            "transferred_orders": len(guest_orders),
+            "transferred_products": len(transferred_products)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error transferring guest orders: {e}")
+        raise HTTPException(status_code=500, detail="Failed to transfer guest orders")
+
 @app.post("/api/v1/guest/checkout")
 async def guest_checkout(order_data: dict):
     """Create a guest order and return order details"""

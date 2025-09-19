@@ -169,6 +169,19 @@ export const AuthProvider = ({ children }) => {
         payload: user
       });
       
+      // Transfer any guest orders to user account
+      try {
+        const transferResult = await apiService.transferGuestOrders();
+        if (transferResult.success && transferResult.data.transferred_products > 0) {
+          console.log(`✅ Transferred ${transferResult.data.transferred_products} products from guest orders`);
+          // Refresh user data to include transferred products
+          refreshUserData();
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to transfer guest orders:', error);
+        // Don't fail login if transfer fails
+      }
+      
       return { success: true };
     } catch (error) {
       dispatch({
@@ -255,7 +268,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // OAuth login function for Google, Facebook, etc.
-  const loginWithOAuth = (user, accessToken) => {
+  const loginWithOAuth = async (user, accessToken) => {
     try {
       // Store user data and token securely
       secureStorage.setItem('user', user);
@@ -266,6 +279,19 @@ export const AuthProvider = ({ children }) => {
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: user
       });
+      
+      // Transfer any guest orders to user account
+      try {
+        const transferResult = await apiService.transferGuestOrders();
+        if (transferResult.success && transferResult.data.transferred_products > 0) {
+          console.log(`✅ Transferred ${transferResult.data.transferred_products} products from guest orders`);
+          // Refresh user data to include transferred products
+          refreshUserData();
+        }
+      } catch (error) {
+        console.warn('⚠️ Failed to transfer guest orders:', error);
+        // Don't fail login if transfer fails
+      }
       
       return { success: true };
     } catch (error) {

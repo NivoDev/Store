@@ -704,6 +704,19 @@ class APIService {
       return { success: false, error: error.message };
     }
   }
+
+  async transferGuestOrders() {
+    try {
+      const response = await this.request('/user/transfer-guest-orders', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to transfer guest orders:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create and export singleton instance
