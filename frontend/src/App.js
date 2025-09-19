@@ -11,6 +11,7 @@ import keepAliveService from './services/keepAlive';
 // Layout components
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
+import ScrollToTop from './components/common/ScrollToTop';
 
 // Auth components
 import AuthModal from './components/auth/AuthModal';
@@ -58,6 +59,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <Router>
+            <ScrollToTop />
             <div className="App">
               <Header onAuthClick={() => setAuthModalOpen(true)} />
               
