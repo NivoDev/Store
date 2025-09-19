@@ -88,6 +88,8 @@ const GoogleCallbackPage = () => {
   
   const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
   const [message, setMessage] = useState('');
+  
+  // Force rebuild to clear cache
 
   useEffect(() => {
     const handleGoogleCallback = async () => {
