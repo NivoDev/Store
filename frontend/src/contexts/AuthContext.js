@@ -254,9 +254,34 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  // OAuth login function for Google, Facebook, etc.
+  const loginWithOAuth = (user, accessToken) => {
+    try {
+      // Store user data and token securely
+      secureStorage.setItem('user', user);
+      secureStorage.setItem('token', accessToken);
+      
+      // Update auth state
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_SUCCESS,
+        payload: user
+      });
+      
+      return { success: true };
+    } catch (error) {
+      console.error('OAuth login error:', error);
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_FAILURE,
+        payload: error.message || 'OAuth login failed'
+      });
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     ...state,
     login,
+    loginWithOAuth,
     register,
     logout,
     clearError,

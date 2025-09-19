@@ -84,7 +84,7 @@ const LoadingSpinner = styled.div`
 const GoogleCallbackPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login } = useAuth();
+  const { loginWithOAuth } = useAuth();
   
   const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
   const [message, setMessage] = useState('');
@@ -124,16 +124,21 @@ const GoogleCallbackPage = () => {
         const result = await apiService.handleGoogleCallback(code, state);
         
         if (result.success) {
-          // Update auth context
-          login(result.data.user, result.data.access_token);
+          // Update auth context using OAuth login
+          const loginResult = loginWithOAuth(result.data.user, result.data.access_token);
           
-          setStatus('success');
-          setMessage('Successfully signed in with Google!');
-          
-          // Redirect to home page after 2 seconds
-          setTimeout(() => {
-            navigate('/');
-          }, 2000);
+          if (loginResult.success) {
+            setStatus('success');
+            setMessage('Successfully signed in with Google!');
+            
+            // Redirect to home page after 2 seconds
+            setTimeout(() => {
+              navigate('/');
+            }, 2000);
+          } else {
+            setStatus('error');
+            setMessage('Failed to sign in. Please try again.');
+          }
         } else {
           setStatus('error');
           setMessage(result.error || 'Failed to sign in with Google. Please try again.');
