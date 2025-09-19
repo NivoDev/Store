@@ -330,8 +330,6 @@ const CheckoutPage = () => {
     vatNumber: '',
     businessType: 'individual',
     
-    // Additional Information
-    notes: '',
     
     // Terms and Conditions
     acceptTerms: false,
@@ -367,7 +365,8 @@ const CheckoutPage = () => {
   };
 
   const validateForm = () => {
-    const required = ['firstName', 'lastName', 'email', 'address', 'city', 'state', 'postalCode', 'country'];
+    // For digital products, only require basic contact info
+    const required = ['firstName', 'lastName', 'email'];
     
     for (const field of required) {
       if (!formData[field]) {
@@ -436,22 +435,26 @@ const CheckoutPage = () => {
         subtotal: calculateTotal(),
         tax: calculateTax(),
         total: calculateTotal() + calculateTax(),
-        notes: formData.notes,
         requestInvoice: formData.requestInvoice
       };
       
       console.log('🛒 Submitting order:', orderData);
       
-      // For now, we'll simulate a successful payment
-      // Later this will be replaced with actual payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      // Create guest order in backend
+      const result = await apiService.guestCheckout(orderData);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create order');
+      }
+      
+      console.log('✅ Order created successfully:', result.data);
       
       // Clear cart and redirect to success page
       clearCart();
       navigate('/checkout/success', { 
         state: { 
           orderData,
-          orderNumber: `ORD-${Date.now()}`,
+          orderNumber: result.data.order_number,
           message: 'Payment successful! Your download links are ready.'
         }
       });
@@ -566,20 +569,19 @@ const CheckoutPage = () => {
               <FormGrid>
                 <FormGroup className="full-width">
                   <Label>
-                    Street Address <Required>*</Required>
+                    Street Address (Optional)
                   </Label>
                   <Input
                     type="text"
                     name="address"
                     value={formData.address}
                     onChange={handleInputChange}
-                    placeholder="Enter your street address"
-                    required
+                    placeholder="Enter your street address (optional for digital products)"
                   />
                 </FormGroup>
                 <FormGroup>
                   <Label>
-                    City <Required>*</Required>
+                    City (Optional)
                   </Label>
                   <Input
                     type="text"
@@ -587,12 +589,11 @@ const CheckoutPage = () => {
                     value={formData.city}
                     onChange={handleInputChange}
                     placeholder="Enter your city"
-                    required
                   />
                 </FormGroup>
                 <FormGroup>
                   <Label>
-                    State/Province <Required>*</Required>
+                    State/Province (Optional)
                   </Label>
                   <Input
                     type="text"
@@ -600,12 +601,11 @@ const CheckoutPage = () => {
                     value={formData.state}
                     onChange={handleInputChange}
                     placeholder="Enter your state"
-                    required
                   />
                 </FormGroup>
                 <FormGroup>
                   <Label>
-                    Postal Code <Required>*</Required>
+                    Postal Code (Optional)
                   </Label>
                   <Input
                     type="text"
@@ -613,18 +613,16 @@ const CheckoutPage = () => {
                     value={formData.postalCode}
                     onChange={handleInputChange}
                     placeholder="Enter your postal code"
-                    required
                   />
                 </FormGroup>
                 <FormGroup>
                   <Label>
-                    Country <Required>*</Required>
+                    Country (Optional)
                   </Label>
                   <Select
                     name="country"
                     value={formData.country}
                     onChange={handleInputChange}
-                    required
                   >
                     <option value="US">United States</option>
                     <option value="CA">Canada</option>
@@ -687,24 +685,6 @@ const CheckoutPage = () => {
               </FormGrid>
             </Section>
 
-            {/* Additional Information */}
-            <Section>
-              <SectionTitle>
-                <FiMail />
-                Additional Information
-              </SectionTitle>
-              <FormGroup>
-                <Label>
-                  Order Notes
-                </Label>
-                <TextArea
-                  name="notes"
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                  placeholder="Any special instructions or notes for your order..."
-                />
-              </FormGroup>
-            </Section>
 
             {/* Terms and Conditions */}
             <Section>

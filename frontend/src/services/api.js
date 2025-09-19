@@ -691,6 +691,19 @@ class APIService {
       return { success: false, error: error.message };
     }
   }
+
+  async guestCheckout(orderData) {
+    try {
+      const response = await this.request('/guest/checkout', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to create guest order:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create and export singleton instance

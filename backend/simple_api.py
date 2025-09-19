@@ -2150,6 +2150,68 @@ async def get_guest_download(order_id: str, verification_token: str):
         print(f"❌ Error getting guest download: {e}")
         raise HTTPException(status_code=500, detail="Failed to get download")
 
+@app.post("/api/v1/guest/checkout")
+async def guest_checkout(order_data: dict):
+    """Create a guest order and return order details"""
+    try:
+        # Extract order data
+        customer = order_data.get("customer", {})
+        items = order_data.get("items", [])
+        subtotal = order_data.get("subtotal", 0)
+        tax = order_data.get("tax", 0)
+        total = order_data.get("total", 0)
+        
+        if not items:
+            raise HTTPException(status_code=400, detail="No items in order")
+        
+        # Generate order number
+        order_number = f"ORD-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        
+        # Create guest order
+        order = {
+            "order_number": order_number,
+            "guest_email": customer.get("email", "").lower(),
+            "customer_info": {
+                "first_name": customer.get("firstName", ""),
+                "last_name": customer.get("lastName", ""),
+                "email": customer.get("email", ""),
+                "phone": customer.get("phone", ""),
+                "address": customer.get("address", ""),
+                "city": customer.get("city", ""),
+                "state": customer.get("state", ""),
+                "postal_code": customer.get("postalCode", ""),
+                "country": customer.get("country", "")
+            },
+            "items": items,
+            "subtotal": subtotal,
+            "tax": tax,
+            "total_amount": total,
+            "status": "verified",  # Direct checkout, no email verification needed
+            "downloads_remaining": 3,  # 3 downloads for direct checkout
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "completed_at": datetime.utcnow()
+        }
+        
+        # Save to database
+        result = await db.guest_orders.insert_one(order)
+        order_id = result.inserted_id
+        
+        print(f"✅ Guest order created: {order_number}")
+        
+        return {
+            "order_number": order_number,
+            "order_id": str(order_id),
+            "status": "completed",
+            "message": "Order created successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error creating guest order: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create order")
+
 @app.get("/api/v1/guest-downloads/{order_number}")
 async def get_guest_download_links(order_number: str):
     """Get all download links for a guest order with validation"""
