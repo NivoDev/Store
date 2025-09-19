@@ -7,7 +7,6 @@ import { useForm } from 'react-hook-form';
 import { theme } from '../../theme';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
-import GoogleSignIn from './GoogleSignIn';
 import apiService from '../../services/api';
 
 const Overlay = styled(motion.div)`
@@ -256,6 +255,25 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
     setVerificationEmail('');
     setOtpCode('');
     onClose();
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      // Get Google auth URL from backend
+      const result = await apiService.getGoogleAuthUrl();
+      
+      if (result.success) {
+        // Store state for CSRF protection
+        localStorage.setItem('google_oauth_state', result.data.state);
+        
+        // Redirect to Google OAuth
+        window.location.href = result.data.auth_url;
+      } else {
+        console.error('Failed to get Google auth URL:', result.error);
+      }
+    } catch (error) {
+      console.error('Google sign-in error:', error);
+    }
   };
 
   const onSubmit = async (data) => {
@@ -526,17 +544,6 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
                     }} />
                   </div>
 
-                  <GoogleSignIn
-                    onSuccess={() => {
-                      if (onSuccessfulLogin) onSuccessfulLogin();
-                      else handleClose();
-                    }}
-                    onError={(error) => {
-                      console.error('Google sign-in error:', error);
-                      // You could show a toast notification here
-                    }}
-                    disabled={isLoading}
-                  />
 
                   {activeTab === 'signin' ? (
                     <>
@@ -564,7 +571,13 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
 
                 <Divider><span>or continue with</span></Divider>
 
-                <SocialButton whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <SocialButton 
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={isLoading}
+                  whileHover={{ scale: 1.02 }} 
+                  whileTap={{ scale: 0.98 }}
+                >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
