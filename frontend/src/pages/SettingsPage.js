@@ -246,9 +246,24 @@ const SettingsPage = () => {
           <SettingDescription>
             Manage your account security settings
           </SettingDescription>
-          <Button variant="secondary">
-            Change Password
-          </Button>
+          {user?.provider === 'email' ? (
+            <Button variant="secondary">
+              Change Password
+            </Button>
+          ) : (
+            <div style={{ 
+              padding: theme.spacing[4], 
+              background: 'rgba(59, 130, 246, 0.1)', 
+              border: '1px solid rgba(59, 130, 246, 0.3)', 
+              borderRadius: theme.borderRadius.lg,
+              color: theme.colors.dark[300]
+            }}>
+              <p style={{ margin: 0, fontSize: theme.typography.sizes.sm }}>
+                🔐 Password management is handled through your {user?.provider || 'OAuth'} account.
+                To change your password, please visit your {user?.provider || 'OAuth'} account settings.
+              </p>
+            </div>
+          )}
         </SettingCard>
 
         {/* Danger Zone */}
