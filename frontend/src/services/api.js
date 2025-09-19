@@ -523,6 +523,39 @@ class APIService {
     }
   }
 
+  async getGoogleAuthUrl() {
+    try {
+      const response = await this.request('/auth/google', {
+        method: 'GET',
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to get Google auth URL:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async handleGoogleCallback(code, state) {
+    try {
+      const response = await this.request('/auth/google/callback', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          code: code,
+          state: state 
+        }),
+      });
+      
+      if (response.access_token) {
+        this.setToken(response.access_token);
+      }
+      
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to handle Google callback:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async deleteAccount() {
     try {
       const response = await this.request('/user/delete-account', {

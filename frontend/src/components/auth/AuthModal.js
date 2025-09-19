@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { theme } from '../../theme';
 import { useAuth } from '../../contexts/AuthContext';
 import Button from '../common/Button';
+import GoogleSignIn from './GoogleSignIn';
 import apiService from '../../services/api';
 
 const Overlay = styled(motion.div)`
@@ -499,6 +500,43 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
                   <Button type="submit" variant="primary" size="lg" fullWidth loading={isLoading}>
                     {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
                   </Button>
+
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    margin: `${theme.spacing[6]} 0`,
+                    gap: theme.spacing[4]
+                  }}>
+                    <div style={{ 
+                      flex: 1, 
+                      height: '1px', 
+                      background: `linear-gradient(to right, transparent, ${theme.colors.dark[300]}, transparent)` 
+                    }} />
+                    <span style={{ 
+                      color: theme.colors.dark[400], 
+                      fontSize: theme.typography.sizes.sm,
+                      fontWeight: theme.typography.weights.medium
+                    }}>
+                      OR
+                    </span>
+                    <div style={{ 
+                      flex: 1, 
+                      height: '1px', 
+                      background: `linear-gradient(to right, transparent, ${theme.colors.dark[300]}, transparent)` 
+                    }} />
+                  </div>
+
+                  <GoogleSignIn
+                    onSuccess={() => {
+                      if (onSuccessfulLogin) onSuccessfulLogin();
+                      else handleClose();
+                    }}
+                    onError={(error) => {
+                      console.error('Google sign-in error:', error);
+                      // You could show a toast notification here
+                    }}
+                    disabled={isLoading}
+                  />
 
                   {activeTab === 'signin' ? (
                     <>

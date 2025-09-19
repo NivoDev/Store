@@ -67,6 +67,11 @@ R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "https://pub-9c5bbe78ba1841d88724531e
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Google OAuth configuration
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/google/callback")
+
 # Security
 security = HTTPBearer()
 
@@ -192,6 +197,7 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
         "email": user_doc.get("email"),
         "avatar_url": user_doc.get("avatar_url"),
         "bio": user_doc.get("bio"),
+        "provider": user_doc.get("provider", "email"),
         "mfa_enabled": user_doc.get("mfa_enabled", False),
         "status": user_doc.get("status", "active"),
         "created_at": user_doc.get("created_at").isoformat() if user_doc.get("created_at") else None,
@@ -1286,6 +1292,13 @@ async def get_purchased_products(current_user: dict = Depends(get_current_user))
 async def change_password(password_data: dict, current_user: dict = Depends(get_current_user)):
     """Change user password"""
     try:
+        # Check if user is OAuth user (Google, Facebook, etc.)
+        if current_user.get("provider") != "email":
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Password changes are not allowed for {current_user.get('provider', 'OAuth')} users. Please change your password through your {current_user.get('provider', 'OAuth')} account."
+            )
+        
         old_password = password_data.get("old_password")
         new_password = password_data.get("new_password")
         
@@ -1349,6 +1362,14 @@ async def forgot_password(request_data: dict):
                 "email_sent": True
             }
         
+        # Check if user is OAuth user (Google, Facebook, etc.)
+        if user.get("provider") != "email":
+            # Don't reveal the provider for security, but don't send reset email
+            return {
+                "message": "If an account with that email exists, a password reset link has been sent.",
+                "email_sent": True
+            }
+        
         # Generate reset token
         reset_token = secrets.token_urlsafe(32)
         reset_expires = datetime.utcnow() + timedelta(hours=1)  # 1 hour expiry
@@ -1393,6 +1414,152 @@ async def forgot_password(request_data: dict):
     except Exception as e:
         print(f"❌ Error in forgot password: {e}")
         raise HTTPException(status_code=500, detail="Failed to process password reset request")
+
+@app.get("/api/v1/auth/google")
+async def google_auth():
+    """Initiate Google OAuth flow"""
+    try:
+        # Generate state parameter for CSRF protection
+        state = secrets.token_urlsafe(32)
+        
+        # Store state in session or database for validation
+        # For now, we'll include it in the redirect URL
+        
+        google_auth_url = (
+            f"https://accounts.google.com/o/oauth2/v2/auth?"
+            f"client_id={GOOGLE_CLIENT_ID}&"
+            f"redirect_uri={GOOGLE_REDIRECT_URI}&"
+            f"response_type=code&"
+            f"scope=openid email profile&"
+            f"state={state}&"
+            f"access_type=offline"
+        )
+        
+        return {
+            "auth_url": google_auth_url,
+            "state": state
+        }
+        
+    except Exception as e:
+        print(f"❌ Error generating Google auth URL: {e}")
+        raise HTTPException(status_code=500, detail="Failed to initiate Google authentication")
+
+@app.post("/api/v1/auth/google/callback")
+async def google_callback(callback_data: dict):
+    """Handle Google OAuth callback"""
+    try:
+        code = callback_data.get("code")
+        state = callback_data.get("state")
+        
+        if not code:
+            raise HTTPException(status_code=400, detail="Authorization code is required")
+        
+        # Exchange code for access token
+        import httpx
+        
+        token_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": GOOGLE_REDIRECT_URI
+        }
+        
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(token_url, data=token_data)
+            token_result = token_response.json()
+            
+            if "error" in token_result:
+                raise HTTPException(status_code=400, detail=f"Token exchange failed: {token_result['error']}")
+            
+            access_token = token_result["access_token"]
+            
+            # Get user info from Google
+            user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            user_response = await client.get(user_info_url, headers=headers)
+            user_info = user_response.json()
+            
+            if "error" in user_info:
+                raise HTTPException(status_code=400, detail=f"Failed to get user info: {user_info['error']}")
+        
+        # Extract user information
+        google_id = user_info.get("id")
+        email = user_info.get("email", "").lower()
+        name = user_info.get("name", "")
+        avatar_url = user_info.get("picture", "")
+        
+        if not google_id or not email:
+            raise HTTPException(status_code=400, detail="Invalid user information from Google")
+        
+        # Check if user already exists
+        existing_user = await db.users.find_one({
+            "$or": [
+                {"email": email, "provider": "google"},
+                {"google_id": google_id}
+            ]
+        })
+        
+        if existing_user:
+            # Update last login
+            await db.users.update_one(
+                {"_id": existing_user["_id"]},
+                {
+                    "$set": {
+                        "last_login": datetime.utcnow(),
+                        "updated_at": datetime.utcnow(),
+                        "avatar_url": avatar_url  # Update avatar in case it changed
+                    }
+                }
+            )
+            user = existing_user
+        else:
+            # Create new user
+            user_doc = {
+                "email": email,
+                "name": name,
+                "avatar_url": avatar_url,
+                "provider": "google",
+                "google_id": google_id,
+                "email_verified": True,  # Google users are always verified
+                "status": "active",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "last_login": datetime.utcnow(),
+                "liked_products": [],
+                "purchased_products": [],
+                "mfa_enabled": False,
+                "bio": None
+            }
+            
+            result = await db.users.insert_one(user_doc)
+            user = await db.users.find_one({"_id": result.inserted_id})
+        
+        # Generate JWT token
+        access_token = create_access_token(data={"sub": str(user["_id"])})
+        user_response = format_user_for_frontend(user)
+        user_response.update({
+            "id": str(user["_id"]),
+            "email": user.get("email"),
+            "provider": user.get("provider", "email"),
+            "status": "active",
+            "email_verified": True
+        })
+        
+        return {
+            "message": "Google authentication successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user_response
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in Google callback: {e}")
+        raise HTTPException(status_code=500, detail="Google authentication failed")
 
 @app.post("/api/v1/auth/reset-password")
 async def reset_password(reset_data: dict):

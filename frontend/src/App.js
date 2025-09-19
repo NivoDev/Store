@@ -35,6 +35,7 @@ import CheckoutPage from './pages/CheckoutPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import GoogleCallbackPage from './pages/GoogleCallbackPage';
 
 function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -82,6 +83,7 @@ function App() {
                   <Route path="/checkout/success" element={<CheckoutSuccessPage />} />
                   <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
                 </Routes>
               </main>
 
