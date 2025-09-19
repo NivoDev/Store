@@ -84,7 +84,7 @@ const LoadingSpinner = styled.div`
 const GoogleCallbackPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loginWithOAuth } = useAuth();
+  const { loginWithOAuth, login } = useAuth();
   
   const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
   const [message, setMessage] = useState('');
