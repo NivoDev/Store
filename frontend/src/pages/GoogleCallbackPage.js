@@ -84,14 +84,18 @@ const LoadingSpinner = styled.div`
 const GoogleCallbackPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loginWithOAuth, login } = useAuth();
+  const { loginWithOAuth } = useAuth();
   
   const [status, setStatus] = useState('loading'); // 'loading', 'success', 'error'
   const [message, setMessage] = useState('');
+  const [hasProcessed, setHasProcessed] = useState(false);
   
   // Force rebuild to clear cache
 
   useEffect(() => {
+    // Prevent duplicate processing
+    if (hasProcessed) return;
+    
     const handleGoogleCallback = async () => {
       try {
         const code = searchParams.get('code');
@@ -136,6 +140,9 @@ const GoogleCallbackPage = () => {
         sessionStorage.removeItem('google_oauth_state');
         localStorage.removeItem('google_oauth_state');
         
+        // Mark as processed to prevent duplicate calls
+        setHasProcessed(true);
+        
         // Call backend to handle the OAuth callback
         const result = await apiService.handleGoogleCallback(code, state);
         
@@ -168,7 +175,7 @@ const GoogleCallbackPage = () => {
     };
     
     handleGoogleCallback();
-  }, [searchParams, navigate, login]);
+  }, [searchParams, navigate, loginWithOAuth]);
 
   if (status === 'loading') {
     return (
