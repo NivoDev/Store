@@ -263,9 +263,10 @@ const AuthModal = ({ isOpen, onClose, onSuccessfulLogin }) => {
       const result = await apiService.getGoogleAuthUrl();
       
       if (result.success) {
-        // Store state for CSRF protection
+        // Store state for CSRF protection (using sessionStorage for better reliability)
         console.log('🔍 Storing state:', result.data.state);
-        localStorage.setItem('google_oauth_state', result.data.state);
+        sessionStorage.setItem('google_oauth_state', result.data.state);
+        localStorage.setItem('google_oauth_state', result.data.state); // Backup
         
         // Redirect to Google OAuth
         window.location.href = result.data.auth_url;
