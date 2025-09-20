@@ -1858,12 +1858,21 @@ async def verify_guest_email(verification_data: dict):
         )
         
         print(f"✅ Guest email verified for order: {order['order_number']}")
-        return {
+        
+        # Return complete order data for checkout page
+        order_data = {
             "message": "Email verified successfully",
             "order_id": str(order["_id"]),
             "order_number": order["order_number"],
-            "verified": True
+            "verified": True,
+            "guest_email": order.get("guest_email", ""),
+            "items": order.get("items", []),
+            "subtotal": order.get("subtotal", 0),
+            "tax": order.get("tax", 0),
+            "total_amount": order.get("total_amount", 0)
         }
+        
+        return order_data
         
     except HTTPException:
         raise
