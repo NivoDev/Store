@@ -1308,15 +1308,8 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         download_url = generate_download_url(object_key, expiration=expiration_seconds)
         print(f"✅ Download URL generated: {download_url}")
         
-        # Decrement the order's download counter
+        # Log download event (no longer decrementing counter)
         order = order_info["order"]
-        await db.orders.update_one(
-            {"_id": order["_id"]},
-            {
-                "$inc": {"downloads_remaining": -1},
-                "$set": {"updated_at": datetime.utcnow()}
-            }
-        )
         
         # Log download event
         download_event = {
@@ -1333,9 +1326,6 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         await db.download_events.insert_one(download_event)
         print(f"📝 Download event logged for order {order.get('order_number')}")
         
-        # Get updated download info for this order
-        updated_downloads_remaining = order_info["downloads_remaining"] - 1
-        
         return {
             "download_url": download_url,
             "expires_in": expiration_seconds,
@@ -1343,7 +1333,6 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
             "product_title": product.get("title", "Unknown Product"),
             "order_number": order.get("order_number"),
             "download_info": {
-                "downloads_remaining": updated_downloads_remaining,
                 "order_id": str(order["_id"])
             }
         }
@@ -2154,10 +2143,6 @@ async def get_guest_download(order_id: str, verification_token: str):
         if not order:
             raise HTTPException(status_code=404, detail="Order not found or not verified")
         
-        # Check download limit
-        if order["downloads_remaining"] <= 0:
-            raise HTTPException(status_code=429, detail="Download limit reached for this order")
-        
         # Get product details
         product_id = order["items"][0]["product_id"]  # For now, just first item
         product = await db.products.find_one({"_id": ObjectId(product_id)})
@@ -2170,21 +2155,11 @@ async def get_guest_download(order_id: str, verification_token: str):
         expiration_seconds = 3600
         download_url = generate_download_url(object_key, expiration=expiration_seconds)
         
-        # Update download count
-        await db.guest_orders.update_one(
-            {"_id": order["_id"]},
-            {
-                "$inc": {"downloads_remaining": -1},
-                "$set": {"updated_at": datetime.utcnow()}
-            }
-        )
-        
         return {
             "download_url": download_url,
             "expires_in": expiration_seconds,
             "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z",
-            "product_title": product.get("title", "Unknown Product"),
-            "downloads_remaining": order["downloads_remaining"] - 1
+            "product_title": product.get("title", "Unknown Product")
         }
         
     except HTTPException:
@@ -2288,10 +2263,6 @@ async def get_guest_download_links(order_number: str):
         if order.get("status") not in ["verified", "completed"]:
             raise HTTPException(status_code=400, detail="Order not verified yet")
         
-        # Check download limit
-        if order["downloads_remaining"] <= 0:
-            raise HTTPException(status_code=429, detail="Download limit reached for this order")
-        
         download_links = []
         
         for item in order["items"]:
@@ -2316,7 +2287,6 @@ async def get_guest_download_links(order_number: str):
         return {
             "order_number": order["order_number"],
             "download_links": download_links,
-            "downloads_remaining": order["downloads_remaining"],
             "total_items": len(order["items"])
         }
         
