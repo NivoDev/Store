@@ -2291,6 +2291,78 @@ async def get_guest_download_links(order_number: str):
         print(f"❌ Error getting guest download links: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@app.put("/api/v1/profile/update")
+async def update_user_profile(profile_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update user profile information"""
+    try:
+        user_id = current_user["id"]
+        print(f"📝 Updating profile for user: {user_id}")
+        
+        # Security check: Reject any attempt to update email
+        if "email" in profile_data:
+            raise HTTPException(status_code=400, detail="Email cannot be updated through this endpoint")
+        
+        # Prepare update data
+        update_data = {
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Add fields that are provided
+        if "name" in profile_data and profile_data["name"]:
+            update_data["name"] = profile_data["name"].strip()
+            
+        if "company_name" in profile_data:
+            update_data["company_name"] = profile_data["company_name"].strip() if profile_data["company_name"] else None
+            
+        if "phone_number" in profile_data:
+            update_data["phone_number"] = profile_data["phone_number"].strip() if profile_data["phone_number"] else None
+            
+        if "vat_number" in profile_data:
+            update_data["vat_number"] = profile_data["vat_number"].strip() if profile_data["vat_number"] else None
+        
+        # Handle billing address
+        if "billing_address" in profile_data and isinstance(profile_data["billing_address"], dict):
+            billing_address = {}
+            address_data = profile_data["billing_address"]
+            
+            # Only include non-empty fields
+            for field in ["street_address", "street_address_2", "city", "state_province", "postal_code", "country"]:
+                if field in address_data and address_data[field]:
+                    billing_address[field] = address_data[field].strip()
+                else:
+                    billing_address[field] = None
+            
+            update_data["billing_address"] = billing_address
+        
+        print(f"📝 Update data: {update_data}")
+        
+        # Update user in database
+        result = await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0:
+            print(f"⚠️ No changes made to user profile: {user_id}")
+        else:
+            print(f"✅ Profile updated successfully for user: {user_id}")
+        
+        # Get updated user data
+        updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not updated_user:
+            raise HTTPException(status_code=404, detail="User not found after update")
+        
+        return {
+            "message": "Profile updated successfully",
+            "user": format_user_for_frontend(updated_user)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error updating profile: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update profile")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
