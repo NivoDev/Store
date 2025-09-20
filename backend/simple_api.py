@@ -935,16 +935,26 @@ async def get_category_counts():
         
         collection = db.products
         
-        # Count products by type
+        # Debug: Check what types actually exist in the database
+        all_products = await collection.find({}, {"type": 1}).to_list(length=None)
+        unique_types = list(set([product.get("type") for product in all_products if product.get("type")]))
+        print(f"🔍 DEBUG: Found product types in database: {unique_types}")
+        
+        # Try both underscore and hyphen versions
         sample_packs_count = await collection.count_documents({"type": "sample_pack"})
+        sample_packs_count_hyphen = await collection.count_documents({"type": "sample-pack"})
         midi_packs_count = await collection.count_documents({"type": "midi_pack"})
+        midi_packs_count_hyphen = await collection.count_documents({"type": "midi-pack"})
         acapellas_count = await collection.count_documents({"type": "acapella"})
         
-        print(f"📊 Category counts - Sample Packs: {sample_packs_count}, MIDI Packs: {midi_packs_count}, Acapellas: {acapellas_count}")
+        print(f"📊 Category counts - Sample Packs (underscore): {sample_packs_count}, (hyphen): {sample_packs_count_hyphen}")
+        print(f"📊 Category counts - MIDI Packs (underscore): {midi_packs_count}, (hyphen): {midi_packs_count_hyphen}")
+        print(f"📊 Category counts - Acapellas: {acapellas_count}")
         
+        # Use the version that has results
         return {
-            "sample_packs": sample_packs_count,
-            "midi_packs": midi_packs_count,
+            "sample_packs": max(sample_packs_count, sample_packs_count_hyphen),
+            "midi_packs": max(midi_packs_count, midi_packs_count_hyphen),
             "acapellas": acapellas_count
         }
         
