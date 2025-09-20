@@ -185,38 +185,7 @@ const FormGroup = styled.div`
   }
 `;
 
-const Label = styled.label`
-  display: block;
-  color: ${theme.colors.dark[200]};
-  font-weight: ${theme.typography.weights.medium};
-  margin-bottom: ${theme.spacing[2]};
-  font-size: ${theme.typography.sizes.sm};
-`;
 
-const Input = styled.input`
-  width: 100%;
-  padding: ${theme.spacing[3]} ${theme.spacing[4]};
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: ${theme.borderRadius.lg};
-  color: ${theme.colors.dark[50]};
-  font-size: ${theme.typography.sizes.base};
-  
-  &:focus {
-    outline: none;
-    border-color: ${theme.colors.primary[400]};
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-  }
-  
-  &::placeholder {
-    color: ${theme.colors.dark[400]};
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
 
 const TextArea = styled.textarea`
   width: 100%;
