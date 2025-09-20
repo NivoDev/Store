@@ -7,6 +7,7 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -196,6 +197,10 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
         "id": str(user_doc.get("_id")),
         "name": user_doc.get("name"),
         "email": user_doc.get("email"),
+        "company_name": user_doc.get("company_name"),
+        "phone_number": user_doc.get("phone_number"),
+        "vat_number": user_doc.get("vat_number"),
+        "billing_address": user_doc.get("billing_address"),
         "avatar_url": user_doc.get("avatar_url"),
         "bio": user_doc.get("bio"),
         "provider": user_doc.get("provider", "email"),
@@ -342,6 +347,35 @@ async def test_email(test_data: dict):
 async def options_handler(path: str):
     """Handle all OPTIONS requests for CORS preflight"""
     return {"message": "OK"}
+
+async def create_auto_login_token(user_id: str, redirect_url: str = "/profile", expires_in_hours: int = 24):
+    """Create an auto-login token for email links"""
+    try:
+        # Generate a secure random token
+        token = secrets.token_urlsafe(32)
+        
+        # Create expiration time
+        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
+        
+        # Store token in database
+        token_data = {
+            "token": token,
+            "user_id": user_id,
+            "redirect_url": redirect_url,
+            "expires_at": expires_at,
+            "used": False,
+            "created_at": datetime.utcnow()
+        }
+        
+        await db.auto_login_tokens.insert_one(token_data)
+        print(f"✅ Created auto-login token for user: {user_id}")
+        
+        return token
+        
+    except Exception as e:
+        print(f"❌ Error creating auto-login token: {e}")
+        return None
+
 
 # Authentication endpoints
 @app.post("/api/v1/auth/register")
@@ -1613,6 +1647,54 @@ async def update_user_profile(profile_data: dict, current_user: dict = Depends(g
     except Exception as e:
         print(f"❌ Error updating profile: {e}")
         raise HTTPException(status_code=500, detail="Failed to update profile")
+
+
+# Auto-login endpoint for email links
+@app.get("/api/v1/auth/auto-login/{token}")
+async def auto_login(token: str):
+    """Auto-login user from email link using a temporary token"""
+    try:
+        print(f"🔐 Processing auto-login token: {token}")
+        
+        # Find the auto-login token in database
+        auto_login_record = await db.auto_login_tokens.find_one({
+            "token": token,
+            "expires_at": {"$gt": datetime.utcnow()},
+            "used": {"$ne": True}
+        })
+        
+        if not auto_login_record:
+            print(f"❌ Invalid or expired auto-login token: {token}")
+            # Redirect to login page with error
+            return RedirectResponse(url=f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/login?error=invalid_token")
+        
+        # Get user data
+        user = await db.users.find_one({"_id": ObjectId(auto_login_record["user_id"])})
+        if not user:
+            print(f"❌ User not found for auto-login token: {token}")
+            return RedirectResponse(url=f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/login?error=user_not_found")
+        
+        # Mark token as used
+        await db.auto_login_tokens.update_one(
+            {"_id": auto_login_record["_id"]},
+            {"$set": {"used": True, "used_at": datetime.utcnow()}}
+        )
+        
+        # Generate JWT token for the user
+        jwt_token = create_access_token(data={"sub": str(user["_id"])})
+        
+        # Get redirect URL from the token record
+        redirect_url = auto_login_record.get("redirect_url", "/profile")
+        
+        print(f"✅ Auto-login successful for user: {user.get('email', 'unknown')}")
+        
+        # Redirect to frontend with JWT token in URL params
+        frontend_url = os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')
+        return RedirectResponse(url=f"{frontend_url}/auth/auto-login?token={jwt_token}&redirect={redirect_url}")
+        
+    except Exception as e:
+        print(f"❌ Error in auto-login: {e}")
+        return RedirectResponse(url=f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/login?error=server_error")
 
 
 # Purchase endpoint
