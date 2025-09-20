@@ -22,6 +22,7 @@ from botocore.exceptions import ClientError
 from botocore.config import Config
 from urllib.parse import urlparse, unquote
 import time
+import httpx
 
 # Load environment variables
 load_dotenv()
@@ -63,6 +64,11 @@ R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
 R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "atomic-rose-tools-bucket")
 R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID")
 R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "https://pub-9c5bbe78ba1841d88724531ea527bb7d.r2.dev")
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "https://atomic-rose-tools.netlify.app/auth/google/callback")
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -192,6 +198,7 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
         "email": user_doc.get("email"),
         "avatar_url": user_doc.get("avatar_url"),
         "bio": user_doc.get("bio"),
+        "provider": user_doc.get("provider", "email"),
         "mfa_enabled": user_doc.get("mfa_enabled", False),
         "status": user_doc.get("status", "active"),
         "created_at": user_doc.get("created_at").isoformat() if user_doc.get("created_at") else None,
@@ -703,6 +710,147 @@ async def resend_user_verification(resend_data: dict):
     except Exception as e:
         print(f"❌ Error resending user verification: {e}")
         raise HTTPException(status_code=500, detail="Failed to resend verification email")
+
+# Google OAuth endpoints
+@app.get("/api/v1/auth/google")
+async def google_auth():
+    """Initiate Google OAuth flow"""
+    try:
+        # Generate state parameter for CSRF protection
+        state = secrets.token_urlsafe(32)
+        
+        google_auth_url = (
+            f"https://accounts.google.com/o/oauth2/v2/auth?"
+            f"client_id={GOOGLE_CLIENT_ID}&"
+            f"redirect_uri={GOOGLE_REDIRECT_URI}&"
+            f"response_type=code&"
+            f"scope=openid email profile&"
+            f"state={state}&"
+            f"access_type=offline"
+        )
+        
+        return {
+            "auth_url": google_auth_url,
+            "state": state
+        }
+        
+    except Exception as e:
+        print(f"❌ Error generating Google auth URL: {e}")
+        raise HTTPException(status_code=500, detail="Failed to initiate Google authentication")
+
+@app.post("/api/v1/auth/google/callback")
+async def google_callback(callback_data: dict):
+    """Handle Google OAuth callback"""
+    try:
+        code = callback_data.get("code")
+        state = callback_data.get("state")
+        
+        if not code:
+            raise HTTPException(status_code=400, detail="Authorization code is required")
+        
+        # Exchange code for access token
+        token_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": GOOGLE_REDIRECT_URI
+        }
+        
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(token_url, data=token_data)
+            token_result = token_response.json()
+            
+            if "error" in token_result:
+                raise HTTPException(status_code=400, detail=f"Token exchange failed: {token_result['error']}")
+            
+            access_token = token_result["access_token"]
+            
+            # Get user info from Google
+            user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            user_response = await client.get(user_info_url, headers=headers)
+            user_info = user_response.json()
+            
+            if "error" in user_info:
+                raise HTTPException(status_code=400, detail=f"Failed to get user info: {user_info['error']}")
+        
+        # Extract user information
+        google_id = user_info.get("id")
+        email = user_info.get("email", "").lower()
+        name = user_info.get("name", "")
+        avatar_url = user_info.get("picture", "")
+        
+        if not google_id or not email:
+            raise HTTPException(status_code=400, detail="Invalid user information from Google")
+        
+        # Check if user already exists
+        existing_user = await db.users.find_one({
+            "$or": [
+                {"email": email, "provider": "google"},
+                {"google_id": google_id}
+            ]
+        })
+        
+        if existing_user:
+            # Update last login
+            await db.users.update_one(
+                {"_id": existing_user["_id"]},
+                {
+                    "$set": {
+                        "last_login": datetime.utcnow(),
+                        "updated_at": datetime.utcnow(),
+                        "avatar_url": avatar_url  # Update avatar in case it changed
+                    }
+                }
+            )
+            user = existing_user
+        else:
+            # Create new user
+            user_doc = {
+                "email": email,
+                "name": name,
+                "avatar_url": avatar_url,
+                "provider": "google",
+                "google_id": google_id,
+                "email_verified": True,  # Google users are always verified
+                "status": "active",
+                "created_at": datetime.utcnow(),
+                "updated_at": datetime.utcnow(),
+                "last_login": datetime.utcnow(),
+                "liked_products": [],
+                "purchased_products": [],
+                "mfa_enabled": False,
+                "bio": None
+            }
+            
+            result = await db.users.insert_one(user_doc)
+            user = await db.users.find_one({"_id": result.inserted_id})
+        
+        # Generate JWT token
+        access_token = create_access_token(data={"sub": str(user["_id"])})
+        
+        # Format user for frontend
+        user_response = format_user_for_frontend(user)
+        user_response.update({
+            "status": "active",
+            "email_verified": True
+        })
+        
+        return {
+            "message": "Google authentication successful",
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user_response
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in Google callback: {e}")
+        raise HTTPException(status_code=500, detail="Google authentication failed")
 
 # Products endpoints
 @app.get("/api/v1/products")
