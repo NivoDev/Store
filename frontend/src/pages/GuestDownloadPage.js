@@ -435,6 +435,66 @@ const GuestDownloadPage = () => {
     );
   }
 
+  // Special case: If coming from payment completion (has orderNumber but no downloads yet)
+  const isFromPaymentCompletion = location.state?.orderNumber && downloadLinks.length === 0 && !error && !loading;
+  
+  if (isFromPaymentCompletion) {
+    return (
+      <PageContainer>
+        <Container>
+          <Header>
+            <Title>Thank You! 🎉</Title>
+            <Subtitle>
+              Your payment has been processed successfully!
+            </Subtitle>
+          </Header>
+
+          <DownloadInfo style={{ 
+            background: 'rgba(34, 197, 94, 0.1)', 
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            marginBottom: theme.spacing[6]
+          }}>
+            <InfoText style={{ 
+              color: '#22c55e',
+              fontSize: theme.typography.sizes.lg,
+              fontWeight: theme.typography.weights.medium,
+              marginBottom: theme.spacing[3]
+            }}>
+              ✅ Payment Successful!
+            </InfoText>
+            <InfoText style={{ 
+              color: theme.colors.dark[200],
+              fontSize: theme.typography.sizes.base,
+              lineHeight: 1.6
+            }}>
+              Your download links have been sent to your email address. 
+              Please check your inbox (and spam folder) for an email with the subject "Thank You for Your Purchase!"
+            </InfoText>
+          </DownloadInfo>
+
+          <DownloadInfo style={{ 
+            background: 'rgba(0, 255, 255, 0.1)', 
+            border: '1px solid rgba(0, 255, 255, 0.3)'
+          }}>
+            <InfoText style={{ 
+              color: '#00ffff',
+              fontSize: theme.typography.sizes.base,
+              fontWeight: theme.typography.weights.medium
+            }}>
+              📧 Click the "Access Your Downloads" button in your email to download your files.
+            </InfoText>
+          </DownloadInfo>
+
+          <div style={{ textAlign: 'center', marginTop: theme.spacing[8] }}>
+            <BackButton onClick={handleBackToHome}>
+              Back to Home
+            </BackButton>
+          </div>
+        </Container>
+      </PageContainer>
+    );
+  }
+
   if (downloadLinks.length === 0) {
     return (
       <PageContainer>

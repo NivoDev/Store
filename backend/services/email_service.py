@@ -472,31 +472,37 @@ class EmailService:
             # Load and customize thank you template
             html_content = self._load_user_thank_you_template()
             
-            # Generate download links HTML
+            # Generate product list HTML without download links (for security)
             download_links_html = ""
             for link in download_links:
                 download_links_html += f"""
-                <div style="margin:12px 0;padding:12px;background:rgba(255,255,255,0.05);border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <img src="{link.get('cover_image_url', '/images/placeholder-product.jpg')}" 
-                             alt="{link.get('title', 'Product')}" 
-                             style="width:40px;height:40px;object-fit:cover;border-radius:4px;">
-                        <div style="flex:1;">
-                            <h4 style="margin:0 0 4px;color:var(--brand-text);font:600 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                                {link.get('title', 'Unknown Product')}
-                            </h4>
-                            <p style="margin:0;color:var(--muted);font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                                by {link.get('artist', 'Unknown Artist')} • {link.get('price', '$0.00')}
-                            </p>
-                        </div>
-                        <a href="{link.get('download_url', '#')}" 
-                           target="_blank" 
-                           rel="noopener noreferrer"
-                           style="background:var(--brand-accent);color:var(--btn-text);text-decoration:none;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:8px 16px;border-radius:6px;white-space:nowrap;">
-                            Download
-                        </a>
-                    </div>
-                </div>
+                <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="margin:12px 0;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid rgba(255,255,255,0.1);">
+                    <tr>
+                        <td style="padding:16px;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" width="100%">
+                                <tr>
+                                    <td width="50" style="vertical-align:top;padding-right:12px;">
+                                        <img src="{link.get('cover_image_url', '/images/placeholder-product.jpg')}"
+                                             alt="{link.get('title', 'Product')}"
+                                             width="40" height="40"
+                                             style="display:block;width:40px;height:40px;object-fit:cover;border-radius:4px;">
+                                    </td>
+                                    <td style="vertical-align:top;">
+                                        <h4 style="margin:0 0 4px;color:#f4f6f8;font:600 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                                            {link.get('title', 'Unknown Product')}
+                                        </h4>
+                                        <p style="margin:0;color:#9aa0a6;font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                                            by {link.get('artist', 'Unknown Artist')} • {link.get('price', '$0.00')}
+                                        </p>
+                                    </td>
+                                    <td width="100" style="vertical-align:middle;text-align:right;color:#9aa0a6;font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                                        Purchased ✓
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
                 """
             
             html_content = self._customize_user_thank_you_template(html_content, {
