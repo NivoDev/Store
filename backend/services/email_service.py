@@ -14,7 +14,8 @@ class EmailService:
     
     def __init__(self):
         self.from_email = os.getenv("FROM_EMAIL", "artools@guerrillatrance.com")
-        self.base_url = os.getenv("FRONTEND_URL", "https://guerrillamusic.netlify.app")
+        self.base_url = os.getenv("FRONTEND_URL", "https://atomic-rose-tools.netlify.app")
+        print(f"🌐 EmailService initialized with base_url: {self.base_url}")
     
     def send_guest_verification_email(self, email: str, order_number: str, verification_token: str, otp_code: str, items: list, total_amount: float) -> bool:
         """
