@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
@@ -125,6 +125,17 @@ const ProductGrid = styled.div`
   gap: ${theme.spacing[6]};
   margin-bottom: ${theme.spacing[8]};
   
+  /* When only one item, make it smaller and centered */
+  &[data-single-item="true"] {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto ${theme.spacing[8]} auto;
+    
+    @media (max-width: ${theme.breakpoints.sm}) {
+      max-width: 100%;
+    }
+  }
+  
   @media (max-width: ${theme.breakpoints.sm}) {
     grid-template-columns: 1fr;
     gap: ${theme.spacing[4]};
@@ -248,6 +259,7 @@ const CategoryCount = styled.div`
 
 const HomePage = ({ onAuthClick }) => {
   const navigate = useNavigate();
+  const productsRef = useRef(null);
   const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
@@ -350,6 +362,15 @@ const HomePage = ({ onAuthClick }) => {
     console.log('Download:', productId);
   };
 
+  const handleExploreCatalog = () => {
+    if (productsRef.current) {
+      productsRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
+
   const categories = [
     {
       title: 'Sample Packs',
@@ -405,7 +426,7 @@ const HomePage = ({ onAuthClick }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
-            <Button variant="primary" size="lg">
+            <Button variant="primary" size="lg" onClick={handleExploreCatalog}>
               <FiPlay size={20} />
               Explore Catalog
             </Button>
@@ -453,7 +474,7 @@ const HomePage = ({ onAuthClick }) => {
         </Container>
       </StatsSection>
 
-      <Section>
+      <Section ref={productsRef}>
         <Container>
           <SectionHeader>
             <SectionTitle>Featured Products</SectionTitle>
@@ -462,7 +483,7 @@ const HomePage = ({ onAuthClick }) => {
             </SectionSubtitle>
           </SectionHeader>
           
-          <ProductGrid>
+          <ProductGrid data-single-item={featuredProducts.length === 1}>
             {featuredProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -496,7 +517,7 @@ const HomePage = ({ onAuthClick }) => {
             </SectionSubtitle>
           </SectionHeader>
           
-          <ProductGrid>
+          <ProductGrid data-single-item={bestsellers.length === 1}>
             {bestsellers.map((product) => (
               <ProductCard
                 key={product.id}
@@ -523,7 +544,7 @@ const HomePage = ({ onAuthClick }) => {
             </SectionSubtitle>
           </SectionHeader>
           
-          <ProductGrid>
+          <ProductGrid data-single-item={newProducts.length === 1}>
             {newProducts.map((product) => (
               <ProductCard
                 key={product.id}
