@@ -277,7 +277,6 @@ const GuestDownloadPage = () => {
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState({});
   const [orderNumber, setOrderNumber] = useState('');
-  const [downloadsRemaining, setDownloadsRemaining] = useState(0);
 
   const fetchDownloadLinks = async (orderNumber) => {
     try {
@@ -297,7 +296,6 @@ const GuestDownloadPage = () => {
       if (data.download_links && data.download_links.length > 0) {
         setDownloadLinks(data.download_links);
         setOrderNumber(data.order_number);
-        setDownloadsRemaining(data.downloads_remaining);
         setError(null);
       } else {
         setError('No download links available for this order.');
@@ -360,12 +358,6 @@ const GuestDownloadPage = () => {
     setDownloading(prev => ({ ...prev, [productId]: true }));
     
     try {
-      // Check if we have downloads remaining
-      if (downloadsRemaining <= 0) {
-        setError('No downloads remaining for this order.');
-        return;
-      }
-      
       // Create a temporary link and trigger download
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -384,19 +376,7 @@ const GuestDownloadPage = () => {
         )
       );
       
-      // Decrease downloads remaining
-      setDownloadsRemaining(prev => prev - 1);
-      
       console.log(`✅ Download started for product ${productId}`);
-      
-      // If no downloads remaining, refresh the page to get updated status
-      if (downloadsRemaining <= 1) {
-        setTimeout(() => {
-          if (orderNumber) {
-            fetchDownloadLinks(orderNumber);
-          }
-        }, 2000);
-      }
     } catch (err) {
       console.error('Download error:', err);
       setError('Failed to download file. Please try again.');
@@ -468,16 +448,9 @@ const GuestDownloadPage = () => {
         <Header>
           <Title>Thank You! 🎉</Title>
           <Subtitle>
-            Your purchase has been completed successfully! Download your purchased products below. 
-            Each download link can only be used once.
+            Your purchase has been completed successfully! Download your purchased products below.
           </Subtitle>
         </Header>
-
-        <DownloadInfo>
-          <InfoText>
-            ⚠️ Each download link can only be used once. Make sure to save your files after downloading.
-          </InfoText>
-        </DownloadInfo>
 
         <DownloadInfo style={{ 
           background: 'rgba(34, 197, 94, 0.1)', 
@@ -493,26 +466,6 @@ const GuestDownloadPage = () => {
             📧 A download link has been sent to your email address for additional access. 
             Check your inbox and spam folder.
           </InfoText>
-          {downloadsRemaining > 0 && (
-            <InfoText style={{ 
-              marginTop: '16px', 
-              color: '#00ffff',
-              fontSize: theme.typography.sizes.base,
-              fontWeight: theme.typography.weights.medium
-            }}>
-              ⬇️ Downloads remaining: {downloadsRemaining}
-            </InfoText>
-          )}
-          {downloadsRemaining === 0 && (
-            <InfoText style={{ 
-              marginTop: '16px', 
-              color: '#ff6b6b',
-              fontSize: theme.typography.sizes.base,
-              fontWeight: theme.typography.weights.medium
-            }}>
-              ⚠️ No downloads remaining for this order
-            </InfoText>
-          )}
         </DownloadInfo>
 
         {downloadLinks.map((link) => (
@@ -535,7 +488,7 @@ const GuestDownloadPage = () => {
             <DownloadSection>
               <DownloadButton
                 onClick={() => handleDownload(link.product_id, link.download_url)}
-                disabled={link.downloaded || downloading[link.product_id] || downloadsRemaining <= 0}
+                disabled={link.downloaded || downloading[link.product_id]}
               >
                 {downloading[link.product_id] ? (
                   <>
@@ -544,8 +497,6 @@ const GuestDownloadPage = () => {
                   </>
                 ) : link.downloaded ? (
                   'Downloaded ✓'
-                ) : downloadsRemaining <= 0 ? (
-                  'No Downloads Remaining'
                 ) : (
                   'Download Now'
                 )}
