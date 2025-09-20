@@ -2224,9 +2224,7 @@ async def complete_guest_order(order_data: dict):
             email_sent = email_service.send_guest_thank_you_email(
                 email=order["guest_email"],
                 order_number=order_number,
-                customer_name=f"{customer_info.get('first_name', '')} {customer_info.get('last_name', '')}".strip(),
-                download_links=download_links,
-                total_amount=order.get("total_amount", 0)
+                download_links=download_links
             )
             
             if email_sent:
@@ -2261,8 +2259,8 @@ async def get_guest_download_links(order_number: str):
         if not order:
             raise HTTPException(status_code=404, detail="Order not found")
         
-        # Check if order is verified
-        if order.get("status") != "verified":
+        # Check if order is verified or completed
+        if order.get("status") not in ["verified", "completed"]:
             raise HTTPException(status_code=400, detail="Order not verified yet")
         
         # Check download limit
