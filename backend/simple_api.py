@@ -920,39 +920,6 @@ async def get_products(
         print(f"❌ Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Failed to get products: {str(e)}")
 
-@app.get("/api/v1/products/{product_id}")
-async def get_product(product_id: str):
-    """Get a specific product by ID"""
-    try:
-        from bson import ObjectId
-        
-        collection = db.products
-        product = await collection.find_one({"_id": ObjectId(product_id)})
-        
-        if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
-        
-        return format_product_for_frontend(product)
-        
-    except Exception as e:
-        print(f"❌ Error getting product {product_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get product")
-
-@app.get("/api/v1/products/featured")
-async def get_featured_products():
-    """Get featured products"""
-    return await get_products(featured=True, limit=10)
-
-@app.get("/api/v1/products/bestsellers")
-async def get_bestseller_products():
-    """Get bestseller products"""
-    return await get_products(bestseller=True, limit=10)
-
-@app.get("/api/v1/products/new")
-async def get_new_products():
-    """Get new products"""
-    return await get_products(new=True, limit=10)
-
 @app.get("/api/v1/products/category-counts")
 async def get_category_counts():
     """Get product counts by category"""
@@ -989,6 +956,40 @@ async def get_category_counts():
             "midi_packs": 0,
             "acapellas": 0
         }
+
+@app.get("/api/v1/products/{product_id}")
+async def get_product(product_id: str):
+    """Get a specific product by ID"""
+    try:
+        from bson import ObjectId
+        
+        collection = db.products
+        product = await collection.find_one({"_id": ObjectId(product_id)})
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        return format_product_for_frontend(product)
+        
+    except Exception as e:
+        print(f"❌ Error getting product {product_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get product")
+
+@app.get("/api/v1/products/featured")
+async def get_featured_products():
+    """Get featured products"""
+    return await get_products(featured=True, limit=10)
+
+@app.get("/api/v1/products/bestsellers")
+async def get_bestseller_products():
+    """Get bestseller products"""
+    return await get_products(bestseller=True, limit=10)
+
+@app.get("/api/v1/products/new")
+async def get_new_products():
+    """Get new products"""
+    return await get_products(new=True, limit=10)
+
 
 # Users endpoints
 @app.get("/api/v1/users")
