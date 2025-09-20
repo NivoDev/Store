@@ -152,12 +152,28 @@ const GoogleCallbackPage = () => {
           
           if (loginResult.success) {
             setStatus('success');
-            setMessage('Successfully signed in with Google!');
             
-            // Redirect to home page after 2 seconds
-            setTimeout(() => {
-              navigate('/');
-            }, 2000);
+            // Check if this is from checkout flow
+            const isCheckoutFlow = sessionStorage.getItem('google_oauth_checkout_flow');
+            
+            if (isCheckoutFlow === 'true') {
+              setMessage('Successfully signed in with Google! Redirecting to checkout...');
+              
+              // Clear the checkout flow flag
+              sessionStorage.removeItem('google_oauth_checkout_flow');
+              
+              // Redirect to checkout page immediately
+              setTimeout(() => {
+                navigate('/checkout');
+              }, 1500);
+            } else {
+              setMessage('Successfully signed in with Google!');
+              
+              // Redirect to home page after 2 seconds
+              setTimeout(() => {
+                navigate('/');
+              }, 2000);
+            }
           } else {
             setStatus('error');
             setMessage('Failed to sign in. Please try again.');
