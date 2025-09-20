@@ -423,11 +423,12 @@ const CheckoutPage = () => {
     return true;
   };
 
-  // Get effective items (cart items or guest order items)
+  // Get effective items (cart items, guest order items, or verified guest order from sessionStorage)
   const getEffectiveItems = () => {
+    // First, check for guest order from email verification (location.state)
     const guestOrder = location.state?.guestOrder;
     if (guestOrder && guestOrder.items) {
-      console.log('🛒 Using guest order items:', guestOrder.items);
+      console.log('🛒 Using guest order items from location.state:', guestOrder.items);
       // Transform guest order items to match cart item structure
       const transformedItems = guestOrder.items.map(item => ({
         ...item,
@@ -435,9 +436,34 @@ const CheckoutPage = () => {
         artist: item.artist || 'Unknown Artist', // Add missing fields
         cover_image_url: item.cover_image_url || '/images/placeholder-product.jpg'
       }));
-      console.log('🛒 Transformed items:', transformedItems);
+      console.log('🛒 Transformed items from location.state:', transformedItems);
       return transformedItems;
     }
+
+    // Second, check for verified guest order from sessionStorage (OTP verification)
+    const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
+    if (verifiedOrder) {
+      try {
+        const orderData = JSON.parse(verifiedOrder);
+        if (orderData && orderData.items) {
+          console.log('🛒 Using verified guest order items from sessionStorage:', orderData.items);
+          // Transform verified order items to match cart item structure
+          const transformedItems = orderData.items.map(item => ({
+            ...item,
+            id: item.product_id || item.id, // Ensure id field exists
+            artist: item.artist || 'Unknown Artist', // Add missing fields
+            cover_image_url: item.cover_image_url || '/images/placeholder-product.jpg'
+          }));
+          console.log('🛒 Transformed items from sessionStorage:', transformedItems);
+          return transformedItems;
+        }
+      } catch (error) {
+        console.error('❌ Error parsing verified guest order from sessionStorage:', error);
+        sessionStorage.removeItem('verifiedGuestOrder');
+      }
+    }
+
+    // Finally, fall back to regular cart items
     console.log('🛒 Using cart items:', items);
     return items;
   };

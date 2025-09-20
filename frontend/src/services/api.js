@@ -743,6 +743,20 @@ class APIService {
       return { success: false, error: error.message };
     }
   }
+
+  // Update user profile
+  async updateUserProfile(profileData) {
+    try {
+      const response = await this.request('/profile/update', {
+        method: 'PUT',
+        body: JSON.stringify(profileData)
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to update user profile:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create and export singleton instance
