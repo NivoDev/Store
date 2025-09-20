@@ -311,7 +311,8 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     clearError,
-    updateProfile
+    updateProfile,
+    refreshUserData
   };
 
   return (

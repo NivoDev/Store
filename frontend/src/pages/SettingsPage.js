@@ -168,7 +168,7 @@ const ButtonGroup = styled.div`
 `;
 
 const SettingsPage = () => {
-  const { user, logout, refreshUserData } = useAuth();
+  const { user, logout, refreshUserData, updateProfile } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -244,10 +244,18 @@ const SettingsPage = () => {
       if (result.success) {
         setProfileSuccess('Profile updated successfully!');
         setIsEditingProfile(false);
-        // Refresh user data to reflect changes
-        if (refreshUserData) {
-          refreshUserData();
+        
+        // Update user data directly from the API response if available
+        if (result.data && result.data.user) {
+          console.log('✅ Updating user data from API response:', result.data.user);
+          // Update user state directly with the returned data
+          updateProfile(result.data.user);
+        } else {
+          // Fallback to refresh user data from server
+          console.log('🔄 Calling refreshUserData as fallback...');
+          await refreshUserData();
         }
+        
         // Clear success message after 3 seconds
         setTimeout(() => setProfileSuccess(''), 3000);
       } else {
