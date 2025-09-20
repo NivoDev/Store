@@ -2277,6 +2277,8 @@ async def complete_guest_order(order_data: dict):
                     download_links.append({
                         "title": item["title"],
                         "artist": product.get("artist", "Unknown Artist"),
+                        "price": f"${item['price']:.2f}",
+                        "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg"),
                         "download_url": download_url
                     })
             
