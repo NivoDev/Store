@@ -729,7 +729,7 @@ const CartPage = () => {
                 fontSize: theme.typography.sizes.lg
               }}
             >
-              Sign In & Get 3 Downloads
+              Sign In & Get Full Access
             </Button>
             
             <Button 
@@ -771,7 +771,7 @@ const CartPage = () => {
                 border: '1px solid rgba(255, 255, 255, 0.2)'
               }}
             >
-              Continue as Guest (1 Download Only)
+              Continue as Guest
             </Button>
           </div>
           
@@ -797,7 +797,7 @@ const CartPage = () => {
               fontSize: theme.typography.sizes.sm,
               lineHeight: 1.6
             }}>
-              <li><strong>3 downloads per purchase</strong> (vs 1 for guests)</li>
+              <li>Unlimited downloads for all purchases</li>
               <li>Dedicated account page with purchase history</li>
               <li>Save your favorite products</li>
               <li>Access to exclusive content and updates</li>
@@ -817,7 +817,7 @@ const CartPage = () => {
               fontSize: theme.typography.sizes.sm,
               lineHeight: 1.5
             }}>
-              <strong>Guest Checkout:</strong> Quick but limited to 1 download per purchase. 
+              <strong>Guest Checkout:</strong> Quick and easy checkout process. 
               No account required, but you'll miss out on the full experience.
             </p>
           </div>
