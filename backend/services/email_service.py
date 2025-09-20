@@ -359,7 +359,7 @@ class EmailService:
             # Load and customize thank you template
             html_content = self._load_guest_thank_you_template()
             
-            # Generate download links HTML (email-client friendly)
+            # Generate product list HTML without download links (for security)
             download_links_html = ""
             for link in download_links:
                 download_links_html += f"""
@@ -382,13 +382,8 @@ class EmailService:
                                             by {link.get('artist', 'Unknown Artist')} • ${link.get('price', '0.00')}
                                         </p>
                                     </td>
-                                    <td width="100" style="vertical-align:middle;text-align:right;">
-                                        <a href="{link.get('download_url', '#')}" 
-                                           target="_blank" 
-                                           rel="noopener noreferrer"
-                                           style="display:inline-block;background:#ff2a6d;color:#ffffff;text-decoration:none;font:700 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:10px 16px;border-radius:6px;white-space:nowrap;">
-                                            Download
-                                        </a>
+                                    <td width="100" style="vertical-align:middle;text-align:right;color:#9aa0a6;font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                                        Purchased ✓
                                     </td>
                                 </tr>
                             </table>
