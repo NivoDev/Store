@@ -15,7 +15,9 @@ class EmailService:
     def __init__(self):
         self.from_email = os.getenv("FROM_EMAIL", "artools@guerrillatrance.com")
         self.base_url = os.getenv("FRONTEND_URL", "https://atomic-rose-tools.netlify.app")
+        self.support_email = os.getenv("SUPPORT_EMAIL", "support@atomicrosetools.com")
         print(f"🌐 EmailService initialized with base_url: {self.base_url}")
+        print(f"📧 Support email: {self.support_email}")
     
     def send_guest_verification_email(self, email: str, order_number: str, verification_token: str, otp_code: str, items: list, total_amount: float) -> bool:
         """
@@ -49,6 +51,7 @@ class EmailService:
                 "EXPIRES_IN_HOURS": "24",
                 "YEAR": str(datetime.now().year),
                 "HELP_URL": f"{self.base_url}/support",
+                "SUPPORT_EMAIL": self.support_email,
                 "TOTAL_AMOUNT": f"${total_amount:.2f}",
                 "ITEMS_COUNT": str(len(items))
             })
@@ -103,7 +106,8 @@ class EmailService:
                 "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
                 "EXPIRES_IN_MINUTES": "1440",  # 24 hours in minutes
                 "YEAR": str(datetime.now().year),
-                "HELP_URL": f"{self.base_url}/support"
+                "HELP_URL": f"{self.base_url}/support",
+                "SUPPORT_EMAIL": self.support_email
             })
             
             print(f"📧 HTML content length: {len(html_content)}")
@@ -292,7 +296,7 @@ class EmailService:
                 
                 <p class="muted">If you didn't request this password reset, you can safely ignore this email. Your password will not be changed.</p>
                 
-                <p class="muted">If you have any questions, please contact us at support@atomicrosetools.com</p>
+                <p class="muted">If you have any questions, please contact us at {self.support_email}</p>
             </div>
         </body>
         </html>
@@ -321,7 +325,8 @@ class EmailService:
                 "EMAIL_ADDRESS": email,
                 "RESET_URL": reset_url,
                 "YEAR": str(datetime.now().year),
-                "HELP_URL": f"{self.base_url}/support"
+                "HELP_URL": f"{self.base_url}/support",
+                "SUPPORT_EMAIL": self.support_email
             })
             
             r = self.resend_client.emails.send({
@@ -404,6 +409,7 @@ class EmailService:
                 "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
                 "YEAR": str(datetime.now().year),
                 "HELP_URL": f"{self.base_url}/support",
+                "SUPPORT_EMAIL": self.support_email,
                 "DOWNLOAD_PAGE_URL": f"{self.base_url}/guest-downloads?order={order_number}",
                 "DOWNLOAD_LINKS": download_links_html
             })
@@ -454,7 +460,7 @@ class EmailService:
             <p>Here are your download links:</p>
             {{DOWNLOAD_LINKS}}
             <p><strong>Important:</strong> Each download link can only be used once and expires in 24 hours.</p>
-            <p>If you have any questions, please contact us at support@atomicrosetools.com</p>
+            <p>If you have any questions, please contact us at {self.support_email}</p>
         </body>
         </html>
         """
@@ -543,6 +549,7 @@ class EmailService:
                 "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
                 "YEAR": str(datetime.now().year),
                 "HELP_URL": f"{self.base_url}/support",
+                "SUPPORT_EMAIL": self.support_email,
                 "PROFILE_URL": profile_url,
                 "DOWNLOAD_PAGE_URL": download_url,
                 "DOWNLOAD_BUTTON_TEXT": download_button_text,
@@ -595,7 +602,7 @@ class EmailService:
             <p>You now have access to 3 downloads per product:</p>
             {{DOWNLOAD_LINKS}}
             <p><strong>Important:</strong> Each download link expires in 1 hour. You can access your products anytime from your profile page.</p>
-            <p>If you have any questions, please contact us at support@atomicrosetools.com</p>
+            <p>If you have any questions, please contact us at {self.support_email}</p>
         </body>
         </html>
         """
