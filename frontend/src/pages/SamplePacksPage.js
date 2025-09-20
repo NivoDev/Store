@@ -190,8 +190,7 @@ const SamplePacksPage = ({ onAuthClick }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
-  const [samplePacks, setSamplePacks] = useState([]);
+    const [samplePacks, setSamplePacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
@@ -415,8 +414,6 @@ const SamplePacksPage = ({ onAuthClick }) => {
             <ProductCard
               key={product.id}
               product={product}
-              onPlay={handlePlay}
-              isPlaying={currentlyPlaying === product.id}
               onAuthClick={onAuthClick}
               onAddToCart={handleAddToCart}
             />

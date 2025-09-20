@@ -5,7 +5,8 @@ import { theme } from '../theme';
 import apiService from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import Button from '../components/common/Button';
-import { FiPlay, FiShoppingCart, FiHeart, FiShare2 } from 'react-icons/fi';
+import AudioPlayer from '../components/audio/AudioPlayer';
+import { FiShoppingCart, FiHeart, FiShare2 } from 'react-icons/fi';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -80,7 +81,6 @@ const ProductDetailPage = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -128,9 +128,6 @@ const ProductDetailPage = () => {
     addItem(product);
   };
 
-  const handlePlay = () => {
-    setIsPlaying(!isPlaying);
-  };
 
   return (
     <PageContainer>
@@ -152,11 +149,10 @@ const ProductDetailPage = () => {
             <Price>${product.price}</Price>
             <Description>{product.description}</Description>
             
+            {/* Audio Player */}
+            <AudioPlayer product={product} />
+            
             <Actions>
-              <Button variant="primary" size="lg" onClick={handlePlay}>
-                <FiPlay size={20} />
-                {isPlaying ? 'Pause' : 'Play'} Preview
-              </Button>
               <Button 
                 variant={isInCart(product.id) ? "secondary" : "primary"} 
                 size="lg"

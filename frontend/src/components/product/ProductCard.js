@@ -16,6 +16,7 @@ import {
 import { theme } from '../../theme';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAudio } from '../../contexts/AudioContext';
 import Button from '../common/Button';
 import Modal from '../modals/Modal';
 import apiService from '../../services/api';
@@ -251,7 +252,7 @@ const Actions = styled.div`
   gap: ${theme.spacing[2]};
 `;
 
-const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, canDownload = true, downloadsRemaining = 0, onAuthClick, onAddToCart }) => {
+const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, canDownload = true, downloadsRemaining = 0, onAuthClick, onAddToCart }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -263,6 +264,7 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { addItem, isInCart } = useCart();
   const { user, isAuthenticated } = useAuth();
+  const { playTrack, isCurrentTrack, isTrackPlaying } = useAudio();
   const navigate = useNavigate();
 
   // Check if item is in guest cart on mount and when cart changes
@@ -411,7 +413,7 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
   const handlePlay = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    onPlay(product);
+    playTrack(product);
   };
 
   const handleAddToGuestCart = (e) => {
@@ -540,7 +542,7 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            {isPlaying ? <FiPause size={24} /> : <FiPlay size={24} />}
+            {isTrackPlaying(product.id) ? <FiPause size={24} /> : <FiPlay size={24} />}
           </PlayButton>
         </ImageOverlay>
 

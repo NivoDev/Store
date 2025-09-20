@@ -33,8 +33,7 @@ const ProductGrid = styled.div`
 
 const MidiPacksPage = ({ onAuthClick }) => {
   const navigate = useNavigate();
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
-  const [midiPacks, setMidiPacks] = useState([]);
+    const [midiPacks, setMidiPacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -59,11 +58,7 @@ const MidiPacksPage = ({ onAuthClick }) => {
     loadProducts();
   }, []);
 
-  const handlePlay = (product) => {
-    setCurrentlyPlaying(currentlyPlaying === product.id ? null : product.id);
-  };
-
-  const handleAddToCart = (product) => {
+    const handleAddToCart = (product) => {
     console.log('Product added to cart:', product);
     // Redirect to cart page
     navigate('/cart');
@@ -98,8 +93,6 @@ const MidiPacksPage = ({ onAuthClick }) => {
               <ProductCard
                 key={product.id}
                 product={product}
-                onPlay={handlePlay}
-                isPlaying={currentlyPlaying === product.id}
                 onAuthClick={onAuthClick}
                 onAddToCart={handleAddToCart}
               />

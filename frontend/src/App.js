@@ -6,6 +6,7 @@ import { theme } from './theme';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import { AudioProvider } from './contexts/AudioContext';
 import keepAliveService from './services/keepAlive';
 
 // Layout components
@@ -58,7 +59,8 @@ function App() {
         <GlobalStyles />
         <AuthProvider>
           <CartProvider>
-            <Router>
+            <AudioProvider>
+              <Router>
             <ScrollToTop />
             <div className="App">
               <Header onAuthClick={() => setAuthModalOpen(true)} />
@@ -94,7 +96,8 @@ function App() {
                 onClose={() => setAuthModalOpen(false)} 
               />
             </div>
-            </Router>
+              </Router>
+            </AudioProvider>
           </CartProvider>
         </AuthProvider>
       </ThemeProvider>

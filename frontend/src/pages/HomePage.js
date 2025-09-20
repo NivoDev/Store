@@ -13,6 +13,7 @@ import {
 } from 'react-icons/fi';
 import { theme } from '../theme';
 import apiService from '../services/api';
+import { useAudio } from '../contexts/AudioContext';
 import ProductCard from '../components/product/ProductCard';
 import Button from '../components/common/Button';
 import SEOHead from '../components/common/SEOHead';
@@ -260,7 +261,7 @@ const CategoryCount = styled.div`
 const HomePage = ({ onAuthClick }) => {
   const navigate = useNavigate();
   const productsRef = useRef(null);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
+  const { isCurrentTrack, isTrackPlaying } = useAudio();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
@@ -351,15 +352,6 @@ const HomePage = ({ onAuthClick }) => {
     loadProducts();
   }, []);
 
-  const handlePlay = (product) => {
-    if (currentlyPlaying === product.id) {
-      setCurrentlyPlaying(null);
-    } else {
-      setCurrentlyPlaying(product.id);
-      // Here you would integrate with an audio player
-      // Audio preview functionality would be implemented here
-    }
-  };
 
   const handleLikeToggle = (productId) => {
     // This would be called from ProductCard when user likes/unlikes
@@ -516,8 +508,6 @@ const HomePage = ({ onAuthClick }) => {
               <ProductCard
                 key={product.id}
                 product={product}
-                onPlay={handlePlay}
-                isPlaying={currentlyPlaying === product.id}
                 onAuthClick={onAuthClick}
                 onAddToCart={handleAddToCart}
               />
@@ -550,8 +540,6 @@ const HomePage = ({ onAuthClick }) => {
               <ProductCard
                 key={product.id}
                 product={product}
-                onPlay={handlePlay}
-                isPlaying={currentlyPlaying === product.id}
                 onAuthClick={onAuthClick}
                 onAddToCart={handleAddToCart}
               />
@@ -577,8 +565,6 @@ const HomePage = ({ onAuthClick }) => {
               <ProductCard
                 key={product.id}
                 product={product}
-                onPlay={handlePlay}
-                isPlaying={currentlyPlaying === product.id}
                 onLikeToggle={handleLikeToggle}
                 onAddToCart={handleAddToCart}
                 onDownload={handleDownload}
