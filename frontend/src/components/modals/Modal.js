@@ -21,10 +21,22 @@ const Overlay = styled(motion.div)`
   overflow-y: auto;
   
   /* On very small screens, allow modal to scroll within overlay */
+  @media (max-height: 700px) {
+    align-items: flex-start;
+    padding-top: ${theme.spacing[6]};
+    padding-bottom: ${theme.spacing[6]};
+  }
+  
   @media (max-height: 600px) {
     align-items: flex-start;
-    padding-top: ${theme.spacing[8]};
-    padding-bottom: ${theme.spacing[8]};
+    padding-top: ${theme.spacing[4]};
+    padding-bottom: ${theme.spacing[4]};
+  }
+  
+  @media (max-height: 500px) {
+    align-items: flex-start;
+    padding-top: ${theme.spacing[2]};
+    padding-bottom: ${theme.spacing[2]};
   }
 `;
 
@@ -45,12 +57,20 @@ const ModalContainer = styled(motion.div)`
   -webkit-overflow-scrolling: touch;
   
   /* Ensure modal doesn't get cut off on small screens */
-  @media (max-height: 700px) {
+  @media (max-height: 800px) {
     max-height: 80vh;
   }
   
-  @media (max-height: 600px) {
+  @media (max-height: 700px) {
     max-height: 75vh;
+  }
+  
+  @media (max-height: 600px) {
+    max-height: 70vh;
+  }
+  
+  @media (max-height: 500px) {
+    max-height: 65vh;
   }
 `;
 

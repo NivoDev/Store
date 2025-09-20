@@ -200,12 +200,7 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [downloading, setDownloading] = useState({});
-  const [downloadInfo, setDownloadInfo] = useState({
-    total_downloads: 0,
-    downloads_remaining: 3,
-    max_downloads: 3,
-    can_download: true
-  });
+  // Removed downloadInfo state since downloads are now unlimited
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -218,10 +213,9 @@ const ProfilePage = () => {
     setError(null);
     
     try {
-      const [likedResult, purchasedResult, downloadInfoResult] = await Promise.all([
+      const [likedResult, purchasedResult] = await Promise.all([
         apiService.getLikedProducts(),
-        apiService.getPurchasedProducts(),
-        apiService.getDownloadInfo()
+        apiService.getPurchasedProducts()
       ]);
 
       if (likedResult.success) {
@@ -234,12 +228,6 @@ const ProfilePage = () => {
         setPurchasedProducts(purchasedResult.data.products || []);
       } else {
         console.error('Failed to load purchased products:', purchasedResult.error);
-      }
-      
-      if (downloadInfoResult.success) {
-        setDownloadInfo(downloadInfoResult.data);
-      } else {
-        console.error('Failed to load download info:', downloadInfoResult.error);
       }
     } catch (err) {
       console.error('Error loading user products:', err);
@@ -263,35 +251,13 @@ const ProfilePage = () => {
       if (result.success) {
         // Open download URL in new tab
         window.open(result.data.download_url, '_blank');
-        
-        // Update download info after successful download
-        if (result.data.download_info) {
-          setDownloadInfo(result.data.download_info);
-        }
-        
-        // Refresh download info from server
-        const downloadInfoResult = await apiService.getDownloadInfo();
-        if (downloadInfoResult.success) {
-          setDownloadInfo(downloadInfoResult.data);
-        }
       } else {
         console.error('Download failed:', result.error);
         alert('Download failed. Please try again.');
       }
     } catch (error) {
       console.error('Download error:', error);
-      
-      // Handle rate limiting errors specifically
-      if (error.status === 429) {
-        const errorData = error.detail || error.message;
-        if (typeof errorData === 'object') {
-          alert(`⏰ Download limit reached: ${errorData.message}`);
-        } else {
-          alert(`⏰ Download limit reached: ${errorData}`);
-        }
-      } else {
-        alert('Download failed. Please try again.');
-      }
+      alert('Download failed. Please try again.');
     } finally {
       setDownloading(prev => ({ ...prev, [productId]: false }));
     }
@@ -397,8 +363,6 @@ const ProfilePage = () => {
                   showDownloadButton={activeTab === 'purchased'}
                   onDownload={() => handleDownload(product.id)}
                   isDownloading={downloading[product.id]}
-                  canDownload={downloadInfo.can_download}
-                  downloadsRemaining={downloadInfo.downloads_remaining}
                 />
               ))}
             </ProductsGrid>

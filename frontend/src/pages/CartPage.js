@@ -18,6 +18,13 @@ const PageContainer = styled.div`
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
+  padding: 0 ${theme.spacing[4]};
+  width: 100%;
+  box-sizing: border-box;
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: 0 ${theme.spacing[3]};
+  }
 `;
 
 const Title = styled.h1`
@@ -26,6 +33,18 @@ const Title = styled.h1`
   font-weight: ${theme.typography.weights.bold};
   color: ${theme.colors.dark[50]};
   margin-bottom: ${theme.spacing[8]};
+  text-align: center;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    font-size: ${theme.typography.sizes['2xl']};
+    margin-bottom: ${theme.spacing[6]};
+  }
+  
+  @media (max-width: 400px) {
+    font-size: ${theme.typography.sizes.xl};
+  }
 `;
 
 const CartGrid = styled.div`
