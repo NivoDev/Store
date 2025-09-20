@@ -427,8 +427,18 @@ const CheckoutPage = () => {
   const getEffectiveItems = () => {
     const guestOrder = location.state?.guestOrder;
     if (guestOrder && guestOrder.items) {
-      return guestOrder.items;
+      console.log('🛒 Using guest order items:', guestOrder.items);
+      // Transform guest order items to match cart item structure
+      const transformedItems = guestOrder.items.map(item => ({
+        ...item,
+        id: item.product_id || item.id, // Ensure id field exists
+        artist: item.artist || 'Unknown Artist', // Add missing fields
+        cover_image_url: item.cover_image_url || '/images/placeholder-product.jpg'
+      }));
+      console.log('🛒 Transformed items:', transformedItems);
+      return transformedItems;
     }
+    console.log('🛒 Using cart items:', items);
     return items;
   };
 
@@ -523,7 +533,7 @@ const CheckoutPage = () => {
             vatNumber: formData.vatNumber,
           },
           items: getEffectiveItems().map(item => ({
-            product_id: item.id,
+            product_id: item.product_id || item.id,
             title: item.title,
             price: item.price,
             quantity: item.quantity,
