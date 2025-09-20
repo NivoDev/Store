@@ -403,7 +403,7 @@ class EmailService:
                 "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
                 "YEAR": str(datetime.now().year),
                 "HELP_URL": f"{self.base_url}/support",
-                "DOWNLOAD_PAGE_URL": f"{self.base_url}/guest-downloads",
+                "DOWNLOAD_PAGE_URL": f"{self.base_url}/guest-downloads?order={order_number}",
                 "DOWNLOAD_LINKS": download_links_html
             })
             

@@ -311,13 +311,22 @@ const GuestDownloadPage = () => {
   };
 
   useEffect(() => {
+    // Get order number from URL query parameter
+    const urlParams = new URLSearchParams(location.search);
+    const orderFromUrl = urlParams.get('order');
+    
     // Get download links from URL state or localStorage
     const state = location.state;
     console.log('🔍 GuestDownloadPage - Location state:', state);
+    console.log('🔍 GuestDownloadPage - Order from URL:', orderFromUrl);
     console.log('🔍 GuestDownloadPage - Download links from state:', state?.downloadLinks);
     
-    // If we have an order number, fetch fresh download links
-    if (state?.orderNumber) {
+    // Priority: URL parameter > state > localStorage
+    if (orderFromUrl) {
+      console.log('✅ Using order number from URL parameter:', orderFromUrl);
+      fetchDownloadLinks(orderFromUrl);
+    } else if (state?.orderNumber) {
+      console.log('✅ Using order number from state:', state.orderNumber);
       fetchDownloadLinks(state.orderNumber);
     } else if (state && state.downloadLinks && state.downloadLinks.length > 0) {
       console.log('✅ Using download links from state');
@@ -345,7 +354,7 @@ const GuestDownloadPage = () => {
       }
       setLoading(false);
     }
-  }, [location.state]);
+  }, [location.state, location.search]);
 
   const handleDownload = async (productId, downloadUrl) => {
     setDownloading(prev => ({ ...prev, [productId]: true }));
