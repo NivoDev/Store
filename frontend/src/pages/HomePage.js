@@ -14,6 +14,7 @@ import {
 import { theme } from '../theme';
 import apiService from '../services/api';
 import { useAudio } from '../contexts/AudioContext';
+import { useAuth } from '../contexts/AuthContext';
 import ProductCard from '../components/product/ProductCard';
 import Button from '../components/common/Button';
 import SEOHead from '../components/common/SEOHead';
@@ -262,6 +263,7 @@ const HomePage = ({ onAuthClick }) => {
   const navigate = useNavigate();
   const productsRef = useRef(null);
   const { isCurrentTrack, isTrackPlaying } = useAudio();
+  const { isAuthenticated } = useAuth();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
@@ -272,14 +274,19 @@ const HomePage = ({ onAuthClick }) => {
     acapellas: 0
   });
 
-  // Clear guest cart on page load to ensure clean state
+  // Clear guest cart on page load only for non-authenticated users
   useEffect(() => {
     console.log('🧹 HomePage useEffect running');
     console.log('🧹 guestCartService available:', !!guestCartService);
     
     try {
-      console.log('🧹 Clearing guest cart on page load');
-      guestCartService.clearCart();
+      // Only clear guest cart if user is not authenticated
+      if (!isAuthenticated) {
+        console.log('🧹 Clearing guest cart on page load (user not authenticated)');
+        guestCartService.clearCart();
+      } else {
+        console.log('🧹 User is authenticated, not clearing guest cart');
+      }
       
       // Listen for cart changes
       const handleCartChange = (event) => {
@@ -294,7 +301,7 @@ const HomePage = ({ onAuthClick }) => {
     } catch (error) {
       console.error('❌ Error in HomePage useEffect:', error);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Load products from API with fallback to mock data
   useEffect(() => {
