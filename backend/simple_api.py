@@ -67,11 +67,6 @@ R2_PUBLIC_URL = os.getenv("R2_PUBLIC_URL", "https://pub-9c5bbe78ba1841d88724531e
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Google OAuth configuration
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/google/callback")
-
 # Security
 security = HTTPBearer()
 
@@ -197,7 +192,6 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
         "email": user_doc.get("email"),
         "avatar_url": user_doc.get("avatar_url"),
         "bio": user_doc.get("bio"),
-        "provider": user_doc.get("provider", "email"),
         "mfa_enabled": user_doc.get("mfa_enabled", False),
         "status": user_doc.get("status", "active"),
         "created_at": user_doc.get("created_at").isoformat() if user_doc.get("created_at") else None,
@@ -1038,30 +1032,78 @@ def generate_download_url(object_key: str, expiration: int = 3600) -> str:
 
 # ---------- END R2 HELPERS ----------
 
+async def find_user_order_for_product(user_id: str, product_id: str) -> dict:
+    """Find the user order that contains the specified product"""
+    try:
+        user_object_id = ObjectId(user_id)
+        product_object_id = ObjectId(product_id)
+        
+        # Find orders for this user that contain the product
+        orders = await db.orders.find({
+            "user_id": user_object_id,
+            "status": "completed",
+            "items.product_id": product_object_id
+        }).sort("created_at", -1).to_list(length=None)
+        
+        # Return the most recent order with downloads remaining
+        for order in orders:
+            downloads_remaining = order.get("downloads_remaining", 0)
+            if downloads_remaining > 0:
+                return {
+                    "order": order,
+                    "downloads_remaining": downloads_remaining,
+                    "can_download": True
+                }
+        
+        # If no orders with downloads remaining, return the most recent one
+        if orders:
+            return {
+                "order": orders[0],
+                "downloads_remaining": 0,
+                "can_download": False
+            }
+        
+        return {
+            "order": None,
+            "downloads_remaining": 0,
+            "can_download": False
+        }
+        
+    except Exception as e:
+        print(f"❌ Error finding user order for product: {e}")
+        return {
+            "order": None,
+            "downloads_remaining": 0,
+            "can_download": False
+        }
+
 async def check_user_downloads(user_id: str) -> dict:
-    """Check user's download count and remaining downloads"""
+    """Check user's download count and remaining downloads (legacy function for compatibility)"""
     try:
         user_object_id = ObjectId(user_id)
         
-        # Count total downloads for this user
-        total_downloads = await db.download_events.count_documents({
-            "user_id": user_object_id
-        })
+        # Get all completed orders for this user
+        orders = await db.orders.find({
+            "user_id": user_object_id,
+            "status": "completed"
+        }).to_list(length=None)
         
-        downloads_remaining = MAX_DOWNLOADS_PER_USER - total_downloads
+        total_downloads_remaining = sum(order.get("downloads_remaining", 0) for order in orders)
+        total_orders = len(orders)
         
         return {
-            "total_downloads": total_downloads,
-            "downloads_remaining": max(0, downloads_remaining),
-            "can_download": downloads_remaining > 0
+            "total_downloads": 0,  # Legacy field
+            "downloads_remaining": total_downloads_remaining,
+            "can_download": total_downloads_remaining > 0,
+            "total_orders": total_orders
         }
         
     except Exception as e:
         print(f"❌ Error checking user downloads: {e}")
         return {
             "total_downloads": 0,
-            "downloads_remaining": MAX_DOWNLOADS_PER_USER,
-            "can_download": True
+            "downloads_remaining": 0,
+            "can_download": False
         }
 
 @app.get("/api/v1/download/{product_id}")
@@ -1082,20 +1124,23 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         if ObjectId(product_id) not in purchased_products:
             raise HTTPException(status_code=403, detail="Product not purchased")
         
-        # Check download limit
-        download_info = await check_user_downloads(user_id)
-        if not download_info["can_download"]:
-            print(f"🚫 Download limit reached: {download_info['total_downloads']}/{MAX_DOWNLOADS_PER_USER}")
-            raise HTTPException(
-                status_code=429, 
-                detail={
-                    "message": f"You have reached the maximum download limit ({MAX_DOWNLOADS_PER_USER} downloads total)",
-                    "total_downloads": download_info["total_downloads"],
-                    "downloads_remaining": 0
-                }
-            )
+        # Find the order for this product and check download limit
+        order_info = await find_user_order_for_product(user_id, product_id)
+        if not order_info["can_download"]:
+            if order_info["order"] is None:
+                raise HTTPException(status_code=404, detail="No order found for this product")
+            else:
+                print(f"🚫 No downloads remaining for product {product_id}")
+                raise HTTPException(
+                    status_code=429, 
+                    detail={
+                        "message": "No downloads remaining for this product",
+                        "downloads_remaining": 0,
+                        "order_number": order_info["order"].get("order_number")
+                    }
+                )
         
-        print(f"✅ Download check passed: {download_info['downloads_remaining']} downloads remaining")
+        print(f"✅ Download check passed: {order_info['downloads_remaining']} downloads remaining for order {order_info['order'].get('order_number')}")
         
         # Get product details
         product = await db.products.find_one({"_id": ObjectId(product_id)})
@@ -1115,10 +1160,22 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         download_url = generate_download_url(object_key, expiration=expiration_seconds)
         print(f"✅ Download URL generated: {download_url}")
         
+        # Decrement the order's download counter
+        order = order_info["order"]
+        await db.orders.update_one(
+            {"_id": order["_id"]},
+            {
+                "$inc": {"downloads_remaining": -1},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
+        
         # Log download event
         download_event = {
             "user_id": ObjectId(user_id),
             "product_id": ObjectId(product_id),
+            "order_id": order["_id"],
+            "order_number": order.get("order_number"),
             "download_url": download_url,
             "ip_address": "127.0.0.1",  # In production, get from request
             "user_agent": "Atomic Rose Tools App",
@@ -1126,19 +1183,20 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         }
         
         await db.download_events.insert_one(download_event)
-        print(f"📝 Download event logged")
+        print(f"📝 Download event logged for order {order.get('order_number')}")
         
-        # Get updated download info after logging
-        updated_download_info = await check_user_downloads(user_id)
+        # Get updated download info for this order
+        updated_downloads_remaining = order_info["downloads_remaining"] - 1
         
         return {
             "download_url": download_url,
             "expires_in": expiration_seconds,
             "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z",
             "product_title": product.get("title", "Unknown Product"),
+            "order_number": order.get("order_number"),
             "download_info": {
-                "total_downloads": updated_download_info["total_downloads"],
-                "downloads_remaining": updated_download_info["downloads_remaining"]
+                "downloads_remaining": updated_downloads_remaining,
+                "order_id": str(order["_id"])
             }
         }
         
@@ -1287,332 +1345,6 @@ async def get_purchased_products(current_user: dict = Depends(get_current_user))
     except Exception as e:
         print(f"❌ Error getting purchased products: {e}")
         raise HTTPException(status_code=500, detail="Failed to get purchased products")
-
-@app.put("/api/v1/user/change-password")
-async def change_password(password_data: dict, current_user: dict = Depends(get_current_user)):
-    """Change user password"""
-    try:
-        # Check if user is OAuth user (Google, Facebook, etc.)
-        if current_user.get("provider") != "email":
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Password changes are not allowed for {current_user.get('provider', 'OAuth')} users. Please change your password through your {current_user.get('provider', 'OAuth')} account."
-            )
-        
-        old_password = password_data.get("old_password")
-        new_password = password_data.get("new_password")
-        
-        if not old_password or not new_password:
-            raise HTTPException(status_code=400, detail="Old password and new password are required")
-        
-        if len(new_password) < 8:
-            raise HTTPException(status_code=400, detail="New password must be at least 8 characters long")
-        
-        # Get user from database
-        user_id = current_user["id"]
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        # Verify old password
-        if not pwd_context.verify(old_password, user.get("password_hash")):
-            raise HTTPException(status_code=400, detail="Current password is incorrect")
-        
-        # Hash new password
-        new_password_hash = pwd_context.hash(new_password)
-        
-        # Update password
-        await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {
-                "$set": {
-                    "password_hash": new_password_hash,
-                    "password_changed_at": datetime.utcnow(),
-                    "updated_at": datetime.utcnow()
-                }
-            }
-        )
-        
-        return {
-            "message": "Password changed successfully",
-            "password_changed_at": datetime.utcnow().isoformat()
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error changing password: {e}")
-        raise HTTPException(status_code=500, detail="Failed to change password")
-
-@app.post("/api/v1/auth/forgot-password")
-async def forgot_password(request_data: dict):
-    """Send password reset email"""
-    try:
-        email = request_data.get("email", "").strip().lower()
-        
-        if not email:
-            raise HTTPException(status_code=400, detail="Email is required")
-        
-        # Check if user exists
-        user = await db.users.find_one({"email": email, "email_verified": True})
-        if not user:
-            # Don't reveal if user exists or not for security
-            return {
-                "message": "If an account with that email exists, a password reset link has been sent.",
-                "email_sent": True
-            }
-        
-        # Check if user is OAuth user (Google, Facebook, etc.)
-        if user.get("provider") != "email":
-            # Don't reveal the provider for security, but don't send reset email
-            return {
-                "message": "If an account with that email exists, a password reset link has been sent.",
-                "email_sent": True
-            }
-        
-        # Generate reset token
-        reset_token = secrets.token_urlsafe(32)
-        reset_expires = datetime.utcnow() + timedelta(hours=1)  # 1 hour expiry
-        
-        # Store reset token
-        await db.users.update_one(
-            {"_id": user["_id"]},
-            {
-                "$set": {
-                    "password_reset_token": reset_token,
-                    "password_reset_expires": reset_expires,
-                    "updated_at": datetime.utcnow()
-                }
-            }
-        )
-        
-        # Send reset email
-        try:
-            from services.email_service import email_service
-            reset_url = f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/reset-password?token={reset_token}"
-            
-            email_sent = email_service.send_password_reset_email(
-                email=email,
-                name=user.get("name", "User"),
-                reset_url=reset_url
-            )
-            
-            if email_sent:
-                print(f"✅ Password reset email sent to {email}")
-            else:
-                print(f"❌ Failed to send password reset email to {email}")
-        except Exception as e:
-            print(f"❌ Error sending password reset email: {e}")
-        
-        return {
-            "message": "If an account with that email exists, a password reset link has been sent.",
-            "email_sent": True
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error in forgot password: {e}")
-        raise HTTPException(status_code=500, detail="Failed to process password reset request")
-
-@app.get("/api/v1/auth/google")
-async def google_auth():
-    """Initiate Google OAuth flow"""
-    try:
-        # Generate state parameter for CSRF protection
-        state = secrets.token_urlsafe(32)
-        
-        # Store state in session or database for validation
-        # For now, we'll include it in the redirect URL
-        
-        google_auth_url = (
-            f"https://accounts.google.com/o/oauth2/v2/auth?"
-            f"client_id={GOOGLE_CLIENT_ID}&"
-            f"redirect_uri={GOOGLE_REDIRECT_URI}&"
-            f"response_type=code&"
-            f"scope=openid email profile&"
-            f"state={state}&"
-            f"access_type=offline"
-        )
-        
-        return {
-            "auth_url": google_auth_url,
-            "state": state
-        }
-        
-    except Exception as e:
-        print(f"❌ Error generating Google auth URL: {e}")
-        raise HTTPException(status_code=500, detail="Failed to initiate Google authentication")
-
-@app.post("/api/v1/auth/google/callback")
-async def google_callback(callback_data: dict):
-    """Handle Google OAuth callback"""
-    try:
-        code = callback_data.get("code")
-        state = callback_data.get("state")
-        
-        if not code:
-            raise HTTPException(status_code=400, detail="Authorization code is required")
-        
-        # Exchange code for access token
-        import httpx
-        
-        token_url = "https://oauth2.googleapis.com/token"
-        token_data = {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            "code": code,
-            "grant_type": "authorization_code",
-            "redirect_uri": GOOGLE_REDIRECT_URI
-        }
-        
-        async with httpx.AsyncClient() as client:
-            token_response = await client.post(token_url, data=token_data)
-            token_result = token_response.json()
-            
-            if "error" in token_result:
-                raise HTTPException(status_code=400, detail=f"Token exchange failed: {token_result['error']}")
-            
-            access_token = token_result["access_token"]
-            
-            # Get user info from Google
-            user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
-            headers = {"Authorization": f"Bearer {access_token}"}
-            
-            user_response = await client.get(user_info_url, headers=headers)
-            user_info = user_response.json()
-            
-            if "error" in user_info:
-                raise HTTPException(status_code=400, detail=f"Failed to get user info: {user_info['error']}")
-        
-        # Extract user information
-        google_id = user_info.get("id")
-        email = user_info.get("email", "").lower()
-        name = user_info.get("name", "")
-        avatar_url = user_info.get("picture", "")
-        
-        if not google_id or not email:
-            raise HTTPException(status_code=400, detail="Invalid user information from Google")
-        
-        # Check if user already exists
-        existing_user = await db.users.find_one({
-            "$or": [
-                {"email": email, "provider": "google"},
-                {"google_id": google_id}
-            ]
-        })
-        
-        if existing_user:
-            # Update last login
-            await db.users.update_one(
-                {"_id": existing_user["_id"]},
-                {
-                    "$set": {
-                        "last_login": datetime.utcnow(),
-                        "updated_at": datetime.utcnow(),
-                        "avatar_url": avatar_url  # Update avatar in case it changed
-                    }
-                }
-            )
-            user = existing_user
-        else:
-            # Create new user
-            user_doc = {
-                "email": email,
-                "name": name,
-                "avatar_url": avatar_url,
-                "provider": "google",
-                "google_id": google_id,
-                "email_verified": True,  # Google users are always verified
-                "status": "active",
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow(),
-                "last_login": datetime.utcnow(),
-                "liked_products": [],
-                "purchased_products": [],
-                "mfa_enabled": False,
-                "bio": None
-            }
-            
-            result = await db.users.insert_one(user_doc)
-            user = await db.users.find_one({"_id": result.inserted_id})
-        
-        # Generate JWT token
-        access_token = create_access_token(data={"sub": str(user["_id"])})
-        user_response = format_user_for_frontend(user)
-        user_response.update({
-            "id": str(user["_id"]),
-            "email": user.get("email"),
-            "provider": user.get("provider", "email"),
-            "status": "active",
-            "email_verified": True
-        })
-        
-        return {
-            "message": "Google authentication successful",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": user_response
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error in Google callback: {e}")
-        raise HTTPException(status_code=500, detail="Google authentication failed")
-
-@app.post("/api/v1/auth/reset-password")
-async def reset_password(reset_data: dict):
-    """Reset password with token"""
-    try:
-        token = reset_data.get("token")
-        new_password = reset_data.get("new_password")
-        
-        if not token or not new_password:
-            raise HTTPException(status_code=400, detail="Token and new password are required")
-        
-        if len(new_password) < 8:
-            raise HTTPException(status_code=400, detail="New password must be at least 8 characters long")
-        
-        # Find user with valid reset token
-        user = await db.users.find_one({
-            "password_reset_token": token,
-            "password_reset_expires": {"$gt": datetime.utcnow()},
-            "email_verified": True
-        })
-        
-        if not user:
-            raise HTTPException(status_code=400, detail="Invalid or expired reset token")
-        
-        # Hash new password
-        new_password_hash = pwd_context.hash(new_password)
-        
-        # Update password and clear reset token
-        await db.users.update_one(
-            {"_id": user["_id"]},
-            {
-                "$set": {
-                    "password_hash": new_password_hash,
-                    "password_changed_at": datetime.utcnow(),
-                    "updated_at": datetime.utcnow()
-                },
-                "$unset": {
-                    "password_reset_token": "",
-                    "password_reset_expires": ""
-                }
-            }
-        )
-        
-        return {
-            "message": "Password reset successfully. You can now log in with your new password.",
-            "password_changed_at": datetime.utcnow().isoformat()
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error resetting password: {e}")
-        raise HTTPException(status_code=500, detail="Failed to reset password")
 
 @app.post("/api/v1/profile/toggle-like")
 async def toggle_like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
@@ -1783,7 +1515,213 @@ async def purchase_product(order_data: dict, current_user: dict = Depends(get_cu
         print(f"❌ Error processing purchase: {e}")
         raise HTTPException(status_code=500, detail="Failed to process purchase")
 
+@app.post("/api/v1/orders/create-user-order")
+async def create_user_order(order_data: dict, current_user: dict = Depends(get_current_user)):
+    """Create an order for authenticated user with multiple items"""
+    try:
+        user_id = current_user["id"]
+        items = order_data.get("items", [])
+        customer = order_data.get("customer", {})
+        
+        if not items:
+            raise HTTPException(status_code=400, detail="No items in order")
+        
+        # Validate all products exist and calculate total
+        total_amount = 0
+        validated_items = []
+        product_ids = []
+        
+        for item in items:
+            try:
+                product_oid = ObjectId(item["product_id"])
+            except Exception:
+                raise HTTPException(status_code=400, detail=f"Invalid product ID: {item['product_id']}")
+            
+            product = await db.products.find_one({"_id": product_oid})
+            if not product:
+                raise HTTPException(status_code=404, detail=f"Product not found: {item['product_id']}")
+            
+            quantity = item.get("quantity", 1)
+            price = product.get("price", 0)
+            item_total = price * quantity
+            total_amount += item_total
+            
+            validated_items.append({
+                "product_id": product_oid,
+                "title": item.get("title", product.get("title", "Unknown")),
+                "quantity": quantity,
+                "price": price,
+                "item_total": item_total
+            })
+            
+            product_ids.append(product_oid)
+        
+        # Add all products to user's purchased products
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$addToSet": {"purchased_products": {"$each": product_ids}}}
+        )
+        
+        # Generate order number
+        order_number = f"USER-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
+        
+        # Create order record
+        order = {
+            "user_id": ObjectId(user_id),
+            "order_number": order_number,
+            "customer_info": customer,
+            "items": validated_items,
+            "total_amount": total_amount,
+            "subtotal": order_data.get("subtotal", total_amount),
+            "tax": order_data.get("tax", 0),
+            "status": "completed",
+            "payment_method": "mock",
+            "payment_id": f"mock_{datetime.utcnow().timestamp()}",
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "completed_at": datetime.utcnow(),
+            "is_fulfilled": True,
+            "fulfillment_date": datetime.utcnow(),
+            "downloads_remaining": 3
+        }
+        
+        result = await db.orders.insert_one(order)
+        
+        # Send thank you email with download links
+        try:
+            from services.email_service import email_service
+            
+            # Generate download links
+            download_links = []
+            for item in validated_items:
+                product = await db.products.find_one({"_id": item["product_id"]})
+                if product:
+                    raw_key = product.get("file_path", f"products/{item['product_id']}.zip")
+                    object_key = _normalize_r2_key(raw_key)
+                    expiration_seconds = 3600  # 1 hour
+                    download_url = generate_download_url(object_key, expiration=expiration_seconds)
+                    
+                    download_links.append({
+                        "title": item["title"],
+                        "artist": product.get("artist", "Unknown Artist"),
+                        "download_url": download_url
+                    })
+            
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            customer_name = customer.get("firstName", "") + " " + customer.get("lastName", "")
+            if not customer_name.strip():
+                customer_name = user.get("name", "Valued Customer")
+            
+            email_sent = email_service.send_user_thank_you_email(
+                email=current_user["email"],
+                name=customer_name.strip(),
+                order_number=order_number,
+                download_links=download_links
+            )
+            
+            if email_sent:
+                print(f"✅ Thank you email sent to {current_user['email']}")
+            else:
+                print(f"❌ Failed to send thank you email to {current_user['email']}")
+                
+        except Exception as e:
+            print(f"❌ Error sending thank you email: {e}")
+        
+        print(f"✅ User order created: {order_number}")
+        
+        return {
+            "order_number": order_number,
+            "order_id": str(result.inserted_id),
+            "status": "completed",
+            "total_amount": total_amount,
+            "message": "Order created successfully"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error creating user order: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create order")
+
 # Guest checkout endpoints
+@app.post("/api/v1/guest/checkout")
+async def guest_checkout(checkout_data: dict):
+    """Process guest checkout with email verification"""
+    try:
+        email = checkout_data.get("email")
+        items = checkout_data.get("items", [])
+        
+        if not email or not items:
+            raise HTTPException(status_code=400, detail="Email and items are required")
+        
+        # Validate email format
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            raise HTTPException(status_code=400, detail="Invalid email format")
+        
+        # Generate verification token and OTP code
+        verification_token = secrets.token_urlsafe(32)
+        otp_code = ''.join(secrets.choice('0123456789') for _ in range(6))
+        
+        # Create guest order
+        order = {
+            "order_number": f"GUEST-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
+            "guest_email": email,
+            "items": items,
+            "total_amount": sum(item["price"] * item["quantity"] for item in items),
+            "status": "pending_verification",
+            "verification_token": verification_token,
+            "otp_code": otp_code,
+            "verification_expires": datetime.utcnow() + timedelta(hours=24),  # 24 hour expiry
+            "downloads_remaining": 1,  # 1 download per guest order
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Save to database
+        result = await db.guest_orders.insert_one(order)
+        order_id = result.inserted_id
+        
+        # Send verification email
+        try:
+            from services.email_service import email_service
+            print(f"📧 Attempting to send OTP email to {email}")
+            
+            email_sent = email_service.send_guest_verification_email(
+                email=email,
+                order_number=order["order_number"],
+                verification_token=verification_token,
+                otp_code=otp_code,
+                items=items,
+                total_amount=order["total_amount"]
+            )
+            if email_sent:
+                print(f"✅ Guest verification email sent successfully to {email}")
+            else:
+                print(f"❌ Failed to send guest verification email to {email}")
+        except Exception as e:
+            print(f"❌ Error sending guest verification email to {email}: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+        
+        print(f"📧 Guest checkout created: {order['order_number']}")
+        print(f"🔗 Verification token: {verification_token}")
+        print(f"📧 Email: {email}")
+        
+        return {
+            "order_id": str(order_id),
+            "order_number": order["order_number"],
+            "verification_token": verification_token,
+            "message": "Please check your email to verify your email address before completing checkout",
+            "email_sent": email_sent if 'email_sent' in locals() else False
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error processing guest checkout: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process checkout")
 
 @app.post("/api/v1/guest/verify-otp")
 async def verify_guest_otp(verification_data: dict):
@@ -2072,129 +2010,88 @@ async def get_guest_download(order_id: str, verification_token: str):
         print(f"❌ Error getting guest download: {e}")
         raise HTTPException(status_code=500, detail="Failed to get download")
 
-@app.post("/api/v1/user/transfer-guest-orders")
-async def transfer_guest_orders_to_user(transfer_data: dict, current_user: dict = Depends(get_current_user)):
-    """Transfer guest orders to user account based on email"""
+@app.post("/api/v1/guest/complete-order")
+async def complete_guest_order(order_data: dict):
+    """Complete a verified guest order with customer information"""
     try:
-        user_id = current_user["id"]
-        user_email = current_user["email"]
+        order_number = order_data.get("order_number")
+        customer_info = order_data.get("customer_info", {})
         
-        # Find all guest orders with this email
-        guest_orders = await db.guest_orders.find({
-            "guest_email": user_email.lower(),
+        if not order_number:
+            raise HTTPException(status_code=400, detail="Order number is required")
+        
+        # Find the verified guest order
+        order = await db.guest_orders.find_one({
+            "order_number": order_number,
             "status": "verified"
-        }).to_list(length=None)
+        })
         
-        if not guest_orders:
-            return {
-                "message": "No guest orders found for this email",
-                "transferred_orders": 0
+        if not order:
+            raise HTTPException(status_code=404, detail="Verified order not found")
+        
+        # Update order with customer information and complete it
+        await db.guest_orders.update_one(
+            {"order_number": order_number},
+            {
+                "$set": {
+                    "customer_info": customer_info,
+                    "status": "completed",
+                    "downloads_remaining": 3,  # 3 downloads for completed orders
+                    "completed_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
             }
-        
-        # Get user's current purchased products
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        current_purchased = set(user.get("purchased_products", []))
-        transferred_products = set()
-        
-        # Process each guest order
-        for order in guest_orders:
-            for item in order.get("items", []):
-                product_id = ObjectId(item["product_id"])
-                if product_id not in current_purchased:
-                    transferred_products.add(product_id)
-        
-        # Update user's purchased products
-        if transferred_products:
-            await db.users.update_one(
-                {"_id": ObjectId(user_id)},
-                {"$addToSet": {"purchased_products": {"$each": list(transferred_products)}}}
-            )
-        
-        # Mark guest orders as transferred
-        order_ids = [order["_id"] for order in guest_orders]
-        await db.guest_orders.update_many(
-            {"_id": {"$in": order_ids}},
-            {"$set": {"transferred_to_user": ObjectId(user_id), "transferred_at": datetime.utcnow()}}
         )
         
-        print(f"✅ Transferred {len(transferred_products)} products from {len(guest_orders)} guest orders to user {user_id}")
+        # Send thank you email with download links
+        try:
+            from services.email_service import email_service
+            
+            # Generate download links
+            download_links = []
+            for item in order.get("items", []):
+                product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
+                if product:
+                    raw_key = product.get("file_path", f"products/{item['product_id']}.zip")
+                    object_key = _normalize_r2_key(raw_key)
+                    expiration_seconds = 3600  # 1 hour
+                    download_url = generate_download_url(object_key, expiration=expiration_seconds)
+                    
+                    download_links.append({
+                        "title": item["title"],
+                        "artist": product.get("artist", "Unknown Artist"),
+                        "download_url": download_url
+                    })
+            
+            email_sent = email_service.send_guest_thank_you_email(
+                email=order["guest_email"],
+                order_number=order_number,
+                customer_name=f"{customer_info.get('first_name', '')} {customer_info.get('last_name', '')}".strip(),
+                download_links=download_links,
+                total_amount=order.get("total_amount", 0)
+            )
+            
+            if email_sent:
+                print(f"✅ Thank you email sent to {order['guest_email']}")
+            else:
+                print(f"❌ Failed to send thank you email to {order['guest_email']}")
+                
+        except Exception as e:
+            print(f"❌ Error sending thank you email: {e}")
         
-        return {
-            "message": f"Successfully transferred {len(transferred_products)} products from {len(guest_orders)} guest orders",
-            "transferred_orders": len(guest_orders),
-            "transferred_products": len(transferred_products)
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error transferring guest orders: {e}")
-        raise HTTPException(status_code=500, detail="Failed to transfer guest orders")
-
-@app.post("/api/v1/guest/checkout")
-async def guest_checkout(order_data: dict):
-    """Create a guest order and return order details"""
-    try:
-        # Extract order data
-        customer = order_data.get("customer", {})
-        items = order_data.get("items", [])
-        subtotal = order_data.get("subtotal", 0)
-        tax = order_data.get("tax", 0)
-        total = order_data.get("total", 0)
-        
-        if not items:
-            raise HTTPException(status_code=400, detail="No items in order")
-        
-        # Generate order number
-        order_number = f"ORD-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}"
-        
-        # Create guest order
-        order = {
-            "order_number": order_number,
-            "guest_email": customer.get("email", "").lower(),
-            "customer_info": {
-                "first_name": customer.get("firstName", ""),
-                "last_name": customer.get("lastName", ""),
-                "email": customer.get("email", ""),
-                "phone": customer.get("phone", ""),
-                "address": customer.get("address", ""),
-                "city": customer.get("city", ""),
-                "state": customer.get("state", ""),
-                "postal_code": customer.get("postalCode", ""),
-                "country": customer.get("country", "")
-            },
-            "items": items,
-            "subtotal": subtotal,
-            "tax": tax,
-            "total_amount": total,
-            "status": "verified",  # Direct checkout, no email verification needed
-            "downloads_remaining": 3,  # 3 downloads for direct checkout
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
-            "completed_at": datetime.utcnow()
-        }
-        
-        # Save to database
-        result = await db.guest_orders.insert_one(order)
-        order_id = result.inserted_id
-        
-        print(f"✅ Guest order created: {order_number}")
+        print(f"✅ Guest order completed: {order_number}")
         
         return {
             "order_number": order_number,
-            "order_id": str(order_id),
             "status": "completed",
-            "message": "Order created successfully"
+            "message": "Order completed successfully"
         }
         
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error creating guest order: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create order")
+        print(f"❌ Error completing guest order: {e}")
+        raise HTTPException(status_code=500, detail="Failed to complete order")
 
 @app.get("/api/v1/guest-downloads/{order_number}")
 async def get_guest_download_links(order_number: str):

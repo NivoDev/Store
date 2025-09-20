@@ -717,6 +717,32 @@ class APIService {
       return { success: false, error: error.message };
     }
   }
+
+  async completeGuestOrder(orderData) {
+    try {
+      const response = await this.request('/guest/complete-order', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to complete guest order:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async createUserOrder(orderData) {
+    try {
+      const response = await this.request('/orders/create-user-order', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to create user order:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create and export singleton instance

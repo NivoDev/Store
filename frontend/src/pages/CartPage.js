@@ -255,9 +255,15 @@ const CartPage = () => {
   const handlePurchase = async () => {
     console.log('🛒 HandlePurchase called, isAuthenticated:', isAuthenticated);
     
-    // Redirect to checkout page for both authenticated and guest users
-    console.log('🛒 Redirecting to checkout page');
-    navigate('/checkout');
+    if (isAuthenticated) {
+      // Authenticated users go directly to checkout
+      console.log('🛒 Authenticated user - redirecting to checkout page');
+      navigate('/checkout');
+    } else {
+      // Guest users need email verification first
+      console.log('🛒 Guest user - showing choice modal');
+      setShowChoiceModal(true);
+    }
   };
 
   const handleGuestCheckout = async () => {
@@ -322,10 +328,30 @@ const CartPage = () => {
       if (result.success) {
         // Store the order data for the next step
         setOrderData(result.data);
-        setVerificationStep('success');
-        
-        // Debug: Log the response data
         console.log('🎉 Guest verification successful:', result.data);
+        
+        // Close verification modal and redirect to checkout page
+        setShowVerificationModal(false);
+        setShowChoiceModal(false);
+        
+        // Store the verified order data in session storage for checkout page
+        sessionStorage.setItem('verifiedGuestOrder', JSON.stringify({
+          orderNumber: result.data.order_number,
+          email: guestEmail,
+          items: items.map(item => ({
+            product_id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            cover_image_url: item.cover_image_url
+          }))
+        }));
+        
+        // Clear cart since order is created
+        clearCart();
+        
+        // Redirect to checkout page
+        navigate('/checkout');
         console.log('📥 Download links:', result.data.download_links);
         
         // Store download links in localStorage as backup

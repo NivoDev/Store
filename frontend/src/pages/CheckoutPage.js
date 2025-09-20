@@ -337,6 +337,26 @@ const CheckoutPage = () => {
     requestInvoice: false
   });
 
+  // Check for verified guest order
+  useEffect(() => {
+    const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
+    if (verifiedOrder) {
+      try {
+        const orderData = JSON.parse(verifiedOrder);
+        console.log('📋 Found verified guest order:', orderData);
+        
+        // Pre-fill email from verified order
+        setFormData(prev => ({
+          ...prev,
+          email: orderData.email || '',
+        }));
+      } catch (error) {
+        console.error('❌ Error parsing verified guest order:', error);
+        sessionStorage.removeItem('verifiedGuestOrder');
+      }
+    }
+  }, []);
+
   // Initialize form with user data if authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -403,61 +423,106 @@ const CheckoutPage = () => {
     setError('');
     
     try {
-      // Create order data
-      const orderData = {
-        customer: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          company: formData.company,
-        },
-        billing: {
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          postalCode: formData.postalCode,
-          country: formData.country,
-        },
-        tax: {
-          taxId: formData.taxId,
-          vatNumber: formData.vatNumber,
-          businessType: formData.businessType,
-        },
-        items: items.map(item => ({
-          product_id: item.id,
-          title: item.title,
-          artist: item.artist,
-          price: item.price,
-          quantity: item.quantity,
-          cover_image_url: item.cover_image_url
-        })),
-        subtotal: calculateTotal(),
-        tax: calculateTax(),
-        total: calculateTotal() + calculateTax(),
-        requestInvoice: formData.requestInvoice
-      };
+      // Check if this is a verified guest order
+      const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
       
-      console.log('🛒 Submitting order:', orderData);
-      
-      // Create guest order in backend
-      const result = await apiService.guestCheckout(orderData);
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to create order');
-      }
-      
-      console.log('✅ Order created successfully:', result.data);
-      
-      // Clear cart and redirect to success page
-      clearCart();
-      navigate('/checkout/success', { 
-        state: { 
-          orderData,
-          orderNumber: result.data.order_number,
-          message: 'Payment successful! Your download links are ready.'
+      if (verifiedOrder) {
+        // Handle verified guest order completion
+        const orderData = JSON.parse(verifiedOrder);
+        console.log('🛒 Completing verified guest order:', orderData.orderNumber);
+        
+        // Complete the verified order with customer info
+        const completeOrderData = {
+          order_number: orderData.orderNumber,
+          customer_info: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            postal_code: formData.postalCode,
+            country: formData.country,
+            company_name: formData.company,
+            business_type: formData.businessType,
+            tax_id: formData.taxId,
+            vat_number: formData.vatNumber,
+          },
+          request_invoice: formData.requestInvoice
+        };
+        
+        // Complete the guest order
+        const result = await apiService.completeGuestOrder(completeOrderData);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to complete order');
         }
-      });
+        
+        console.log('✅ Guest order completed successfully:', result.data);
+        
+        // Clear the verified order from session storage
+        sessionStorage.removeItem('verifiedGuestOrder');
+        
+        // Redirect to guest download page
+        navigate('/guest-download', { 
+          state: { 
+            orderNumber: orderData.orderNumber,
+            message: 'Payment successful! Your download links are ready.'
+          }
+        });
+        
+      } else {
+        // Handle regular authenticated user checkout
+        const orderData = {
+          customer: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            postalCode: formData.postalCode,
+            country: formData.country,
+            companyName: formData.company,
+            businessType: formData.businessType,
+            taxId: formData.taxId,
+            vatNumber: formData.vatNumber,
+          },
+          items: items.map(item => ({
+            product_id: item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            cover_image_url: item.cover_image_url
+          })),
+          subtotal: calculateTotal(),
+          tax: calculateTax(),
+          total: calculateTotal() + calculateTax(),
+          requestInvoice: formData.requestInvoice
+        };
+        
+        console.log('🛒 Submitting authenticated user order:', orderData);
+        
+        // Create authenticated user order
+        const result = await apiService.createUserOrder(orderData);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create order');
+        }
+        
+        console.log('✅ Authenticated user order created successfully:', result.data);
+        
+        // Clear cart and redirect to profile page
+        clearCart();
+        navigate('/profile', { 
+          state: { 
+            message: 'Purchase successful! Check your email for download links.',
+            tab: 'purchased'
+          }
+        });
+      }
       
     } catch (err) {
       console.error('❌ Checkout error:', err);
@@ -472,7 +537,7 @@ const CheckoutPage = () => {
   }
 
   return (
-    <Container>
+      <Container>
       <Content>
         <CheckoutForm
           initial={{ opacity: 0, y: 20 }}
@@ -805,7 +870,7 @@ const CheckoutPage = () => {
           </SummaryRow>
         </OrderSummary>
       </Content>
-    </Container>
+      </Container>
   );
 };
 
