@@ -252,7 +252,7 @@ const Actions = styled.div`
   gap: ${theme.spacing[2]};
 `;
 
-const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, canDownload = true, downloadsRemaining = 0, onAuthClick, onAddToCart }) => {
+const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, onAuthClick, onAddToCart }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -607,13 +607,10 @@ const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggl
               size="sm"
               fullWidth
               onClick={onDownload}
-              disabled={isDownloading || !canDownload}
-              title={!canDownload ? `No downloads remaining (${downloadsRemaining}/3 used)` : undefined}
+              disabled={isDownloading}
             >
               <FiDownload size={16} />
-              {isDownloading ? 'Generating...' : 
-               !canDownload ? `No Downloads Left (${downloadsRemaining}/3)` :
-               `Download (${downloadsRemaining} left)`}
+              {isDownloading ? 'Generating...' : 'Download'}
             </Button>
           ) : showDownload ? (
             <Button
