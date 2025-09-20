@@ -382,6 +382,7 @@ async def register(user_data: dict):
         user_doc = {
             "email": email,
             "password_hash": password_hash,
+            "provider": "email",                 # ✅ Required field for email registration
             "mfa_enabled": False,
             "status": "active",                  # ✅ stays valid per enum
             "email_verified": False,             # ⛔ blocks login until verified
