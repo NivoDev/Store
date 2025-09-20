@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { 
   FiPlay, 
@@ -21,6 +22,7 @@ import apiService from '../../services/api';
 import guestCartService from '../../services/guestCart';
 import GuestPurchaseModal from '../modals/GuestPurchaseModal';
 import PurchaseSuccessModal from '../modals/PurchaseSuccessModal';
+import DuplicatePurchaseModal from '../modals/DuplicatePurchaseModal';
 
 const Card = styled(motion.div)`
   background: ${theme.colors.gradients.card};
@@ -254,12 +256,14 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const [purchaseData, setPurchaseData] = useState(null);
   const [isInGuestCart, setIsInGuestCart] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { addItem, isInCart } = useCart();
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   // Check if item is in guest cart on mount and when cart changes
   React.useEffect(() => {
@@ -330,15 +334,49 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
     setImageError(true);
   }, []);
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // For authenticated users, check if they already purchased this product
+    if (isAuthenticated && user) {
+      try {
+        const result = await apiService.checkProductPurchased(product.id);
+        if (result.success && result.data.has_purchased) {
+          // User has already purchased this product, show duplicate purchase modal
+          setShowDuplicateModal(true);
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Error checking product purchase:', error);
+        // Continue with normal flow if check fails
+      }
+    }
+    
+    // Normal add to cart flow
     addItem(product);
     
     // Call the callback if provided (for redirect functionality)
     if (onAddToCart) {
       onAddToCart(product);
     }
+  };
+
+  const handleRecheckout = () => {
+    setShowDuplicateModal(false);
+    // Add to cart anyway for re-purchase
+    addItem(product);
+    
+    // Call the callback if provided (for redirect functionality)
+    if (onAddToCart) {
+      onAddToCart(product);
+    }
+  };
+
+  const handleViewProfile = () => {
+    setShowDuplicateModal(false);
+    // Navigate to profile page
+    navigate('/profile');
   };
 
   const handleFavorite = async (e) => {
@@ -645,6 +683,15 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
       }}
       product={product}
       purchaseData={purchaseData}
+    />
+
+    {/* Duplicate Purchase Modal */}
+    <DuplicatePurchaseModal
+      isOpen={showDuplicateModal}
+      onClose={() => setShowDuplicateModal(false)}
+      product={product}
+      onRecheckout={handleRecheckout}
+      onViewProfile={handleViewProfile}
     />
     
     {/* Login Prompt Modal */}

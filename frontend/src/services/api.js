@@ -757,6 +757,17 @@ class APIService {
       return { success: false, error: error.message };
     }
   }
+
+  // Check if user has purchased a product
+  async checkProductPurchased(productId) {
+    try {
+      const response = await this.request(`/profile/check-purchased/${productId}`);
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to check product purchase:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create and export singleton instance
