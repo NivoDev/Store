@@ -86,12 +86,9 @@ const AutoLoginPage = () => {
 
         console.log('🔄 Auto-login attempt with token:', token.substring(0, 20) + '...');
         
-        // Call the auto-login API
-        const response = await apiService.request('/auth/auto-login', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        // Call the auto-login API with token as query parameter
+        const response = await apiService.request(`/auth/auto-login?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(redirect)}`, {
+          method: 'GET'
         });
 
         if (response.access_token) {

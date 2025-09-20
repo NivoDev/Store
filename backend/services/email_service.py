@@ -522,10 +522,8 @@ class EmailService:
                 first_download = download_links[0]
                 if first_download.get('download_url'):
                     download_url = first_download['download_url']
-                    if len(download_links) > 1:
-                        download_button_text = f"Download {first_download.get('title', 'First Product')}"
-                    else:
-                        download_button_text = f"Download {first_download.get('title', 'Product')}"
+                    # Always use simple "Download" text for the button
+                    download_button_text = "Download"
             
             # If we have user_id, create auto-login token for profile
             if user_id:
