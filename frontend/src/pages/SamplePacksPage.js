@@ -8,6 +8,7 @@ import apiService from '../services/api';
 import ProductCard from '../components/product/ProductCard';
 import Button from '../components/common/Button';
 import SEOHead from '../components/common/SEOHead';
+import { useAudio } from '../contexts/AudioContext';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -187,10 +188,11 @@ const ProductGrid = styled.div`
 
 const SamplePacksPage = ({ onAuthClick }) => {
   const navigate = useNavigate();
+  const { playTrack, isCurrentTrack, isTrackPlaying } = useAudio();
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
-    const [samplePacks, setSamplePacks] = useState([]);
+  const [samplePacks, setSamplePacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
@@ -271,12 +273,7 @@ const SamplePacksPage = ({ onAuthClick }) => {
   }, [samplePacks, searchTerm, filters]);
 
   const handlePlay = (product) => {
-    if (currentlyPlaying === product.id) {
-      setCurrentlyPlaying(null);
-    } else {
-      setCurrentlyPlaying(product.id);
-      // Audio preview functionality would be implemented here
-    }
+    playTrack(product);
   };
 
   const handleAddToCart = (product) => {

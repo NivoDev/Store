@@ -314,7 +314,14 @@ const Footer = () => {
           </Copyright>
 
           <LegalLinks>
-            {/* Contact and Support links removed - not in use */}
+            <FooterLink 
+              href="https://guerrillatrance.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: theme.colors.primary[400], fontWeight: theme.typography.weights.medium }}
+            >
+              Made by Guerrilla
+            </FooterLink>
           </LegalLinks>
         </FooterBottom>
       </FooterContent>

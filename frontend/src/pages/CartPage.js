@@ -353,8 +353,22 @@ const CartPage = () => {
         // Clear cart since order is created
         clearCart();
         
-        // Redirect to checkout page
-        navigate('/checkout');
+        // Redirect to checkout page with guest order data
+        navigate('/checkout', { 
+          state: { 
+            guestOrder: {
+              order_number: result.data.order_number,
+              guest_email: guestEmail,
+              items: items.map(item => ({
+                product_id: item.id,
+                title: item.title,
+                price: item.price,
+                quantity: item.quantity,
+                cover_image_url: item.cover_image_url
+              }))
+            }
+          }
+        });
       } else {
         setTermsError(`Verification failed: ${result.error}`);
       }
