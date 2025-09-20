@@ -574,7 +574,9 @@ const CheckoutPage = () => {
     }
   };
 
-  if (items.length === 0) {
+  // Check effective items (cart or guest order items) instead of just cart items
+  const effectiveItems = getEffectiveItems();
+  if (effectiveItems.length === 0) {
     return null; // Will redirect to cart
   }
 
