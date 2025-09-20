@@ -369,12 +369,32 @@ const CheckoutPage = () => {
     }
   }, [isAuthenticated, user]);
 
-  // Redirect if no items in cart
+  // Handle guest order from email verification
   useEffect(() => {
-    if (items.length === 0) {
+    const isFromEmailVerification = location.state?.fromEmailVerification;
+    const guestOrder = location.state?.guestOrder;
+    
+    if (isFromEmailVerification && guestOrder) {
+      // Pre-fill email from guest order
+      setFormData(prev => ({
+        ...prev,
+        email: guestOrder.guest_email || '',
+      }));
+      
+      console.log('📧 Guest order from email verification:', guestOrder);
+    }
+  }, [location.state]);
+
+  // Redirect if no items in cart (unless coming from email verification)
+  useEffect(() => {
+    const isFromEmailVerification = location.state?.fromEmailVerification;
+    const guestOrder = location.state?.guestOrder;
+    const effectiveItems = getEffectiveItems();
+    
+    if (effectiveItems.length === 0 && !isFromEmailVerification && !guestOrder) {
       navigate('/cart');
     }
-  }, [items, navigate]);
+  }, [items, navigate, location.state]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -403,8 +423,18 @@ const CheckoutPage = () => {
     return true;
   };
 
+  // Get effective items (cart items or guest order items)
+  const getEffectiveItems = () => {
+    const guestOrder = location.state?.guestOrder;
+    if (guestOrder && guestOrder.items) {
+      return guestOrder.items;
+    }
+    return items;
+  };
+
   const calculateTotal = () => {
-    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const effectiveItems = getEffectiveItems();
+    return effectiveItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
   const calculateTax = () => {
@@ -423,17 +453,19 @@ const CheckoutPage = () => {
     setError('');
     
     try {
-      // Check if this is a verified guest order
+      // Check if this is a verified guest order (from session or email verification)
       const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
+      const guestOrderFromEmail = location.state?.guestOrder;
       
-      if (verifiedOrder) {
+      if (verifiedOrder || guestOrderFromEmail) {
         // Handle verified guest order completion
-        const orderData = JSON.parse(verifiedOrder);
-        console.log('🛒 Completing verified guest order:', orderData.orderNumber);
+        const orderData = guestOrderFromEmail || JSON.parse(verifiedOrder);
+        const orderNumber = guestOrderFromEmail?.order_number || orderData.orderNumber;
+        console.log('🛒 Completing verified guest order:', orderNumber);
         
         // Complete the verified order with customer info
         const completeOrderData = {
-          order_number: orderData.orderNumber,
+          order_number: orderNumber,
           customer_info: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -467,7 +499,7 @@ const CheckoutPage = () => {
         // Redirect to guest download page
         navigate('/guest-download', { 
           state: { 
-            orderNumber: orderData.orderNumber,
+            orderNumber: orderNumber,
             message: 'Payment successful! Your download links are ready.'
           }
         });
@@ -490,7 +522,7 @@ const CheckoutPage = () => {
             taxId: formData.taxId,
             vatNumber: formData.vatNumber,
           },
-          items: items.map(item => ({
+          items: getEffectiveItems().map(item => ({
             product_id: item.id,
             title: item.title,
             price: item.price,
@@ -843,7 +875,7 @@ const CheckoutPage = () => {
             Order Summary
           </h3>
           
-          {items.map((item, index) => (
+          {getEffectiveItems().map((item, index) => (
             <ProductItem key={index}>
               <ProductImage src={item.cover_image_url} alt={item.title} />
               <ProductInfo>
