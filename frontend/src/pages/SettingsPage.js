@@ -276,11 +276,16 @@ const SettingsPage = () => {
   // Initialize profile data from user
   useEffect(() => {
     if (user) {
+      // Split name into first and last name
+      const nameParts = (user.name || '').split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       setProfileData({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
-        phone: user.phone || '',
-        company: user.company || '',
+        firstName: firstName,
+        lastName: lastName,
+        phone: user.phone_number || '',
+        company: user.company_name || '',
         street_address: user.billing_address?.street_address || '',
         street_address_2: user.billing_address?.street_address_2 || '',
         city: user.billing_address?.city || '',
@@ -308,7 +313,24 @@ const SettingsPage = () => {
     setProfileMessage('');
 
     try {
-      const result = await apiService.updateUserProfile(profileData);
+      // Transform frontend data to backend format
+      const backendData = {
+        name: `${profileData.firstName} ${profileData.lastName}`.trim(),
+        company_name: profileData.company || null,
+        phone_number: profileData.phone || null,
+        vat_number: profileData.vat_number || null,
+        billing_address: {
+          street_address: profileData.street_address || null,
+          street_address_2: profileData.street_address_2 || null,
+          city: profileData.city || null,
+          state_province: profileData.state_province || null,
+          postal_code: profileData.postal_code || null,
+          country: profileData.country || null
+        }
+      };
+
+      console.log('📝 Sending profile data:', backendData);
+      const result = await apiService.updateUserProfile(backendData);
       
       if (result.success) {
         setProfileMessage('Profile updated successfully!');
