@@ -359,7 +359,7 @@ class EmailService:
             # Load and customize thank you template
             html_content = self._load_guest_thank_you_template()
             
-            # Generate product list HTML without download links (for security)
+            # Generate product list HTML with individual download links
             download_links_html = ""
             for link in download_links:
                 download_links_html += f"""
@@ -371,19 +371,25 @@ class EmailService:
                                     <td width="50" style="vertical-align:top;padding-right:12px;">
                                         <img src="{link.get('cover_image_url', '/images/placeholder-product.jpg')}" 
                                              alt="{link.get('title', 'Product')}" 
-                                             width="40" height="40"
-                                             style="display:block;width:40px;height:40px;object-fit:cover;border-radius:4px;">
+                                             width="50" height="50"
+                                             style="display:block;width:50px;height:50px;object-fit:cover;border-radius:6px;">
                                     </td>
                                     <td style="vertical-align:top;">
-                                        <h4 style="margin:0 0 4px;color:#f4f6f8;font:600 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                                        <h4 style="margin:0 0 6px;color:#f8fafc;font:600 16px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                                             {link.get('title', 'Unknown Product')}
                                         </h4>
-                                        <p style="margin:0;color:#9aa0a6;font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                                        <p style="margin:0 0 8px;color:#94a3b8;font:500 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                                             by {link.get('artist', 'Unknown Artist')} • ${link.get('price', '0.00')}
                                         </p>
+                                        <a href="{link.get('download_url', '#')}" 
+                                           target="_blank" 
+                                           rel="noopener noreferrer"
+                                           style="display:inline-block;background:#0ea5e9;color:#ffffff;text-decoration:none;font:700 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:8px 16px;border-radius:6px;box-shadow:0 2px 8px rgba(14,165,233,0.3);">
+                                            Download Now
+                                        </a>
                                     </td>
-                                    <td width="100" style="vertical-align:middle;text-align:right;color:#9aa0a6;font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                                        Purchased ✓
+                                    <td width="100" style="vertical-align:middle;text-align:right;color:#10b981;font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                                        ✓ Purchased
                                     </td>
                                 </tr>
                             </table>
@@ -452,7 +458,7 @@ class EmailService:
         </html>
         """
     
-    def send_user_thank_you_email(self, email: str, name: str, order_number: str, download_links: list) -> bool:
+    def send_user_thank_you_email(self, email: str, name: str, order_number: str, download_links: list, user_id: str = None) -> bool:
         """
         Send thank you email with download links to registered user.
         
@@ -476,28 +482,59 @@ class EmailService:
             download_links_html = ""
             for link in download_links:
                 download_links_html += f"""
-                <div style="margin:12px 0;padding:12px;background:rgba(255,255,255,0.05);border-radius:6px;border:1px solid rgba(255,255,255,0.1);">
-                    <div style="display:flex;align-items:center;gap:12px;">
+                <div style="margin:12px 0;padding:16px;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid rgba(255,255,255,0.1);">
+                    <div style="display:flex;align-items:center;gap:16px;">
                         <img src="{link.get('cover_image_url', '/images/placeholder-product.jpg')}" 
                              alt="{link.get('title', 'Product')}" 
-                             style="width:40px;height:40px;object-fit:cover;border-radius:4px;">
+                             style="width:50px;height:50px;object-fit:cover;border-radius:6px;">
                         <div style="flex:1;">
-                            <h4 style="margin:0 0 4px;color:var(--brand-text);font:600 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                            <h4 style="margin:0 0 6px;color:#f8fafc;font:600 16px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                                 {link.get('title', 'Unknown Product')}
                             </h4>
-                            <p style="margin:0;color:var(--muted);font:500 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                            <p style="margin:0;color:#94a3b8;font:500 14px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                                 by {link.get('artist', 'Unknown Artist')} • {link.get('price', '$0.00')}
                             </p>
                         </div>
                         <a href="{link.get('download_url', '#')}" 
                            target="_blank" 
                            rel="noopener noreferrer"
-                           style="background:var(--brand-accent);color:var(--btn-text);text-decoration:none;font:600 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:8px 16px;border-radius:6px;white-space:nowrap;">
-                            Download
+                           style="background:#0ea5e9;color:#ffffff;text-decoration:none;font:700 14px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:12px 20px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(14,165,233,0.3);transition:all 0.2s ease;">
+                            Download Now
                         </a>
                     </div>
                 </div>
                 """
+            
+            # Generate URLs
+            profile_url = f"{self.base_url}/profile"
+            download_url = f"{self.base_url}/profile"  # Default to profile
+            download_button_text = "Download Now"
+            
+            # If we have download links, use the first one for direct download
+            if download_links and len(download_links) > 0:
+                first_download = download_links[0]
+                if first_download.get('download_url'):
+                    download_url = first_download['download_url']
+                    if len(download_links) > 1:
+                        download_button_text = f"Download {first_download.get('title', 'First Product')}"
+                    else:
+                        download_button_text = f"Download {first_download.get('title', 'Product')}"
+            
+            # If we have user_id, create auto-login token for profile
+            if user_id:
+                try:
+                    from simple_api import create_access_token
+                    import datetime as dt
+                    # Create a short-lived token for auto-login (1 hour)
+                    auto_login_token = create_access_token(
+                        data={"sub": user_id}, 
+                        expires_delta=dt.timedelta(hours=1)
+                    )
+                    profile_url = f"{self.base_url}/auth/auto-login?token={auto_login_token}&redirect=/profile"
+                except Exception as e:
+                    print(f"❌ Error creating auto-login token: {e}")
+                    # Fallback to regular profile URL
+                    profile_url = f"{self.base_url}/profile"
             
             html_content = self._customize_user_thank_you_template(html_content, {
                 "FIRST_NAME": name.split()[0] if name else "User",
@@ -505,8 +542,9 @@ class EmailService:
                 "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
                 "YEAR": str(datetime.now().year),
                 "HELP_URL": f"{self.base_url}/support",
-                "PROFILE_URL": f"{self.base_url}/profile",
-                "DOWNLOAD_PAGE_URL": f"{self.base_url}/profile",
+                "PROFILE_URL": profile_url,
+                "DOWNLOAD_PAGE_URL": download_url,
+                "DOWNLOAD_BUTTON_TEXT": download_button_text,
                 "DOWNLOAD_LINKS": download_links_html
             })
             

@@ -852,6 +852,40 @@ async def google_callback(callback_data: dict):
         print(f"❌ Error in Google callback: {e}")
         raise HTTPException(status_code=500, detail="Google authentication failed")
 
+@app.get("/api/v1/auth/auto-login")
+async def auto_login(token: str, redirect: str = "/"):
+    """Auto-login user with token and redirect"""
+    try:
+        # Verify token
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="Invalid token")
+        
+        # Get user
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Create new access token
+        access_token = create_access_token(data={"sub": str(user["_id"])})
+        
+        # Return redirect response with token
+        return {
+            "message": "Auto-login successful",
+            "redirect_url": f"{redirect}?token={access_token}",
+            "access_token": access_token
+        }
+        
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.JWTError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+    except Exception as e:
+        print(f"❌ Auto-login error: {e}")
+        raise HTTPException(status_code=500, detail="Auto-login failed")
+
 # Products endpoints
 @app.get("/api/v1/products")
 async def get_products(
@@ -1708,7 +1742,8 @@ async def purchase_product(order_data: dict, current_user: dict = Depends(get_cu
                 email=current_user["email"],
                 name=user_name,
                 order_number=order["order_number"],
-                download_links=download_links
+                download_links=download_links,
+                user_id=current_user["id"]
             )
             if thank_you_sent:
                 print(f"✅ User thank you email sent successfully to {current_user['email']}")
@@ -1835,7 +1870,8 @@ async def create_user_order(order_data: dict, current_user: dict = Depends(get_c
                 email=current_user["email"],
                 name=customer_name.strip(),
                 order_number=order_number,
-                download_links=download_links
+                download_links=download_links,
+                user_id=current_user["id"]
             )
             
             if email_sent:
