@@ -314,14 +314,22 @@ const Footer = () => {
           </Copyright>
 
           <LegalLinks>
-            <FooterLink 
+            <a 
               href="https://guerrillatrance.com" 
               target="_blank" 
               rel="noopener noreferrer"
-              style={{ color: theme.colors.primary[400], fontWeight: theme.typography.weights.medium }}
+              style={{ 
+                color: theme.colors.primary[400], 
+                fontWeight: theme.typography.weights.medium,
+                textDecoration: 'none',
+                fontSize: theme.typography.sizes.sm,
+                transition: 'color 0.2s ease'
+              }}
+              onMouseOver={(e) => e.target.style.color = theme.colors.primary[300]}
+              onMouseOut={(e) => e.target.style.color = theme.colors.primary[400]}
             >
               Made by Guerrilla
-            </FooterLink>
+            </a>
           </LegalLinks>
         </FooterBottom>
       </FooterContent>
