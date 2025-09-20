@@ -2435,6 +2435,70 @@ async def update_user_profile(profile_data: dict, current_user: dict = Depends(g
         print(f"❌ Error updating profile: {e}")
         raise HTTPException(status_code=500, detail="Failed to update profile")
 
+@app.post("/api/v1/user/transfer-guest-orders")
+async def transfer_guest_orders(current_user: dict = Depends(get_current_user)):
+    """Transfer guest orders to authenticated user"""
+    try:
+        user_id = current_user["id"]
+        user_email = current_user["email"]
+        
+        print(f"🔄 Transferring guest orders for user: {user_id}, email: {user_email}")
+        
+        # Find all guest orders with matching email
+        guest_orders = await db.guest_orders.find({
+            "guest_email": user_email.lower(),
+            "status": "completed"
+        }).to_list(length=None)
+        
+        if not guest_orders:
+            print(f"ℹ️ No guest orders found for email: {user_email}")
+            return {
+                "message": "No guest orders to transfer",
+                "transferred_count": 0
+            }
+        
+        print(f"📦 Found {len(guest_orders)} guest orders to transfer")
+        
+        # Transfer each guest order to user orders
+        transferred_count = 0
+        for guest_order in guest_orders:
+            try:
+                # Create user order from guest order
+                user_order = {
+                    "user_id": ObjectId(user_id),
+                    "order_number": guest_order["order_number"],
+                    "items": guest_order["items"],
+                    "total_amount": guest_order["total_amount"],
+                    "status": "completed",
+                    "customer_info": guest_order.get("customer_info", {}),
+                    "created_at": guest_order["created_at"],
+                    "updated_at": datetime.utcnow(),
+                    "transferred_from_guest": True
+                }
+                
+                # Insert user order
+                await db.orders.insert_one(user_order)
+                transferred_count += 1
+                
+                print(f"✅ Transferred guest order: {guest_order['order_number']}")
+                
+            except Exception as e:
+                print(f"❌ Error transferring guest order {guest_order.get('order_number', 'unknown')}: {e}")
+                continue
+        
+        print(f"✅ Successfully transferred {transferred_count} guest orders")
+        
+        return {
+            "message": f"Successfully transferred {transferred_count} guest orders",
+            "transferred_count": transferred_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error transferring guest orders: {e}")
+        raise HTTPException(status_code=500, detail="Failed to transfer guest orders")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
