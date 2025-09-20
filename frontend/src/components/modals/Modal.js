@@ -18,6 +18,14 @@ const Overlay = styled(motion.div)`
   align-items: center;
   justify-content: center;
   padding: ${theme.spacing[4]};
+  overflow-y: auto;
+  
+  /* On very small screens, allow modal to scroll within overlay */
+  @media (max-height: 600px) {
+    align-items: flex-start;
+    padding-top: ${theme.spacing[8]};
+    padding-bottom: ${theme.spacing[8]};
+  }
 `;
 
 const ModalContainer = styled(motion.div)`
@@ -29,9 +37,21 @@ const ModalContainer = styled(motion.div)`
   box-shadow: ${theme.shadows.xl};
   max-width: 500px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 85vh;
   overflow-y: auto;
   position: relative;
+  
+  /* Better scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
+  
+  /* Ensure modal doesn't get cut off on small screens */
+  @media (max-height: 700px) {
+    max-height: 80vh;
+  }
+  
+  @media (max-height: 600px) {
+    max-height: 75vh;
+  }
 `;
 
 const Header = styled.div`
