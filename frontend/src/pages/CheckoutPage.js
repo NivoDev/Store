@@ -463,11 +463,63 @@ const CheckoutPage = () => {
     setError('');
     
     try {
-      // Check if this is a verified guest order (from session or email verification)
-      const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
-      const guestOrderFromEmail = location.state?.guestOrder;
-      
-      if (verifiedOrder || guestOrderFromEmail) {
+      // Check if user is authenticated first - authenticated users always use user checkout
+      if (isAuthenticated) {
+        // Handle authenticated user checkout (even if they came from guest email verification)
+        const orderData = {
+          customer: {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            postalCode: formData.postalCode,
+            country: formData.country,
+            companyName: formData.company,
+            businessType: formData.businessType,
+            taxId: formData.taxId,
+            vatNumber: formData.vatNumber,
+          },
+          items: getEffectiveItems().map(item => ({
+            product_id: item.product_id || item.id,
+            title: item.title,
+            price: item.price,
+            quantity: item.quantity,
+            cover_image_url: item.cover_image_url
+          })),
+          subtotal: calculateTotal(),
+          tax: calculateTax(),
+          total: calculateTotal() + calculateTax(),
+          requestInvoice: formData.requestInvoice
+        };
+        
+        console.log('🛒 Creating authenticated user order:', orderData);
+        
+        const result = await apiService.createUserOrder(orderData);
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create order');
+        }
+        
+        console.log('✅ User order created successfully:', result.data);
+        
+        // Clear cart and redirect to profile with success message
+        clearCart();
+        navigate('/profile', { 
+          state: { 
+            message: 'Order completed successfully! Your downloads are now available.',
+            tab: 'purchases'
+          }
+        });
+        
+      } else {
+        // Check if this is a verified guest order (from session or email verification)
+        const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
+        const guestOrderFromEmail = location.state?.guestOrder;
+        
+        if (verifiedOrder || guestOrderFromEmail) {
         // Handle verified guest order completion
         const orderData = guestOrderFromEmail || JSON.parse(verifiedOrder);
         const orderNumber = guestOrderFromEmail?.order_number || orderData.orderNumber;
@@ -514,56 +566,10 @@ const CheckoutPage = () => {
           }
         });
         
-      } else {
-        // Handle regular authenticated user checkout
-        const orderData = {
-          customer: {
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            email: formData.email,
-            phone: formData.phone,
-            address: formData.address,
-            city: formData.city,
-            state: formData.state,
-            postalCode: formData.postalCode,
-            country: formData.country,
-            companyName: formData.company,
-            businessType: formData.businessType,
-            taxId: formData.taxId,
-            vatNumber: formData.vatNumber,
-          },
-          items: getEffectiveItems().map(item => ({
-            product_id: item.product_id || item.id,
-            title: item.title,
-            price: item.price,
-            quantity: item.quantity,
-            cover_image_url: item.cover_image_url
-          })),
-          subtotal: calculateTotal(),
-          tax: calculateTax(),
-          total: calculateTotal() + calculateTax(),
-          requestInvoice: formData.requestInvoice
-        };
-        
-        console.log('🛒 Submitting authenticated user order:', orderData);
-        
-        // Create authenticated user order
-        const result = await apiService.createUserOrder(orderData);
-        
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to create order');
+        } else {
+          // No verified guest order and not authenticated - this shouldn't happen
+          throw new Error('No items to checkout');
         }
-        
-        console.log('✅ Authenticated user order created successfully:', result.data);
-        
-        // Clear cart and redirect to profile page
-        clearCart();
-        navigate('/profile', { 
-          state: { 
-            message: 'Purchase successful! Check your email for download links.',
-            tab: 'purchased'
-          }
-        });
       }
       
     } catch (err) {

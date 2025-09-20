@@ -1994,12 +1994,13 @@ async def verify_guest_email(verification_data: dict):
         if not order:
             raise HTTPException(status_code=400, detail="Invalid or expired verification token")
         
-        # Update order status to email verified (but still pending checkout)
+        # Update order status to verified (ready for checkout completion)
         await db.guest_orders.update_one(
             {"_id": order["_id"]},
             {
                 "$set": {
                     "email_verified": True,
+                    "status": "verified",  # Set status to verified for complete_guest_order
                     "updated_at": datetime.utcnow()
                 }
             }
