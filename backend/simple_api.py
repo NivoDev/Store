@@ -2036,7 +2036,7 @@ async def complete_guest_order(order_data: dict):
                 "$set": {
                     "customer_info": customer_info,
                     "status": "completed",
-                    "downloads_remaining": 3,  # 3 downloads for completed orders
+                    "downloads_remaining": 1,  # 1 download for guest orders
                     "completed_at": datetime.utcnow(),
                     "updated_at": datetime.utcnow()
                 }

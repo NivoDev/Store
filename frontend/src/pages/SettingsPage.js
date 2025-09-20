@@ -232,39 +232,27 @@ const SettingsPage = () => {
         </SettingCard>
 
         {/* Security Settings */}
-        <SettingCard
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <SettingHeader>
-            <SettingIcon>
-              <FiShield size={24} />
-            </SettingIcon>
-            <SettingTitle>Security</SettingTitle>
-          </SettingHeader>
-          <SettingDescription>
-            Manage your account security settings
-          </SettingDescription>
-          {user?.provider === 'email' ? (
+        {/* Security Section - Only show for email users */}
+        {user?.provider === 'email' && (
+          <SettingCard
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <SettingHeader>
+              <SettingIcon>
+                <FiShield size={24} />
+              </SettingIcon>
+              <SettingTitle>Security</SettingTitle>
+            </SettingHeader>
+            <SettingDescription>
+              Manage your account security settings
+            </SettingDescription>
             <Button variant="secondary">
               Change Password
             </Button>
-          ) : (
-            <div style={{ 
-              padding: theme.spacing[4], 
-              background: 'rgba(59, 130, 246, 0.1)', 
-              border: '1px solid rgba(59, 130, 246, 0.3)', 
-              borderRadius: theme.borderRadius.lg,
-              color: theme.colors.dark[300]
-            }}>
-              <p style={{ margin: 0, fontSize: theme.typography.sizes.sm }}>
-                🔐 Password management is handled through your {user?.provider || 'OAuth'} account.
-                To change your password, please visit your {user?.provider || 'OAuth'} account settings.
-              </p>
-            </div>
-          )}
-        </SettingCard>
+          </SettingCard>
+        )}
 
         {/* Danger Zone */}
         <DangerZone
