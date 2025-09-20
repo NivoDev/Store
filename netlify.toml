@@ -6,7 +6,7 @@
   publish = "build"
 
 [build.environment]
-  NODE_VERSION = "18.20.4"           # CRA 5 works great on Node 18
+  NODE_VERSION = "20.11.0"           # Use Node 20 to match package.json requirement
   NPM_VERSION = "10"
   NODE_ENV = "production"
   REACT_APP_API_BASE_URL = "https://store-6ryk.onrender.com/api/v1"
