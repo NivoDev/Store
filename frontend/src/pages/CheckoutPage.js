@@ -585,7 +585,7 @@ const CheckoutPage = () => {
         sessionStorage.removeItem('verifiedGuestOrder');
         
         // Redirect to guest download page
-        navigate('/guest-download', { 
+        navigate('/guest-downloads', { 
           state: { 
             orderNumber: orderNumber,
             message: 'Payment successful! Your download links are ready.'

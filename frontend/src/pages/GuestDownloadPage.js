@@ -311,28 +311,43 @@ const GuestDownloadPage = () => {
   };
 
   useEffect(() => {
-    // Get download links from URL state or localStorage
+    // Get download links from URL state, query params, or localStorage
     const state = location.state;
+    const urlParams = new URLSearchParams(location.search);
+    const orderFromUrl = urlParams.get('order');
+    
     console.log('🔍 GuestDownloadPage - Location state:', state);
+    console.log('🔍 GuestDownloadPage - Order from URL:', orderFromUrl);
     console.log('🔍 GuestDownloadPage - Download links from state:', state?.downloadLinks);
     
-    // If we have an order number, fetch fresh download links
-    if (state?.orderNumber) {
+    // Priority 1: Order number from URL query parameter (email link)
+    if (orderFromUrl) {
+      console.log('📧 Guest accessed via email link, fetching fresh data for order:', orderFromUrl);
+      fetchDownloadLinks(orderFromUrl);
+    }
+    // Priority 2: Order number from location state (payment completion)
+    else if (state?.orderNumber) {
+      console.log('💳 Guest accessed after payment completion, fetching fresh data for order:', state.orderNumber);
       fetchDownloadLinks(state.orderNumber);
-    } else if (state && state.downloadLinks && state.downloadLinks.length > 0) {
+    }
+    // Priority 3: Download links from location state
+    else if (state && state.downloadLinks && state.downloadLinks.length > 0) {
       console.log('✅ Using download links from state');
       setDownloadLinks(state.downloadLinks);
       setLoading(false);
-    } else {
-      // Try to get from localStorage as fallback
+    }
+    // Priority 4: Fallback to localStorage (deprecated, but for backward compatibility)
+    else {
       const storedLinks = localStorage.getItem('guest_download_links');
       console.log('🔍 GuestDownloadPage - Stored links from localStorage:', storedLinks);
       if (storedLinks) {
         try {
           const parsedLinks = JSON.parse(storedLinks);
-          console.log('✅ Using download links from localStorage:', parsedLinks);
+          console.log('⚠️ Using deprecated localStorage data:', parsedLinks);
           if (parsedLinks && parsedLinks.length > 0) {
             setDownloadLinks(parsedLinks);
+            // Clear localStorage since we're using it
+            localStorage.removeItem('guest_download_links');
           } else {
             setError('No download links found. Please complete your purchase first.');
           }
@@ -345,7 +360,7 @@ const GuestDownloadPage = () => {
       }
       setLoading(false);
     }
-  }, [location.state]);
+  }, [location.state, location.search]);
 
   const handleDownload = async (productId, downloadUrl) => {
     setDownloading(prev => ({ ...prev, [productId]: true }));
