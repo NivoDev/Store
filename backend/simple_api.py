@@ -1892,82 +1892,34 @@ async def verify_guest_otp(verification_data: dict):
         if not order:
             raise HTTPException(status_code=400, detail="Invalid or expired OTP code")
         
-        # Complete the purchase and generate download links
-        download_links = []
-        
-        # Generate download links for each item
-        for item in order["items"]:
-            try:
-                product_id = item["product_id"]
-                product = await db.products.find_one({"_id": ObjectId(product_id)})
-                
-                if product:
-                    # Generate R2 download URL
-                    raw_key = product.get("file_path", f"products/{product_id}.zip")
-                    print(f"📁 Guest - Raw file path from DB: '{raw_key}'")
-                    object_key = _normalize_r2_key(raw_key)
-                    print(f"🔗 Guest - Normalized key: '{object_key}'")
-                    expiration_seconds = 3600  # 1 hour
-                    download_url = generate_download_url(object_key, expiration=expiration_seconds)
-                    print(f"✅ Guest - Download URL generated: {download_url}")
-                    
-                    download_links.append({
-                        "product_id": product_id,
-                        "title": item["title"],
-                        "artist": product.get("artist", "Unknown Artist"),
-                        "price": f"${item['price']:.2f}",
-                        "download_url": download_url,
-                        "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg")
-                    })
-                    
-                    print(f"✅ Generated download link for {item['title']}")
-                else:
-                    print(f"❌ Product not found: {product_id}")
-                    
-            except Exception as e:
-                print(f"❌ Error generating download link for {item['title']}: {e}")
-        
-        # Update order status to completed
+        # Update order status to verified (ready for checkout, not completed)
         await db.guest_orders.update_one(
             {"_id": order["_id"]},
             {
                 "$set": {
-                    "status": "completed",
+                    "status": "verified",  # Ready for checkout, not completed
                     "email_verified": True,
-                    "download_links": download_links,
-                    "completed_at": datetime.utcnow(),
                     "updated_at": datetime.utcnow()
                 }
             }
         )
         
-        # Send thank you email with download links
-        try:
-            from services.email_service import email_service
-            print(f"📧 Sending thank you email to {order['guest_email']}")
-            thank_you_sent = email_service.send_guest_thank_you_email(
-                email=order['guest_email'],
-                order_number=order['order_number'],
-                download_links=download_links
-            )
-            if thank_you_sent:
-                print(f"✅ Thank you email sent successfully to {order['guest_email']}")
-            else:
-                print(f"❌ Failed to send thank you email to {order['guest_email']}")
-        except Exception as e:
-            print(f"❌ Error sending thank you email to {order['guest_email']}: {e}")
-            import traceback
-            print(f"❌ Traceback: {traceback.format_exc()}")
+        print(f"✅ Guest email verified for order: {order['order_number']}")
         
-        print(f"✅ Guest purchase completed for order: {order['order_number']}")
-        return {
-            "success": True,
-            "message": "Purchase completed successfully",
+        # Return complete order data for checkout page
+        order_data = {
+            "message": "Email verified successfully",
             "order_id": str(order["_id"]),
             "order_number": order["order_number"],
-            "download_links": download_links,
-            "verified": True
+            "verified": True,
+            "guest_email": order.get("guest_email", ""),
+            "items": order.get("items", []),
+            "subtotal": order.get("subtotal", 0),
+            "tax": order.get("tax", 0),
+            "total_amount": order.get("total_amount", 0)
         }
+        
+        return order_data
         
     except HTTPException:
         raise

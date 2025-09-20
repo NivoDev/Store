@@ -355,27 +355,6 @@ const CartPage = () => {
         
         // Redirect to checkout page
         navigate('/checkout');
-        console.log('📥 Download links:', result.data.download_links);
-        
-        // Store download links in localStorage as backup
-        if (result.data.download_links && result.data.download_links.length > 0) {
-          localStorage.setItem('guest_download_links', JSON.stringify(result.data.download_links));
-          console.log('💾 Stored download links in localStorage as backup');
-        }
-        
-        // Set up automatic redirect after 3 seconds
-        const timer = setTimeout(() => {
-          // Redirect to guest download page with order data
-          navigate('/guest-downloads', { 
-            state: { 
-              downloadLinks: result.data.download_links || [],
-              orderNumber: result.data.order_number,
-              orderId: result.data.order_id
-            }
-          });
-        }, 3000);
-        
-        setRedirectTimer(timer);
       } else {
         setTermsError(`Verification failed: ${result.error}`);
       }
