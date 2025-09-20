@@ -1560,6 +1560,10 @@ async def update_user_profile(profile_data: dict, current_user: dict = Depends(g
         user_id = current_user["id"]
         print(f"📝 Updating profile for user: {user_id}")
         
+        # Security check: Reject any attempt to update email
+        if "email" in profile_data:
+            raise HTTPException(status_code=400, detail="Email cannot be updated through this endpoint")
+        
         # Prepare update data
         update_data = {
             "updated_at": datetime.utcnow()

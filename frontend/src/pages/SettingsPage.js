@@ -392,6 +392,7 @@ const SettingsPage = () => {
             <div>
               <div style={{ marginBottom: theme.spacing[6] }}>
                 <h4 style={{ color: theme.colors.dark[100], marginBottom: theme.spacing[3] }}>Personal Information</h4>
+                <p><strong>Email:</strong> {user?.email || 'Not set'} <span style={{ color: theme.colors.dark[400], fontSize: '0.875rem' }}>(cannot be changed)</span></p>
                 <p><strong>Name:</strong> {user?.name || 'Not set'}</p>
                 <p><strong>Company:</strong> {user?.company_name || 'Not set'}</p>
                 <p><strong>Phone:</strong> {user?.phone_number || 'Not set'}</p>
