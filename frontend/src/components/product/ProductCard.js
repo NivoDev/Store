@@ -605,10 +605,13 @@ const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDo
               size="sm"
               fullWidth
               onClick={onDownload}
-              disabled={isDownloading}
+              disabled={isDownloading || !canDownload}
+              title={!canDownload ? `No downloads remaining (${downloadsRemaining}/3 used)` : undefined}
             >
               <FiDownload size={16} />
-              {isDownloading ? 'Generating...' : 'Download'}
+              {isDownloading ? 'Generating...' : 
+               !canDownload ? `No Downloads Left (${downloadsRemaining}/3)` :
+               `Download (${downloadsRemaining} left)`}
             </Button>
           ) : showDownload ? (
             <Button

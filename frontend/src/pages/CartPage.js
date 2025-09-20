@@ -18,13 +18,6 @@ const PageContainer = styled.div`
 const Container = styled.div`
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 ${theme.spacing[4]};
-  width: 100%;
-  box-sizing: border-box;
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    padding: 0 ${theme.spacing[3]};
-  }
 `;
 
 const Title = styled.h1`
@@ -33,18 +26,6 @@ const Title = styled.h1`
   font-weight: ${theme.typography.weights.bold};
   color: ${theme.colors.dark[50]};
   margin-bottom: ${theme.spacing[8]};
-  text-align: center;
-  word-break: break-word;
-  overflow-wrap: break-word;
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    font-size: ${theme.typography.sizes['2xl']};
-    margin-bottom: ${theme.spacing[6]};
-  }
-  
-  @media (max-width: 400px) {
-    font-size: ${theme.typography.sizes.xl};
-  }
 `;
 
 const CartGrid = styled.div`
@@ -776,7 +757,7 @@ const CartPage = () => {
                 border: '1px solid rgba(255, 255, 255, 0.2)'
               }}
             >
-              Continue as Guest
+              Continue as Guest (1 Download Only)
             </Button>
           </div>
           
@@ -802,7 +783,7 @@ const CartPage = () => {
               fontSize: theme.typography.sizes.sm,
               lineHeight: 1.6
             }}>
-              <li><strong>Unlimited downloads per purchase</strong></li>
+              <li><strong>3 downloads per purchase</strong> (vs 1 for guests)</li>
               <li>Dedicated account page with purchase history</li>
               <li>Save your favorite products</li>
               <li>Access to exclusive content and updates</li>
@@ -822,8 +803,8 @@ const CartPage = () => {
               fontSize: theme.typography.sizes.sm,
               lineHeight: 1.5
             }}>
-              <strong>Guest Checkout:</strong> Quick and simple checkout with instant access to your downloads. 
-              No account required, but you'll miss out on the account benefits above.
+              <strong>Guest Checkout:</strong> Quick but limited to 1 download per purchase. 
+              No account required, but you'll miss out on the full experience.
             </p>
           </div>
         </ModalContent>

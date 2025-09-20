@@ -1532,6 +1532,39 @@ async def get_purchased_products(current_user: dict = Depends(get_current_user))
         print(f"❌ Error getting purchased products: {e}")
         raise HTTPException(status_code=500, detail="Failed to get purchased products")
 
+@app.get("/api/v1/profile/check-purchased/{product_id}")
+async def check_product_purchased(product_id: str, current_user: dict = Depends(get_current_user)):
+    """Check if user has already purchased a specific product"""
+    try:
+        user_id = current_user["id"]
+        
+        # Validate product ID format
+        try:
+            product_oid = ObjectId(product_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid product ID format")
+        
+        # Check if user exists and has purchased this product
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        purchased_products = user.get("purchased_products", [])
+        has_purchased = product_oid in purchased_products
+        
+        print(f"🔍 User {user_id} purchase check for product {product_id}: {has_purchased}")
+        
+        return {
+            "has_purchased": has_purchased,
+            "product_id": product_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error checking purchased product: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check purchased product")
+
 @app.post("/api/v1/profile/toggle-like")
 async def toggle_like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
     """Toggle like status for a product"""

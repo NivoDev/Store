@@ -9,37 +9,20 @@
   <meta name="supported-color-schemes" content="light dark">
   <title>Verify your email</title>
   <style>
-    :root{
-      --brand-bg:#0b0b10;
-      --brand-card:#161622;
-      --brand-accent:#ff2a6d; /* tweak to match your brand */
-      --brand-text:#f4f6f8;
-      --muted:#9aa0a6;
-      --border:#26263a;
-      --btn-text:#0b0b10;
-      --radius:12px;
-    }
     @media (max-width:600px){
       .container{width:100% !important}
       .px{padding-left:20px !important;padding-right:20px !important}
       .stack{display:block !important;width:100% !important}
     }
-    /* Dark-mode hints for clients that support it */
-    @media (prefers-color-scheme:dark){
-      .bg{background:var(--brand-bg) !important}
-      .card{background:var(--brand-card) !important}
-      .text{color:var(--brand-text) !important}
-      .muted{color:var(--muted) !important}
-    }
   </style>
 </head>
-<body class="bg" style="margin:0;background:var(--brand-bg);">
+<body class="bg" style="margin:0;background:#0f172a;">
   <!-- Preheader (hidden preview text) -->
   <div style="display:none;max-height:0;overflow:hidden;">
     Verify your email to proceed with your order at Atomic Rose Tools.
   </div>
 
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:var(--brand-bg);" bgcolor="#0b0b10">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#0f172a;" bgcolor="#0f172a">
     <tr>
       <td align="center" style="padding:24px;">
         <table role="presentation" width="600" class="container" cellspacing="0" cellpadding="0" style="width:600px;">
@@ -48,10 +31,10 @@
               <!-- Brand -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td class="text" style="font:700 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);letter-spacing:.5px;">
+                  <td class="text" style="font:700 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f8fafc;letter-spacing:.5px;">
                     Atomic Rose Tools
                   </td>
-                  <td align="right" class="muted" style="font:500 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--muted);">
+                  <td align="right" class="muted" style="font:500 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#94a3b8;">
                     {{EMAIL_DATE}}
                   </td>
                 </tr>
@@ -61,28 +44,28 @@
 
           <tr>
             <td class="px" style="padding:0 32px 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="card" style="background:var(--brand-card);border:1px solid var(--border);border-radius:var(--radius);">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="card" style="background:#1e293b;border:1px solid #334155;border-radius:12px;">
                 <tr>
-                  <td class="text" style="padding:32px;color:var(--brand-text);font:400 16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                    <h1 style="margin:0 0 12px;font:700 24px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);">
+                  <td class="text" style="padding:32px;color:#f8fafc;font:400 16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                    <h1 style="margin:0 0 12px;font:700 24px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f8fafc;">
                       Verify Your Email
                     </h1>
-                    <p style="margin:0 0 16px;color:var(--muted);">
+                    <p style="margin:0 0 16px;color:#94a3b8;">
                       Thanks for your interest! Please verify your email address to proceed with your purchase and access your downloads.
                     </p>
 
                     <!-- Order Details -->
-                    <div style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:20px;margin:20px 0;">
-                      <p style="margin:0 0 8px;font:600 16px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);">
+                    <div style="background:rgba(255,255,255,0.05);border:1px solid #334155;border-radius:8px;padding:20px;margin:20px 0;">
+                      <p style="margin:0 0 8px;font:600 16px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f8fafc;">
                         Order #{{ORDER_NUMBER}}
                       </p>
-                      <p style="margin:0 0 8px;color:var(--muted);">
-                        Email: <span style="color:#fff;">{{EMAIL_ADDRESS}}</span>
+                      <p style="margin:0 0 8px;color:#94a3b8;">
+                        Email: <span style="color:#f8fafc;">{{EMAIL_ADDRESS}}</span>
                       </p>
-                      <p style="margin:0 0 8px;color:var(--muted);">
+                      <p style="margin:0 0 8px;color:#94a3b8;">
                         Items: {{ITEMS_COUNT}} product(s)
                       </p>
-                      <p style="margin:0;font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-accent);">
+                      <p style="margin:0;font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#0ea5e9;">
                         Total: {{TOTAL_AMOUNT}}
                       </p>
                     </div>
@@ -97,13 +80,13 @@
                           {{OTP_CODE}}
                         </span>
                       </div>
-                      <p style="margin:12px 0 0;color:var(--muted);font:500 12px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                      <p style="margin:12px 0 0;color:#94a3b8;font:500 12px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                         This code expires in {{EXPIRES_IN_HOURS}} hours
                       </p>
                     </div>
 
 
-                    <p class="muted" style="margin:16px 0 0;color:var(--muted);font-size:13px;">
+                    <p class="muted" style="margin:16px 0 0;color:#94a3b8;font-size:13px;">
                       This link expires in {{EXPIRES_IN_HOURS}} hours. If you didn't initiate this purchase, you can ignore this email.
                     </p>
                   </td>
@@ -112,7 +95,7 @@
 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px;">
                 <tr>
-                  <td class="muted" style="color:var(--muted);font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                  <td class="muted" style="color:#94a3b8;font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                     You're receiving this secure, transactional email because a purchase was initiated on Atomic Rose Tools.
                     Do not share this code or link with anyone.
                   </td>
@@ -126,8 +109,8 @@
             <td class="px" style="padding:0 32px 40px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td class="muted" style="color:var(--muted);font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;" align="center">
-                    © {{YEAR}} Atomic Rose Tools • <a href="{{HELP_URL}}" target="_blank" style="color:var(--muted);text-decoration:underline;">Support</a>
+                  <td class="muted" style="color:#94a3b8;font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;" align="center">
+                    © {{YEAR}} Atomic Rose Tools • <a href="{{HELP_URL}}" target="_blank" style="color:#94a3b8;text-decoration:underline;">Support</a>
                   </td>
                 </tr>
               </table>

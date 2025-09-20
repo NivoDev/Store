@@ -277,6 +277,7 @@ const GuestDownloadPage = () => {
   const [error, setError] = useState('');
   const [downloading, setDownloading] = useState({});
   const [orderNumber, setOrderNumber] = useState('');
+  const [downloadsRemaining, setDownloadsRemaining] = useState(0);
 
   const fetchDownloadLinks = async (orderNumber) => {
     try {
@@ -296,6 +297,7 @@ const GuestDownloadPage = () => {
       if (data.download_links && data.download_links.length > 0) {
         setDownloadLinks(data.download_links);
         setOrderNumber(data.order_number);
+        setDownloadsRemaining(data.downloads_remaining);
         setError(null);
       } else {
         setError('No download links available for this order.');
@@ -309,43 +311,28 @@ const GuestDownloadPage = () => {
   };
 
   useEffect(() => {
-    // Get download links from URL state, query params, or localStorage
+    // Get download links from URL state or localStorage
     const state = location.state;
-    const urlParams = new URLSearchParams(location.search);
-    const orderFromUrl = urlParams.get('order');
-    
     console.log('🔍 GuestDownloadPage - Location state:', state);
-    console.log('🔍 GuestDownloadPage - Order from URL:', orderFromUrl);
     console.log('🔍 GuestDownloadPage - Download links from state:', state?.downloadLinks);
     
-    // Priority 1: Order number from URL query parameter (email link)
-    if (orderFromUrl) {
-      console.log('📧 Guest accessed via email link, fetching fresh data for order:', orderFromUrl);
-      fetchDownloadLinks(orderFromUrl);
-    }
-    // Priority 2: Order number from location state (payment completion)
-    else if (state?.orderNumber) {
-      console.log('💳 Guest accessed after payment completion, fetching fresh data for order:', state.orderNumber);
+    // If we have an order number, fetch fresh download links
+    if (state?.orderNumber) {
       fetchDownloadLinks(state.orderNumber);
-    }
-    // Priority 3: Download links from location state
-    else if (state && state.downloadLinks && state.downloadLinks.length > 0) {
+    } else if (state && state.downloadLinks && state.downloadLinks.length > 0) {
       console.log('✅ Using download links from state');
       setDownloadLinks(state.downloadLinks);
       setLoading(false);
-    }
-    // Priority 4: Fallback to localStorage (deprecated, but for backward compatibility)
-    else {
+    } else {
+      // Try to get from localStorage as fallback
       const storedLinks = localStorage.getItem('guest_download_links');
       console.log('🔍 GuestDownloadPage - Stored links from localStorage:', storedLinks);
       if (storedLinks) {
         try {
           const parsedLinks = JSON.parse(storedLinks);
-          console.log('⚠️ Using deprecated localStorage data:', parsedLinks);
+          console.log('✅ Using download links from localStorage:', parsedLinks);
           if (parsedLinks && parsedLinks.length > 0) {
             setDownloadLinks(parsedLinks);
-            // Clear localStorage since we're using it
-            localStorage.removeItem('guest_download_links');
           } else {
             setError('No download links found. Please complete your purchase first.');
           }
@@ -358,12 +345,18 @@ const GuestDownloadPage = () => {
       }
       setLoading(false);
     }
-  }, [location.state, location.search]);
+  }, [location.state]);
 
   const handleDownload = async (productId, downloadUrl) => {
     setDownloading(prev => ({ ...prev, [productId]: true }));
     
     try {
+      // Check if we have downloads remaining
+      if (downloadsRemaining <= 0) {
+        setError('No downloads remaining for this order.');
+        return;
+      }
+      
       // Create a temporary link and trigger download
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -373,7 +366,28 @@ const GuestDownloadPage = () => {
       link.click();
       document.body.removeChild(link);
       
+      // Mark as downloaded (disable button)
+      setDownloadLinks(prev => 
+        prev.map(link => 
+          link.product_id === productId 
+            ? { ...link, downloaded: true }
+            : link
+        )
+      );
+      
+      // Decrease downloads remaining
+      setDownloadsRemaining(prev => prev - 1);
+      
       console.log(`✅ Download started for product ${productId}`);
+      
+      // If no downloads remaining, refresh the page to get updated status
+      if (downloadsRemaining <= 1) {
+        setTimeout(() => {
+          if (orderNumber) {
+            fetchDownloadLinks(orderNumber);
+          }
+        }, 2000);
+      }
     } catch (err) {
       console.error('Download error:', err);
       setError('Failed to download file. Please try again.');
@@ -421,66 +435,6 @@ const GuestDownloadPage = () => {
     );
   }
 
-  // Special case: If coming from payment completion (has orderNumber but no downloads yet)
-  const isFromPaymentCompletion = location.state?.orderNumber && downloadLinks.length === 0 && !error && !loading;
-  
-  if (isFromPaymentCompletion) {
-    return (
-      <PageContainer>
-        <Container>
-          <Header>
-            <Title>Thank You! 🎉</Title>
-            <Subtitle>
-              Your payment has been processed successfully!
-            </Subtitle>
-          </Header>
-
-          <DownloadInfo style={{ 
-            background: 'rgba(34, 197, 94, 0.1)', 
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            marginBottom: theme.spacing[6]
-          }}>
-            <InfoText style={{ 
-              color: '#22c55e',
-              fontSize: theme.typography.sizes.lg,
-              fontWeight: theme.typography.weights.medium,
-              marginBottom: theme.spacing[3]
-            }}>
-              ✅ Payment Successful!
-            </InfoText>
-            <InfoText style={{ 
-              color: theme.colors.dark[200],
-              fontSize: theme.typography.sizes.base,
-              lineHeight: 1.6
-            }}>
-              Your download links have been sent to your email address. 
-              Please check your inbox (and spam folder) for an email with the subject "Thank You for Your Purchase!"
-            </InfoText>
-          </DownloadInfo>
-
-          <DownloadInfo style={{ 
-            background: 'rgba(0, 255, 255, 0.1)', 
-            border: '1px solid rgba(0, 255, 255, 0.3)'
-          }}>
-            <InfoText style={{ 
-              color: '#00ffff',
-              fontSize: theme.typography.sizes.base,
-              fontWeight: theme.typography.weights.medium
-            }}>
-              📧 Click the "Access Your Downloads" button in your email to download your files.
-            </InfoText>
-          </DownloadInfo>
-
-          <div style={{ textAlign: 'center', marginTop: theme.spacing[8] }}>
-            <BackButton onClick={handleBackToHome}>
-              Back to Home
-            </BackButton>
-          </div>
-        </Container>
-      </PageContainer>
-    );
-  }
-
   if (downloadLinks.length === 0) {
     return (
       <PageContainer>
@@ -505,29 +459,51 @@ const GuestDownloadPage = () => {
         <Header>
           <Title>Thank You! 🎉</Title>
           <Subtitle>
-            Your purchase has been completed successfully! Download your purchased products below.
+            Your purchase has been completed successfully! Download your purchased products below. 
+            Each download link can only be used once.
           </Subtitle>
         </Header>
 
         <DownloadInfo>
           <InfoText>
-            💾 Make sure to save your files after downloading to your preferred location.
+            ⚠️ Each download link can only be used once. Make sure to save your files after downloading.
           </InfoText>
         </DownloadInfo>
 
         <DownloadInfo style={{ 
           background: 'rgba(34, 197, 94, 0.1)', 
           border: '1px solid rgba(34, 197, 94, 0.3)',
-          marginBottom: theme.spacing[6]
+          marginBottom: theme.spacing[6],
+          position: 'relative'
         }}>
           <InfoText style={{ 
             color: '#22c55e',
             fontSize: theme.typography.sizes.base,
             fontWeight: theme.typography.weights.medium
           }}>
-            📧 A download link has been sent to your email address for easy access. 
+            📧 A download link has been sent to your email address for additional access. 
             Check your inbox and spam folder.
           </InfoText>
+          {downloadsRemaining > 0 && (
+            <InfoText style={{ 
+              marginTop: '16px', 
+              color: '#00ffff',
+              fontSize: theme.typography.sizes.base,
+              fontWeight: theme.typography.weights.medium
+            }}>
+              ⬇️ Downloads remaining: {downloadsRemaining}
+            </InfoText>
+          )}
+          {downloadsRemaining === 0 && (
+            <InfoText style={{ 
+              marginTop: '16px', 
+              color: '#ff6b6b',
+              fontSize: theme.typography.sizes.base,
+              fontWeight: theme.typography.weights.medium
+            }}>
+              ⚠️ No downloads remaining for this order
+            </InfoText>
+          )}
         </DownloadInfo>
 
         {downloadLinks.map((link) => (
@@ -550,13 +526,17 @@ const GuestDownloadPage = () => {
             <DownloadSection>
               <DownloadButton
                 onClick={() => handleDownload(link.product_id, link.download_url)}
-                disabled={downloading[link.product_id]}
+                disabled={link.downloaded || downloading[link.product_id] || downloadsRemaining <= 0}
               >
                 {downloading[link.product_id] ? (
                   <>
                     <LoadingSpinner />
                     Downloading...
                   </>
+                ) : link.downloaded ? (
+                  'Downloaded ✓'
+                ) : downloadsRemaining <= 0 ? (
+                  'No Downloads Remaining'
                 ) : (
                   'Download Now'
                 )}

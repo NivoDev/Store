@@ -9,26 +9,10 @@
   <meta name="supported-color-schemes" content="light dark">
   <title>Thank You for Your Purchase</title>
   <style>
-    :root{
-      --brand-bg:#0b0b10;
-      --brand-card:#161622;
-      --brand-accent:#ff2a6d;
-      --brand-text:#f4f6f8;
-      --muted:#9aa0a6;
-      --border:#26263a;
-      --btn-text:#0b0b10;
-      --radius:12px;
-    }
     @media (max-width:600px){
       .container{width:100% !important}
       .px{padding-left:20px !important;padding-right:20px !important}
       .stack{display:block !important;width:100% !important}
-    }
-    @media (prefers-color-scheme:dark){
-      .bg{background:var(--brand-bg) !important}
-      .card{background:var(--brand-card) !important}
-      .text{color:var(--brand-text) !important}
-      .muted{color:var(--muted) !important}
     }
   </style>
 </head>
@@ -46,10 +30,10 @@
               <!-- Brand -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td class="text" style="font:700 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f4f6f8;letter-spacing:.5px;">
+                  <td class="text" style="font:700 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f8fafc;letter-spacing:.5px;">
                     Atomic Rose Tools
                   </td>
-                  <td align="right" class="muted" style="font:500 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#9aa0a6;">
+                  <td align="right" class="muted" style="font:500 12px/1 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#94a3b8;">
                     {{EMAIL_DATE}}
                   </td>
                 </tr>
@@ -58,20 +42,20 @@
           </tr>
           <tr>
             <td class="px" style="padding:0 32px 32px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="card" style="background:#161622;border:1px solid #26263a;border-radius:12px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="card" style="background:#1e293b;border:1px solid #334155;border-radius:12px;">
                 <tr>
-                  <td class="text" style="padding:32px;color:#f4f6f8;font:400 16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                    <h1 style="margin:0 0 12px;font:700 24px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f4f6f8;">
+                  <td class="text" style="padding:32px;color:#f8fafc;font:400 16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                    <h1 style="margin:0 0 12px;font:700 24px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#f8fafc;">
                       Thank You for Your Purchase! 🎉
                     </h1>
-                    <p style="margin:0 0 16px;color:#9aa0a6;">
-                      Hi there! Your order <strong style="color:#f4f6f8;">{{ORDER_NUMBER}}</strong> has been completed successfully. 
+                    <p style="margin:0 0 16px;color:#94a3b8;">
+                      Hi there! Your order <strong style="color:#f8fafc;">{{ORDER_NUMBER}}</strong> has been completed successfully. 
                       Click the button below to access your downloads securely.
                     </p>
                     
                     <!-- Purchased Products Section -->
-                    <div style="margin:24px 0;padding:20px;background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.2);border-radius:8px;">
-                      <h3 style="margin:0 0 16px;color:#f4f6f8;font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                    <div style="margin:24px 0;padding:20px;background:rgba(14,165,233,0.1);border:1px solid rgba(14,165,233,0.3);border-radius:8px;">
+                      <h3 style="margin:0 0 16px;color:#f8fafc;font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                         🎵 Your Purchased Products
                       </h3>
                       <div style="margin:16px 0;">
@@ -80,10 +64,10 @@
                     </div>
                     
                     <!-- Important Notice -->
-                    <div style="margin:24px 0;padding:16px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
-                      <p style="margin:0;color:#ffc107;font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                    <div style="margin:24px 0;padding:16px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;">
+                      <p style="margin:0;color:#f59e0b;font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                         🔐 <strong>Secure Access:</strong> Use the "Access Your Downloads" button below to get your download links. 
-                        Each download is limited and expires in 24 hours.
+                        Download links expire in 24 hours for security, but you can generate new ones anytime.
                       </p>
                     </div>
                     
@@ -91,14 +75,14 @@
                     <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
                       <tr>
                         <td>
-                          <a href="{{DOWNLOAD_PAGE_URL}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#ff2a6d;color:#ffffff;text-decoration:none;font:700 16px/48px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:0 24px;border-radius:10px;min-width:200px;text-align:center;">
+                          <a href="{{DOWNLOAD_PAGE_URL}}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#0ea5e9;color:#ffffff;text-decoration:none;font:700 16px/48px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:0 24px;border-radius:10px;min-width:200px;text-align:center;">
                             Access Your Downloads
                           </a>
                         </td>
                       </tr>
                     </table>
                     
-                    <p class="muted" style="margin:16px 0 0;color:#9aa0a6;font-size:13px;">
+                    <p class="muted" style="margin:16px 0 0;color:#94a3b8;font-size:13px;">
                       If you have any questions or need support, please contact us at support@atomicrosetools.com
                     </p>
                   </td>
@@ -107,7 +91,7 @@
               
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:16px;">
                 <tr>
-                  <td class="muted" style="color:#9aa0a6;font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
+                  <td class="muted" style="color:#94a3b8;font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                     You're receiving this email because you completed a purchase on Atomic Rose Tools.
                   </td>
                 </tr>
@@ -118,8 +102,8 @@
             <td class="px" style="padding:0 32px 40px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td class="muted" style="color:#9aa0a6;font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;" align="center">
-                    © {{YEAR}} Atomic Rose Tools • <a href="{{HELP_URL}}" target="_blank" style="color:#9aa0a6;text-decoration:underline;">Support</a>
+                  <td class="muted" style="color:#94a3b8;font:500 12px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;" align="center">
+                    © {{YEAR}} Atomic Rose Tools • <a href="{{HELP_URL}}" target="_blank" style="color:#94a3b8;text-decoration:underline;">Support</a>
                   </td>
                 </tr>
               </table>
