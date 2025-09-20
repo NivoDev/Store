@@ -7,7 +7,6 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, HTTPException, status, Depends
-from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -197,10 +196,6 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
         "id": str(user_doc.get("_id")),
         "name": user_doc.get("name"),
         "email": user_doc.get("email"),
-        "company_name": user_doc.get("company_name"),
-        "phone_number": user_doc.get("phone_number"),
-        "vat_number": user_doc.get("vat_number"),
-        "billing_address": user_doc.get("billing_address"),
         "avatar_url": user_doc.get("avatar_url"),
         "bio": user_doc.get("bio"),
         "provider": user_doc.get("provider", "email"),
@@ -347,35 +342,6 @@ async def test_email(test_data: dict):
 async def options_handler(path: str):
     """Handle all OPTIONS requests for CORS preflight"""
     return {"message": "OK"}
-
-async def create_auto_login_token(user_id: str, redirect_url: str = "/profile", expires_in_hours: int = 24):
-    """Create an auto-login token for email links"""
-    try:
-        # Generate a secure random token
-        token = secrets.token_urlsafe(32)
-        
-        # Create expiration time
-        expires_at = datetime.utcnow() + timedelta(hours=expires_in_hours)
-        
-        # Store token in database
-        token_data = {
-            "token": token,
-            "user_id": user_id,
-            "redirect_url": redirect_url,
-            "expires_at": expires_at,
-            "used": False,
-            "created_at": datetime.utcnow()
-        }
-        
-        await db.auto_login_tokens.insert_one(token_data)
-        print(f"✅ Created auto-login token for user: {user_id}")
-        
-        return token
-        
-    except Exception as e:
-        print(f"❌ Error creating auto-login token: {e}")
-        return None
-
 
 # Authentication endpoints
 @app.post("/api/v1/auth/register")
@@ -987,6 +953,43 @@ async def get_new_products():
     """Get new products"""
     return await get_products(new=True, limit=10)
 
+@app.get("/api/v1/products/category-counts")
+async def get_category_counts():
+    """Get product counts by category"""
+    global mongodb_connected
+    try:
+        if not mongodb_connected:
+            print("❌ Database not connected, returning default counts")
+            return {
+                "sample_packs": 0,
+                "midi_packs": 0,
+                "acapellas": 0
+            }
+        
+        collection = db.products
+        
+        # Count products by type
+        sample_packs_count = await collection.count_documents({"type": "sample_pack"})
+        midi_packs_count = await collection.count_documents({"type": "midi_pack"})
+        acapellas_count = await collection.count_documents({"type": "acapella"})
+        
+        print(f"📊 Category counts - Sample Packs: {sample_packs_count}, MIDI Packs: {midi_packs_count}, Acapellas: {acapellas_count}")
+        
+        return {
+            "sample_packs": sample_packs_count,
+            "midi_packs": midi_packs_count,
+            "acapellas": acapellas_count
+        }
+        
+    except Exception as e:
+        print(f"❌ Error getting category counts: {e}")
+        # Return default counts on error
+        return {
+            "sample_packs": 0,
+            "midi_packs": 0,
+            "acapellas": 0
+        }
+
 # Users endpoints
 @app.get("/api/v1/users")
 async def get_users(skip: int = 0, limit: int = 20):
@@ -1342,8 +1345,15 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         download_url = generate_download_url(object_key, expiration=expiration_seconds)
         print(f"✅ Download URL generated: {download_url}")
         
-        # Log download event (no longer decrementing counter)
+        # Decrement the order's download counter
         order = order_info["order"]
+        await db.orders.update_one(
+            {"_id": order["_id"]},
+            {
+                "$inc": {"downloads_remaining": -1},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
         
         # Log download event
         download_event = {
@@ -1360,6 +1370,9 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         await db.download_events.insert_one(download_event)
         print(f"📝 Download event logged for order {order.get('order_number')}")
         
+        # Get updated download info for this order
+        updated_downloads_remaining = order_info["downloads_remaining"] - 1
+        
         return {
             "download_url": download_url,
             "expires_in": expiration_seconds,
@@ -1367,6 +1380,7 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
             "product_title": product.get("title", "Unknown Product"),
             "order_number": order.get("order_number"),
             "download_info": {
+                "downloads_remaining": updated_downloads_remaining,
                 "order_id": str(order["_id"])
             }
         }
@@ -1517,39 +1531,6 @@ async def get_purchased_products(current_user: dict = Depends(get_current_user))
         print(f"❌ Error getting purchased products: {e}")
         raise HTTPException(status_code=500, detail="Failed to get purchased products")
 
-@app.get("/api/v1/profile/check-purchased/{product_id}")
-async def check_product_purchased(product_id: str, current_user: dict = Depends(get_current_user)):
-    """Check if user has already purchased a specific product"""
-    try:
-        user_id = current_user["id"]
-        
-        # Validate product ID format
-        try:
-            product_oid = ObjectId(product_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid product ID format")
-        
-        # Check if user exists and has purchased this product
-        user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        
-        purchased_products = user.get("purchased_products", [])
-        has_purchased = product_oid in purchased_products
-        
-        print(f"🔍 User {user_id} purchase check for product {product_id}: {has_purchased}")
-        
-        return {
-            "has_purchased": has_purchased,
-            "product_id": product_id
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error checking purchased product: {e}")
-        raise HTTPException(status_code=500, detail="Failed to check purchased product")
-
 @app.post("/api/v1/profile/toggle-like")
 async def toggle_like_product(product_data: dict, current_user: dict = Depends(get_current_user)):
     """Toggle like status for a product"""
@@ -1607,127 +1588,6 @@ async def toggle_like_product(product_data: dict, current_user: dict = Depends(g
     except Exception as e:
         print(f"❌ Error toggling like: {e}")
         raise HTTPException(status_code=500, detail="Failed to toggle like")
-
-
-@app.put("/api/v1/profile/update")
-async def update_user_profile(profile_data: dict, current_user: dict = Depends(get_current_user)):
-    """Update user profile information"""
-    try:
-        user_id = current_user["id"]
-        print(f"📝 Updating profile for user: {user_id}")
-        
-        # Security check: Reject any attempt to update email
-        if "email" in profile_data:
-            raise HTTPException(status_code=400, detail="Email cannot be updated through this endpoint")
-        
-        # Prepare update data
-        update_data = {
-            "updated_at": datetime.utcnow()
-        }
-        
-        # Add fields that are provided
-        if "name" in profile_data and profile_data["name"]:
-            update_data["name"] = profile_data["name"].strip()
-            
-        if "company_name" in profile_data:
-            update_data["company_name"] = profile_data["company_name"].strip() if profile_data["company_name"] else None
-            
-        if "phone_number" in profile_data:
-            update_data["phone_number"] = profile_data["phone_number"].strip() if profile_data["phone_number"] else None
-            
-        if "vat_number" in profile_data:
-            update_data["vat_number"] = profile_data["vat_number"].strip() if profile_data["vat_number"] else None
-        
-        # Handle billing address
-        if "billing_address" in profile_data and isinstance(profile_data["billing_address"], dict):
-            billing_address = {}
-            address_data = profile_data["billing_address"]
-            
-            # Only include non-empty fields
-            for field in ["street_address", "street_address_2", "city", "state_province", "postal_code", "country"]:
-                if field in address_data and address_data[field]:
-                    billing_address[field] = address_data[field].strip()
-                else:
-                    billing_address[field] = None
-            
-            update_data["billing_address"] = billing_address
-        
-        print(f"📝 Update data: {update_data}")
-        
-        # Update user in database
-        result = await db.users.update_one(
-            {"_id": ObjectId(user_id)},
-            {"$set": update_data}
-        )
-        
-        if result.modified_count == 0:
-            print(f"⚠️ No changes made to user profile: {user_id}")
-        else:
-            print(f"✅ Profile updated successfully for user: {user_id}")
-        
-        # Get updated user data
-        updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
-        if not updated_user:
-            raise HTTPException(status_code=404, detail="User not found after update")
-        
-        return {
-            "message": "Profile updated successfully",
-            "user": format_user_for_frontend(updated_user)
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"❌ Error updating profile: {e}")
-        raise HTTPException(status_code=500, detail="Failed to update profile")
-
-
-# Auto-login endpoint for email links
-@app.get("/api/v1/auth/auto-login/{token}")
-async def auto_login(token: str):
-    """Auto-login user from email link using a temporary token"""
-    try:
-        print(f"🔐 Processing auto-login token: {token}")
-        
-        # Find the auto-login token in database
-        auto_login_record = await db.auto_login_tokens.find_one({
-            "token": token,
-            "expires_at": {"$gt": datetime.utcnow()},
-            "used": {"$ne": True}
-        })
-        
-        if not auto_login_record:
-            print(f"❌ Invalid or expired auto-login token: {token}")
-            # Redirect to login page with error
-            return RedirectResponse(url=f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/login?error=invalid_token")
-        
-        # Get user data
-        user = await db.users.find_one({"_id": ObjectId(auto_login_record["user_id"])})
-        if not user:
-            print(f"❌ User not found for auto-login token: {token}")
-            return RedirectResponse(url=f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/login?error=user_not_found")
-        
-        # Mark token as used
-        await db.auto_login_tokens.update_one(
-            {"_id": auto_login_record["_id"]},
-            {"$set": {"used": True, "used_at": datetime.utcnow()}}
-        )
-        
-        # Generate JWT token for the user
-        jwt_token = create_access_token(data={"sub": str(user["_id"])})
-        
-        # Get redirect URL from the token record
-        redirect_url = auto_login_record.get("redirect_url", "/profile")
-        
-        print(f"✅ Auto-login successful for user: {user.get('email', 'unknown')}")
-        
-        # Redirect to frontend with JWT token in URL params
-        frontend_url = os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')
-        return RedirectResponse(url=f"{frontend_url}/auth/auto-login?token={jwt_token}&redirect={redirect_url}")
-        
-    except Exception as e:
-        print(f"❌ Error in auto-login: {e}")
-        return RedirectResponse(url=f"{os.getenv('FRONTEND_URL', 'https://atomic-rose-tools.netlify.app')}/login?error=server_error")
 
 
 # Purchase endpoint
@@ -2258,6 +2118,10 @@ async def get_guest_download(order_id: str, verification_token: str):
         if not order:
             raise HTTPException(status_code=404, detail="Order not found or not verified")
         
+        # Check download limit
+        if order["downloads_remaining"] <= 0:
+            raise HTTPException(status_code=429, detail="Download limit reached for this order")
+        
         # Get product details
         product_id = order["items"][0]["product_id"]  # For now, just first item
         product = await db.products.find_one({"_id": ObjectId(product_id)})
@@ -2270,11 +2134,21 @@ async def get_guest_download(order_id: str, verification_token: str):
         expiration_seconds = 3600
         download_url = generate_download_url(object_key, expiration=expiration_seconds)
         
+        # Update download count
+        await db.guest_orders.update_one(
+            {"_id": order["_id"]},
+            {
+                "$inc": {"downloads_remaining": -1},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
+        
         return {
             "download_url": download_url,
             "expires_in": expiration_seconds,
             "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z",
-            "product_title": product.get("title", "Unknown Product")
+            "product_title": product.get("title", "Unknown Product"),
+            "downloads_remaining": order["downloads_remaining"] - 1
         }
         
     except HTTPException:
@@ -2378,6 +2252,10 @@ async def get_guest_download_links(order_number: str):
         if order.get("status") not in ["verified", "completed"]:
             raise HTTPException(status_code=400, detail="Order not verified yet")
         
+        # Check download limit
+        if order["downloads_remaining"] <= 0:
+            raise HTTPException(status_code=429, detail="Download limit reached for this order")
+        
         download_links = []
         
         for item in order["items"]:
@@ -2402,6 +2280,7 @@ async def get_guest_download_links(order_number: str):
         return {
             "order_number": order["order_number"],
             "download_links": download_links,
+            "downloads_remaining": order["downloads_remaining"],
             "total_items": len(order["items"])
         }
         

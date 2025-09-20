@@ -319,6 +319,17 @@ class APIService {
     }
   }
 
+  // Get category counts
+  async getCategoryCounts() {
+    try {
+      const response = await this.request('/products/category-counts');
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to get category counts:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
   async toggleProductLike(productId) {
     try {
       const response = await this.request(`/products/${productId}/like`, {
@@ -740,31 +751,6 @@ class APIService {
       return { success: true, data: response };
     } catch (error) {
       console.error('❌ API: Failed to create user order:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  // Update user profile
-  async updateUserProfile(profileData) {
-    try {
-      const response = await this.request('/profile/update', {
-        method: 'PUT',
-        body: JSON.stringify(profileData)
-      });
-      return { success: true, data: response };
-    } catch (error) {
-      console.error('❌ API: Failed to update user profile:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  // Check if user has purchased a product
-  async checkProductPurchased(productId) {
-    try {
-      const response = await this.request(`/profile/check-purchased/${productId}`);
-      return { success: true, data: response };
-    } catch (error) {
-      console.error('❌ API: Failed to check product purchase:', error);
       return { success: false, error: error.message };
     }
   }

@@ -265,6 +265,11 @@ const HomePage = ({ onAuthClick }) => {
   const [bestsellers, setBestsellers] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
   const [downloading] = useState({});
+  const [categoryCounts, setCategoryCounts] = useState({
+    sample_packs: 0,
+    midi_packs: 0,
+    acapellas: 0
+  });
 
   // Clear guest cart on page load to ensure clean state
   useEffect(() => {
@@ -295,11 +300,12 @@ const HomePage = ({ onAuthClick }) => {
     const loadProducts = async () => {
       try {
 
-        // Load all product categories in parallel
-        const [featuredResult, bestsellersResult, newResult] = await Promise.all([
+        // Load all product categories and counts in parallel
+        const [featuredResult, bestsellersResult, newResult, categoryCountsResult] = await Promise.all([
           apiService.getProducts({ featured: true }),
           apiService.getProducts({ bestseller: true }),
-          apiService.getProducts({ new: true })
+          apiService.getProducts({ new: true }),
+          apiService.getCategoryCounts()
         ]);
 
         // Set featured products
@@ -321,6 +327,14 @@ const HomePage = ({ onAuthClick }) => {
           setNewProducts(newResult.data.products.slice(0, 3));
         } else {
           setNewProducts([]);
+        }
+
+        // Set category counts
+        if (categoryCountsResult.success) {
+          setCategoryCounts(categoryCountsResult.data);
+          console.log('📊 Category counts loaded:', categoryCountsResult.data);
+        } else {
+          console.error('❌ Failed to load category counts:', categoryCountsResult.error);
         }
 
       } catch (error) {
@@ -371,26 +385,40 @@ const HomePage = ({ onAuthClick }) => {
     }
   };
 
+  const fetchCategoryCounts = async () => {
+    try {
+      const result = await apiService.getCategoryCounts();
+      if (result.success) {
+        setCategoryCounts(result.data);
+        console.log('📊 Category counts loaded:', result.data);
+      } else {
+        console.error('❌ Failed to load category counts:', result.error);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching category counts:', error);
+    }
+  };
+
   const categories = [
     {
       title: 'Sample Packs',
       description: 'High-quality audio samples, loops, and one-shots for your productions',
       icon: FiDisc,
-      count: '12 Packs',
+      count: `${categoryCounts.sample_packs} Pack${categoryCounts.sample_packs !== 1 ? 's' : ''}`,
       link: '/sample-packs'
     },
     {
       title: 'MIDI Packs',
       description: 'Professional MIDI patterns and sequences for instant inspiration',
       icon: FiMusic,
-      count: '8 Packs',
+      count: `${categoryCounts.midi_packs} Pack${categoryCounts.midi_packs !== 1 ? 's' : ''}`,
       link: '/midi-packs'
     },
     {
       title: 'Acapellas',
       description: 'Stunning vocal performances and harmonies for your tracks',
       icon: FiMic,
-      count: '5 Packs',
+      count: `${categoryCounts.acapellas} Pack${categoryCounts.acapellas !== 1 ? 's' : ''}`,
       link: '/acapellas'
     }
   ];
