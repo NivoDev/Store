@@ -432,7 +432,7 @@ const CheckoutPage = () => {
       const transformedItems = guestOrder.items.map(item => ({
         ...item,
         id: item.product_id || item.id, // Ensure id field exists
-        artist: item.artist || 'Unknown Artist', // Add missing fields
+        artist: item.made_by || item.artist || 'Unknown Artist', // Add missing fields with fallback
         cover_image_url: item.cover_image_url || '/images/placeholder-product.jpg'
       }));
       console.log('🛒 Transformed items:', transformedItems);

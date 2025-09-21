@@ -335,6 +335,20 @@ const CartPage = () => {
   const { items: regularItems, total: regularTotal, itemCount: regularItemCount, clearCart: clearRegularCart, addItem, removeItem, updateQuantity } = useCart();
   const { user, isAuthenticated } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Calculate correct tax values
+  const calculateSubtotal = () => {
+    const items = isAuthenticated ? regularItems : guestCart.items;
+    return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const calculateTax = () => {
+    return calculateSubtotal() * 0.18; // Israel VAT rate 2025: 18%
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + calculateTax();
+  };
   
   // Guest cart state
   const [guestCart, setGuestCart] = useState({ items: [], total: 0, count: 0 });
@@ -790,7 +804,7 @@ const CartPage = () => {
             }}>
               <span>Subtotal:</span>
               <span style={{ color: theme.colors.dark[50] }}>
-                ${(total / 1.18).toFixed(2)}
+                ${calculateSubtotal().toFixed(2)}
               </span>
             </div>
             
@@ -803,7 +817,7 @@ const CartPage = () => {
             }}>
               <span>VAT (18%):</span>
               <span style={{ color: theme.colors.dark[50] }}>
-                ${(total - (total / 1.18)).toFixed(2)}
+                ${calculateTax().toFixed(2)}
               </span>
             </div>
             
@@ -820,7 +834,7 @@ const CartPage = () => {
             }}>
               <span>Total:</span>
               <span style={{ color: theme.colors.primary[400] }}>
-                ${total.toFixed(2)}
+                ${calculateTotal().toFixed(2)}
               </span>
             </div>
             <Button 
