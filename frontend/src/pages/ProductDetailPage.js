@@ -239,8 +239,8 @@ const ShareDropdown = styled.div`
   padding: ${theme.spacing[2]};
   margin-top: ${theme.spacing[1]};
   min-width: 200px;
-  box-shadow: ${theme.shadows.lg};
-  z-index: ${theme.zIndex.dropdown};
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
   
   @media (max-width: ${theme.breakpoints.sm}) {
     right: auto;
@@ -494,21 +494,28 @@ const ProductDetailPage = ({ onAuthClick }) => {
   };
 
   const handleShare = (platform) => {
+    console.log('🔗 handleShare called with platform:', platform);
     const url = window.location.href;
-    const title = product.title;
+    const title = product?.title || 'Product';
     const text = `Check out "${title}" on Atomic Rose Tools`;
+
+    console.log('🔗 Share data:', { url, title, text });
 
     switch (platform) {
       case 'twitter':
+        console.log('🔗 Opening Twitter share');
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
         break;
       case 'facebook':
+        console.log('🔗 Opening Facebook share');
         window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
         break;
       case 'linkedin':
+        console.log('🔗 Opening LinkedIn share');
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
         break;
       case 'copy':
+        console.log('🔗 Copying to clipboard');
         navigator.clipboard.writeText(url).then(() => {
           alert('Link copied to clipboard!');
         }).catch(() => {
@@ -523,6 +530,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
         });
         break;
       default:
+        console.log('🔗 Unknown platform:', platform);
         break;
     }
     setShowShareDropdown(false);
@@ -640,22 +648,43 @@ const ProductDetailPage = ({ onAuthClick }) => {
                 variant="ghost" 
                 size="lg"
                 data-share-dropdown
-                onClick={() => setShowShareDropdown(!showShareDropdown)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🔗 Share button clicked, current state:', showShareDropdown);
+                  setShowShareDropdown(!showShareDropdown);
+                }}
               >
                 <FiShare2 size={20} />
                 Share
                 {showShareDropdown && (
                   <ShareDropdown>
-                    <ShareOption onClick={() => handleShare('twitter')}>
+                    <ShareOption onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleShare('twitter');
+                    }}>
                       🐦 Share on Twitter
                     </ShareOption>
-                    <ShareOption onClick={() => handleShare('facebook')}>
+                    <ShareOption onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleShare('facebook');
+                    }}>
                       📘 Share on Facebook
                     </ShareOption>
-                    <ShareOption onClick={() => handleShare('linkedin')}>
+                    <ShareOption onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleShare('linkedin');
+                    }}>
                       💼 Share on LinkedIn
                     </ShareOption>
-                    <ShareOption onClick={() => handleShare('copy')}>
+                    <ShareOption onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleShare('copy');
+                    }}>
                       📋 Copy Link
                     </ShareOption>
                   </ShareDropdown>
