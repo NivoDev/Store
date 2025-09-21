@@ -7,7 +7,6 @@ import {
   FiUser, 
   FiMenu, 
   FiX, 
-  FiSearch,
   FiMusic,
   FiDisc,
   FiMic,
@@ -139,20 +138,6 @@ const RightSection = styled.div`
   gap: ${theme.spacing[4]};
 `;
 
-const SearchButton = styled(motion.button)`
-  background: transparent;
-  border: none;
-  color: ${theme.colors.dark[300]};
-  cursor: pointer;
-  padding: ${theme.spacing[2]};
-  border-radius: ${theme.borderRadius.md};
-  transition: all ${theme.animation.durations.fast} ${theme.animation.easings.easeInOut};
-  
-  &:hover {
-    color: ${theme.colors.primary[400]};
-    background: rgba(14, 165, 233, 0.1);
-  }
-`;
 
 const CartButton = styled(motion.button)`
   position: relative;
@@ -452,13 +437,6 @@ const Header = ({ onAuthClick }) => {
         </DesktopNav>
 
         <RightSection>
-          <SearchButton
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <FiSearch size={20} />
-          </SearchButton>
-
           <CartButton
             onClick={handleCartClick}
             whileHover={{ scale: 1.05 }}
@@ -554,11 +532,6 @@ const Header = ({ onAuthClick }) => {
             </MobileNavLinks>
 
             <MobileActions>
-              <Button variant="ghost" fullWidth>
-                <FiSearch size={16} />
-                Search Products
-              </Button>
-              
               {isAuthenticated ? (
                 <>
                   <Button variant="secondary" fullWidth onClick={handleProfileClick}>

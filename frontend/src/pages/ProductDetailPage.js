@@ -14,6 +14,14 @@ import { FiShoppingCart, FiHeart, FiShare2, FiPlay, FiPause } from 'react-icons/
 const PageContainer = styled.div`
   min-height: 100vh;
   padding: ${theme.spacing[8]} ${theme.spacing[6]};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: ${theme.spacing[4]} ${theme.spacing[3]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.spacing[3]} ${theme.spacing[2]};
+  }
 `;
 
 const Container = styled.div`
@@ -26,9 +34,17 @@ const ProductGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: ${theme.spacing[12]};
   
+  @media (max-width: ${theme.breakpoints.lg}) {
+    gap: ${theme.spacing[8]};
+  }
+  
   @media (max-width: ${theme.breakpoints.md}) {
     grid-template-columns: 1fr;
-    gap: ${theme.spacing[8]};
+    gap: ${theme.spacing[6]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    gap: ${theme.spacing[4]};
   }
 `;
 
@@ -41,6 +57,12 @@ const ProductImage = styled.img`
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: ${theme.borderRadius.xl};
+  max-width: 100%;
+  height: auto;
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    border-radius: ${theme.borderRadius.lg};
+  }
 `;
 
 const InfoSection = styled.div``;
@@ -51,6 +73,14 @@ const Title = styled.h1`
   font-weight: ${theme.typography.weights.bold};
   color: ${theme.colors.dark[50]};
   margin-bottom: ${theme.spacing[2]};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    font-size: ${theme.typography.sizes['3xl']};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    font-size: ${theme.typography.sizes['2xl']};
+  }
 `;
 
 const Artist = styled.div`
@@ -76,6 +106,11 @@ const Actions = styled.div`
   display: flex;
   gap: ${theme.spacing[3]};
   margin-bottom: ${theme.spacing[8]};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    flex-direction: column;
+    gap: ${theme.spacing[2]};
+  }
 `;
 
 const SamplePreviews = styled.div`
@@ -84,6 +119,16 @@ const SamplePreviews = styled.div`
   background: ${theme.colors.dark[800]};
   border-radius: ${theme.borderRadius.lg};
   border: 1px solid ${theme.colors.dark[700]};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: ${theme.spacing[4]};
+    margin-top: ${theme.spacing[6]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.spacing[3]};
+    margin-top: ${theme.spacing[4]};
+  }
 `;
 
 const SamplePreviewsTitle = styled.h3`
@@ -104,6 +149,16 @@ const SamplesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${theme.spacing[4]};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: ${theme.spacing[3]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    grid-template-columns: 1fr;
+    gap: ${theme.spacing[2]};
+  }
 `;
 
 const SampleItem = styled.div`
