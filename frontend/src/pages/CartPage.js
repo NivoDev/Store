@@ -13,6 +13,14 @@ import AuthModal from '../components/auth/AuthModal';
 const PageContainer = styled.div`
   min-height: 100vh;
   padding: ${theme.spacing[8]} ${theme.spacing[6]};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: ${theme.spacing[4]} ${theme.spacing[3]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.spacing[3]} ${theme.spacing[2]};
+  }
 `;
 
 const Container = styled.div`
@@ -26,6 +34,16 @@ const Title = styled.h1`
   font-weight: ${theme.typography.weights.bold};
   color: ${theme.colors.dark[50]};
   margin-bottom: ${theme.spacing[8]};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    font-size: ${theme.typography.sizes['3xl']};
+    margin-bottom: ${theme.spacing[6]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    font-size: ${theme.typography.sizes['2xl']};
+    margin-bottom: ${theme.spacing[4]};
+  }
 `;
 
 const CartGrid = styled.div`
@@ -33,8 +51,17 @@ const CartGrid = styled.div`
   grid-template-columns: 2fr 1fr;
   gap: ${theme.spacing[8]};
   
+  @media (max-width: ${theme.breakpoints.lg}) {
+    gap: ${theme.spacing[6]};
+  }
+  
   @media (max-width: ${theme.breakpoints.md}) {
     grid-template-columns: 1fr;
+    gap: ${theme.spacing[4]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    gap: ${theme.spacing[3]};
   }
 `;
 
@@ -43,6 +70,14 @@ const CartItems = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: ${theme.borderRadius.xl};
   padding: ${theme.spacing[6]};
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: ${theme.spacing[4]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.spacing[3]};
+  }
 `;
 
 const CartSummary = styled.div`
@@ -51,12 +86,156 @@ const CartSummary = styled.div`
   border-radius: ${theme.borderRadius.xl};
   padding: ${theme.spacing[6]};
   height: fit-content;
+  
+  @media (max-width: ${theme.breakpoints.md}) {
+    padding: ${theme.spacing[4]};
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.spacing[3]};
+  }
 `;
 
 const EmptyCart = styled.div`
   text-align: center;
   padding: ${theme.spacing[12]};
   color: ${theme.colors.dark[400]};
+`;
+
+const CartItemContainer = styled.div`
+  padding: ${theme.spacing[4]};
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: ${theme.spacing[3]};
+    padding: ${theme.spacing[3]};
+  }
+`;
+
+const CartItemInfo = styled.div`
+  flex: 1;
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    width: 100%;
+  }
+`;
+
+const CartItemTitle = styled.h4`
+  color: ${theme.colors.dark[50]};
+  margin-bottom: ${theme.spacing[1]};
+  font-size: ${theme.typography.sizes.lg};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    font-size: ${theme.typography.sizes.md};
+  }
+`;
+
+const CartItemArtist = styled.p`
+  color: ${theme.colors.dark[300]};
+  margin-bottom: ${theme.spacing[1]};
+  font-size: ${theme.typography.sizes.sm};
+`;
+
+const CartItemPrice = styled.p`
+  color: ${theme.colors.dark[50]};
+  font-weight: bold;
+  font-size: ${theme.typography.sizes.md};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    font-size: ${theme.typography.sizes.sm};
+  }
+`;
+
+const CartItemControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing[2]};
+  margin-left: ${theme.spacing[4]};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+`;
+
+const QuantityControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing[2]};
+  background: rgba(255, 255, 255, 0.05);
+  padding: ${theme.spacing[2]};
+  border-radius: ${theme.borderRadius.md};
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    gap: ${theme.spacing[1]};
+    padding: ${theme.spacing[1]};
+  }
+`;
+
+const QuantityButton = styled.button`
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: ${theme.colors.dark[50]};
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+  }
+`;
+
+const QuantityDisplay = styled.span`
+  color: ${theme.colors.dark[50]};
+  min-width: 20px;
+  text-align: center;
+  font-weight: bold;
+  font-size: ${theme.typography.sizes.md};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    font-size: ${theme.typography.sizes.sm};
+  }
+`;
+
+const RemoveButton = styled.button`
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: ${theme.spacing[2]};
+  border-radius: ${theme.borderRadius.md};
+  cursor: pointer;
+  font-size: ${theme.typography.sizes.sm};
+  font-weight: bold;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(239, 68, 68, 0.2);
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.spacing[1]} ${theme.spacing[2]};
+    font-size: ${theme.typography.sizes.xs};
+  }
 `;
 
 // Guest checkout modal styles
@@ -114,6 +293,12 @@ const ButtonGroup = styled.div`
   display: flex;
   gap: ${theme.spacing[3]};
   margin-top: ${theme.spacing[6]};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    flex-direction: column;
+    gap: ${theme.spacing[2]};
+    margin-top: ${theme.spacing[4]};
+  }
 `;
 
 const VerificationModal = styled.div`
@@ -533,42 +718,18 @@ const CartPage = () => {
         <CartGrid>
           <CartItems>
             {items.map((item) => (
-              <div key={item.cartId || item.id} style={{ 
-                padding: theme.spacing[4], 
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center'
-              }}>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ color: theme.colors.dark[50], marginBottom: theme.spacing[1] }}>
-                    {item.title}
-                  </h4>
-                  <p style={{ color: theme.colors.dark[300], marginBottom: theme.spacing[1] }}>
-                    by {item.artist}
-                  </p>
-                  <p style={{ color: theme.colors.dark[50], fontWeight: 'bold' }}>
+              <CartItemContainer key={item.cartId || item.id}>
+                <CartItemInfo>
+                  <CartItemTitle>{item.title}</CartItemTitle>
+                  <CartItemArtist>by {item.artist}</CartItemArtist>
+                  <CartItemPrice>
                     ${item.price} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
-                  </p>
-                </div>
+                  </CartItemPrice>
+                </CartItemInfo>
                 
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: theme.spacing[2],
-                  marginLeft: theme.spacing[4]
-                }}>
-                  {/* Quantity Controls */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: theme.spacing[2],
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    padding: theme.spacing[2],
-                    borderRadius: theme.borderRadius.md,
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}>
-                    <button
+                <CartItemControls>
+                  <QuantityControls>
+                    <QuantityButton
                       onClick={() => {
                         if (isAuthenticated) {
                           updateQuantity(item.cartId, Math.max(1, item.quantity - 1));
@@ -578,32 +739,11 @@ const CartPage = () => {
                           setGuestCart(guestCartService.loadCart());
                         }
                       }}
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: 'none',
-                        color: theme.colors.dark[50],
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '18px',
-                        fontWeight: 'bold'
-                      }}
                     >
                       -
-                    </button>
-                    <span style={{ 
-                      color: theme.colors.dark[50], 
-                      minWidth: '20px', 
-                      textAlign: 'center',
-                      fontWeight: 'bold'
-                    }}>
-                      {item.quantity}
-                    </span>
-                    <button
+                    </QuantityButton>
+                    <QuantityDisplay>{item.quantity}</QuantityDisplay>
+                    <QuantityButton
                       onClick={() => {
                         if (isAuthenticated) {
                           updateQuantity(item.cartId, item.quantity + 1);
@@ -613,27 +753,12 @@ const CartPage = () => {
                           setGuestCart(guestCartService.loadCart());
                         }
                       }}
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: 'none',
-                        color: theme.colors.dark[50],
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '18px',
-                        fontWeight: 'bold'
-                      }}
                     >
                       +
-                    </button>
-                  </div>
+                    </QuantityButton>
+                  </QuantityControls>
                   
-                  {/* Remove Button */}
-                  <button
+                  <RemoveButton
                     onClick={() => {
                       if (isAuthenticated) {
                         removeItem(item.cartId);
@@ -643,28 +768,11 @@ const CartPage = () => {
                         setGuestCart(guestCartService.loadCart());
                       }
                     }}
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid rgba(239, 68, 68, 0.3)',
-                      color: '#ef4444',
-                      padding: theme.spacing[2],
-                      borderRadius: theme.borderRadius.md,
-                      cursor: 'pointer',
-                      fontSize: theme.typography.sizes.sm,
-                      fontWeight: 'bold',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseOver={(e) => {
-                      e.target.style.background = 'rgba(239, 68, 68, 0.2)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.target.style.background = 'rgba(239, 68, 68, 0.1)';
-                    }}
                   >
                     Remove
-                  </button>
-                </div>
-              </div>
+                  </RemoveButton>
+                </CartItemControls>
+              </CartItemContainer>
             ))}
           </CartItems>
           
