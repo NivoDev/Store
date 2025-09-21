@@ -63,7 +63,16 @@ async def insert_sample_product():
     
     try:
         print("🔄 Connecting to MongoDB...")
-        client = AsyncIOMotorClient(MONGODB_URI)
+        import certifi
+        client = AsyncIOMotorClient(
+            MONGODB_URI,
+            tlsCAFile=certifi.where(),
+            tlsAllowInvalidCertificates=False,
+            tlsAllowInvalidHostnames=False,
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000
+        )
         db = client.atomic_rose
         
         # Test connection

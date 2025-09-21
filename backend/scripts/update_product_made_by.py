@@ -20,7 +20,16 @@ async def update_product_made_by():
     """Update existing product with made_by field"""
     try:
         # Connect to MongoDB
-        client = AsyncIOMotorClient(MONGODB_URI)
+        import certifi
+        client = AsyncIOMotorClient(
+            MONGODB_URI,
+            tlsCAFile=certifi.where(),
+            tlsAllowInvalidCertificates=False,
+            tlsAllowInvalidHostnames=False,
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000
+        )
         db = client.get_database()
         
         # Find the existing product (assuming it's the Psychedelic Horizons product)
@@ -58,3 +67,4 @@ async def update_product_made_by():
 
 if __name__ == "__main__":
     asyncio.run(update_product_made_by())
+

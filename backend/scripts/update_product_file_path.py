@@ -18,7 +18,16 @@ if not MONGODB_URI:
 
 async def update_product_file_path():
     # Connect to MongoDB
-    client = AsyncIOMotorClient(MONGODB_URI)
+    import certifi
+    client = AsyncIOMotorClient(
+        MONGODB_URI,
+        tlsCAFile=certifi.where(),
+        tlsAllowInvalidCertificates=False,
+        tlsAllowInvalidHostnames=False,
+        serverSelectionTimeoutMS=30000,
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000
+    )
     db = client.atomic_rose
     
     try:

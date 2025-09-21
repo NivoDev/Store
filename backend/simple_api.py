@@ -6,9 +6,12 @@ No Beanie ODM - just direct MongoDB queries with proper data conversion.
 import asyncio
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi import FastAPI, HTTPException, status, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 import os
@@ -109,6 +112,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Configure rate limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 # Add CORS middleware - more permissive for development
 app.add_middleware(
     CORSMiddleware,
@@ -124,7 +132,20 @@ async def startup_event():
     global db_client, db, mongodb_connected
     try:
         print("🔄 Connecting to MongoDB...")
-        db_client = AsyncIOMotorClient(MONGODB_URI)
+        
+        # MongoDB connection with SSL/TLS configuration
+        import certifi
+        db_client = AsyncIOMotorClient(
+            MONGODB_URI,
+            tlsCAFile=certifi.where(),
+            tlsAllowInvalidCertificates=False,
+            tlsAllowInvalidHostnames=False,
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000,
+            retryWrites=True,
+            retryReads=True
+        )
         db = db_client.get_database()
         
         # Test connection
@@ -206,7 +227,12 @@ def format_user_for_frontend(user_doc: Dict[str, Any]) -> Dict[str, Any]:
         "last_login": user_doc.get("last_login").isoformat() if user_doc.get("last_login") else None,
         "liked_products": liked_products_str,
         "liked_products_count": len(liked_products),
-        "purchased_products_count": len(user_doc.get("purchased_products", []))
+        "purchased_products_count": len(user_doc.get("purchased_products", [])),
+        # Add billing address and personal information
+        "billing_address": user_doc.get("billing_address", {}),
+        "company_name": user_doc.get("company_name"),
+        "phone_number": user_doc.get("phone_number"),
+        "vat_number": user_doc.get("vat_number")
     }
 
 def format_order_for_frontend(order_doc: Dict[str, Any]) -> Dict[str, Any]:
@@ -301,6 +327,11 @@ async def health_check():
     """Health check endpoint"""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
+@app.get("/api/v1/health")
+async def api_health_check():
+    """API health check endpoint for frontend"""
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
 @app.post("/api/v1/test-email")
 async def test_email(test_data: dict):
     """Test email sending endpoint"""
@@ -346,7 +377,8 @@ async def options_handler(path: str):
 
 # Authentication endpoints
 @app.post("/api/v1/auth/register")
-async def register(user_data: dict):
+@limiter.limit("3/minute")
+async def register(request: Request, user_data: dict):
     """Register a new user"""
     try:
         print(f"🔄 Registration attempt: {user_data}")
@@ -433,7 +465,8 @@ async def register(user_data: dict):
         raise HTTPException(status_code=500, detail="Registration failed")
 
 @app.post("/api/v1/auth/login")
-async def login(credentials: dict):
+@limiter.limit("5/minute")
+async def login(request: Request, credentials: dict):
     """Login user (Option A: gate by email_verified, status can remain 'active')."""
     try:
         email = credentials.get("email", "").lower().strip()
@@ -492,7 +525,8 @@ async def login(credentials: dict):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error during login: {e}")
+        from config.logging import secure_logger
+        secure_logger.error("Login error", {"email": email, "error": str(e)})
         raise HTTPException(status_code=500, detail="Login failed")
 
 @app.get("/api/v1/auth/me")
@@ -995,21 +1029,27 @@ async def get_category_counts():
 
 @app.get("/api/v1/products/{product_id}")
 async def get_product(product_id: str):
-    """Get a specific product by ID"""
+    """Get a specific product by ID with proper error handling"""
     try:
-        from bson import ObjectId
+        from utils.errors import validate_object_id, handle_product_not_found
+        from config.logging import secure_logger
+        
+        # Validate ObjectId format
+        product_oid = validate_object_id(product_id)
         
         collection = db.products
-        product = await collection.find_one({"_id": ObjectId(product_id)})
+        product = await collection.find_one({"_id": product_oid})
         
         if not product:
-            raise HTTPException(status_code=404, detail="Product not found")
+            handle_product_not_found()
         
         return format_product_for_frontend(product)
         
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"❌ Error getting product {product_id}: {e}")
-        raise HTTPException(status_code=500, detail="Failed to get product")
+        secure_logger.error("Error getting product", {"product_id": product_id, "error": str(e)})
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/v1/products/featured")
 async def get_featured_products():
@@ -2365,49 +2405,51 @@ async def get_guest_download_links(order_number: str):
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.put("/api/v1/profile/update")
-async def update_user_profile(profile_data: dict, current_user: dict = Depends(get_current_user)):
-    """Update user profile information"""
+@limiter.limit("10/minute")
+async def update_user_profile(request: Request, profile_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update user profile information with security validation"""
     try:
+        from middleware.security import sanitize_input, validate_input, get_validation_rules, sanitize_billing_address
+        from config.logging import secure_logger
+        
         user_id = current_user["id"]
-        print(f"📝 Updating profile for user: {user_id}")
+        secure_logger.info("Profile update attempt", {"user_id": user_id})
         
         # Security check: Reject any attempt to update email
         if "email" in profile_data:
             raise HTTPException(status_code=400, detail="Email cannot be updated through this endpoint")
+        
+        # Sanitize input to prevent XSS
+        sanitized_data = sanitize_input(profile_data)
+        
+        # Validate input fields
+        validation_rules = get_validation_rules()
+        validate_input(sanitized_data, validation_rules)
         
         # Prepare update data
         update_data = {
             "updated_at": datetime.utcnow()
         }
         
-        # Add fields that are provided
-        if "name" in profile_data and profile_data["name"]:
-            update_data["name"] = profile_data["name"].strip()
+        # Add fields that are provided with sanitization
+        if "name" in sanitized_data and sanitized_data["name"]:
+            update_data["name"] = sanitized_data["name"].strip()
             
-        if "company_name" in profile_data:
-            update_data["company_name"] = profile_data["company_name"].strip() if profile_data["company_name"] else None
+        if "company_name" in sanitized_data:
+            update_data["company_name"] = sanitized_data["company_name"].strip() if sanitized_data["company_name"] else None
             
-        if "phone_number" in profile_data:
-            update_data["phone_number"] = profile_data["phone_number"].strip() if profile_data["phone_number"] else None
+        if "phone_number" in sanitized_data:
+            update_data["phone_number"] = sanitized_data["phone_number"].strip() if sanitized_data["phone_number"] else None
             
-        if "vat_number" in profile_data:
-            update_data["vat_number"] = profile_data["vat_number"].strip() if profile_data["vat_number"] else None
+        if "vat_number" in sanitized_data:
+            update_data["vat_number"] = sanitized_data["vat_number"].strip() if sanitized_data["vat_number"] else None
         
-        # Handle billing address
-        if "billing_address" in profile_data and isinstance(profile_data["billing_address"], dict):
-            billing_address = {}
-            address_data = profile_data["billing_address"]
-            
-            # Only include non-empty fields
-            for field in ["street_address", "street_address_2", "city", "state_province", "postal_code", "country"]:
-                if field in address_data and address_data[field]:
-                    billing_address[field] = address_data[field].strip()
-                else:
-                    billing_address[field] = None
-            
+        # Handle billing address with sanitization
+        if "billing_address" in sanitized_data and isinstance(sanitized_data["billing_address"], dict):
+            billing_address = sanitize_billing_address(sanitized_data["billing_address"])
             update_data["billing_address"] = billing_address
         
-        print(f"📝 Update data: {update_data}")
+        secure_logger.info("Profile update data prepared", {"user_id": user_id, "fields_updated": list(update_data.keys())})
         
         # Update user in database
         result = await db.users.update_one(
@@ -2416,9 +2458,9 @@ async def update_user_profile(profile_data: dict, current_user: dict = Depends(g
         )
         
         if result.modified_count == 0:
-            print(f"⚠️ No changes made to user profile: {user_id}")
+            secure_logger.warning("No changes made to user profile", {"user_id": user_id})
         else:
-            print(f"✅ Profile updated successfully for user: {user_id}")
+            secure_logger.info("Profile updated successfully", {"user_id": user_id})
         
         # Get updated user data
         updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
@@ -2433,7 +2475,7 @@ async def update_user_profile(profile_data: dict, current_user: dict = Depends(g
     except HTTPException:
         raise
     except Exception as e:
-        print(f"❌ Error updating profile: {e}")
+        secure_logger.error("Error updating profile", {"user_id": user_id, "error": str(e)})
         raise HTTPException(status_code=500, detail="Failed to update profile")
 
 @app.post("/api/v1/user/transfer-guest-orders")

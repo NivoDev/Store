@@ -27,7 +27,16 @@ def update_product_image():
     try:
         # Connect to MongoDB
         print("🔌 Connecting to MongoDB...")
-        client = MongoClient(MONGODB_URI)
+        import certifi
+        client = MongoClient(
+            MONGODB_URI,
+            tlsCAFile=certifi.where(),
+            tlsAllowInvalidCertificates=False,
+            tlsAllowInvalidHostnames=False,
+            serverSelectionTimeoutMS=30000,
+            connectTimeoutMS=30000,
+            socketTimeoutMS=30000
+        )
         db = client.get_default_database()
         products_collection = db.products
         
@@ -89,3 +98,4 @@ if __name__ == "__main__":
     update_product_image()
     print("=" * 50)
     print("✨ Script completed!")
+

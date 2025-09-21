@@ -385,14 +385,13 @@ const CheckoutPage = () => {
     }
   }, [location.state]);
 
-  // Redirect if no items in cart (unless coming from email verification or guest order)
+  // Redirect if no items in cart (unless coming from email verification)
   useEffect(() => {
     const isFromEmailVerification = location.state?.fromEmailVerification;
     const guestOrder = location.state?.guestOrder;
-    const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
     const effectiveItems = getEffectiveItems();
     
-    if (effectiveItems.length === 0 && !isFromEmailVerification && !guestOrder && !verifiedOrder) {
+    if (effectiveItems.length === 0 && !isFromEmailVerification && !guestOrder) {
       navigate('/cart');
     }
   }, [items, navigate, location.state]);
@@ -426,10 +425,9 @@ const CheckoutPage = () => {
 
   // Get effective items (cart items or guest order items)
   const getEffectiveItems = () => {
-    // First check for guest order from navigation state
     const guestOrder = location.state?.guestOrder;
     if (guestOrder && guestOrder.items) {
-      console.log('🛒 Using guest order items from navigation state:', guestOrder.items);
+      console.log('🛒 Using guest order items:', guestOrder.items);
       // Transform guest order items to match cart item structure
       const transformedItems = guestOrder.items.map(item => ({
         ...item,
@@ -440,30 +438,6 @@ const CheckoutPage = () => {
       console.log('🛒 Transformed items:', transformedItems);
       return transformedItems;
     }
-    
-    // Then check for verified guest order from session storage
-    const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
-    if (verifiedOrder) {
-      try {
-        const orderData = JSON.parse(verifiedOrder);
-        if (orderData.items && orderData.items.length > 0) {
-          console.log('🛒 Using verified guest order items from session storage:', orderData.items);
-          // Transform verified order items to match cart item structure
-          const transformedItems = orderData.items.map(item => ({
-            ...item,
-            id: item.product_id || item.id, // Ensure id field exists
-            artist: item.artist || 'Unknown Artist', // Add missing fields
-            cover_image_url: item.cover_image_url || '/images/placeholder-product.jpg'
-          }));
-          console.log('🛒 Transformed verified order items:', transformedItems);
-          return transformedItems;
-        }
-      } catch (error) {
-        console.error('❌ Error parsing verified guest order:', error);
-        sessionStorage.removeItem('verifiedGuestOrder');
-      }
-    }
-    
     console.log('🛒 Using cart items:', items);
     return items;
   };
@@ -584,8 +558,8 @@ const CheckoutPage = () => {
         // Clear the verified order from session storage
         sessionStorage.removeItem('verifiedGuestOrder');
         
-        // Redirect to guest download page with order number in URL
-        navigate(`/guest-downloads?order=${orderNumber}`, { 
+        // Redirect to guest download page
+        navigate('/guest-download', { 
           state: { 
             orderNumber: orderNumber,
             message: 'Payment successful! Your download links are ready.'

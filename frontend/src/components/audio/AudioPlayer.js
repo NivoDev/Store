@@ -285,3 +285,4 @@ const AudioPlayer = ({ product }) => {
 };
 
 export default AudioPlayer;
+
