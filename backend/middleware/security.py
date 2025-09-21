@@ -40,12 +40,12 @@ def validate_input(data: Dict[str, Any], field_rules: Dict[str, Dict]) -> None:
                     detail=f"{field} format is invalid"
                 )
             
-            # Check required characters
+            # Check required characters (regex pattern)
             if 'required_chars' in rules:
-                if not any(char in value for char in rules['required_chars']):
+                if not re.search(rules['required_chars'], value):
                     raise HTTPException(
                         status_code=400,
-                        detail=f"{field} must contain at least one of: {', '.join(rules['required_chars'])}"
+                        detail=f"{field} must contain at least one letter"
                     )
 
 def get_validation_rules() -> Dict[str, Dict]:
@@ -54,7 +54,7 @@ def get_validation_rules() -> Dict[str, Dict]:
         'name': {
             'max_length': 100,
             'pattern': r'^[a-zA-Z0-9\s\-\.]+$',
-            'required_chars': ['a-zA-Z']
+            'required_chars': r'[a-zA-Z]'
         },
         'company_name': {
             'max_length': 100,
