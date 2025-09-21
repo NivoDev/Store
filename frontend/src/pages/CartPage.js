@@ -444,7 +444,7 @@ const CartPage = () => {
 
   // Use appropriate cart based on authentication status
   const items = isAuthenticated ? regularItems : guestCart.items;
-  const total = isAuthenticated ? regularTotal : guestCart.total;
+  const total = calculateTotal(); // Use our corrected calculation
   const itemCount = isAuthenticated ? regularItemCount : guestCart.count;
   const clearCart = isAuthenticated ? clearRegularCart : () => {
     guestCartService.clearCart();
