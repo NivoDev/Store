@@ -23,7 +23,7 @@ def validate_input(data: Dict[str, Any], field_rules: Dict[str, Dict]) -> None:
     for field, rules in field_rules.items():
         if field in data:
             value = data[field]
-            if not isinstance(value, str):
+            if value is None or value == '' or not isinstance(value, str):
                 continue
                 
             # Check max length
