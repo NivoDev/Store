@@ -1066,6 +1066,79 @@ async def get_new_products():
     """Get new products"""
     return await get_products(new=True, limit=10)
 
+@app.get("/api/v1/products/{product_id}/samples")
+async def get_product_samples(product_id: str):
+    """Get sample files for a product"""
+    try:
+        # Validate ObjectId
+        if not ObjectId.is_valid(product_id):
+            raise HTTPException(status_code=400, detail="Invalid product ID format")
+        
+        # Get product
+        product = await db.products.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Get sample files
+        sample_files = product.get("sample_files", [])
+        
+        return {
+            "success": True,
+            "data": sample_files,
+            "total": len(sample_files)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting product samples: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get product samples")
+
+@app.get("/api/v1/samples/{sample_id}/preview")
+async def get_sample_preview(sample_id: str, product_id: str):
+    """Get presigned URL for sample preview"""
+    try:
+        # Validate ObjectId
+        if not ObjectId.is_valid(product_id):
+            raise HTTPException(status_code=400, detail="Invalid product ID format")
+        
+        # Get product
+        product = await db.products.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Find the specific sample
+        sample_files = product.get("sample_files", [])
+        sample = next((s for s in sample_files if s.get("id") == sample_id), None)
+        
+        if not sample:
+            raise HTTPException(status_code=404, detail="Sample not found")
+        
+        # Generate presigned URL
+        r2_key = sample.get("r2_key")
+        if not r2_key:
+            raise HTTPException(status_code=404, detail="Sample file not found")
+        
+        # Generate presigned URL (1 hour expiry for previews)
+        preview_url = generate_download_url(r2_key, expiration=3600)
+        
+        return {
+            "success": True,
+            "data": {
+                "sample_id": sample_id,
+                "title": sample.get("title"),
+                "duration": sample.get("duration"),
+                "preview_url": preview_url,
+                "expires_in": 3600
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting sample preview: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get sample preview")
+
 
 # Users endpoints
 @app.get("/api/v1/users")

@@ -268,6 +268,32 @@ class APIService {
     }
   }
 
+  async getProductSamples(productId) {
+    try {
+      const response = await this.request(`/products/${productId}/samples`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Failed to get product samples:', error);
+      return { 
+        success: false, 
+        error: "Samples not available" 
+      };
+    }
+  }
+
+  async getSamplePreview(sampleId, productId) {
+    try {
+      const response = await this.request(`/samples/${sampleId}/preview?product_id=${productId}`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Failed to get sample preview:', error);
+      return { 
+        success: false, 
+        error: "Sample preview not available" 
+      };
+    }
+  }
+
   async getFeaturedProducts() {
     try {
       const response = await this.request('/products/featured');
