@@ -351,11 +351,16 @@ const SettingsPage = () => {
   const handleCancelEdit = () => {
     // Reset profile data to current user data
     if (user) {
+      // Split name into first and last name
+      const nameParts = (user.name || '').split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       setProfileData({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
-        phone: user.phone || '',
-        company: user.company || '',
+        firstName: firstName,
+        lastName: lastName,
+        phone: user.phone_number || '',
+        company: user.company_name || '',
         street_address: user.billing_address?.street_address || '',
         street_address_2: user.billing_address?.street_address_2 || '',
         city: user.billing_address?.city || '',
@@ -449,10 +454,9 @@ const SettingsPage = () => {
           {!isEditingProfile ? (
             <div>
               <div style={{ marginBottom: theme.spacing[4] }}>
-                <p><strong>First Name:</strong> {user?.first_name || 'Not set'}</p>
-                <p><strong>Last Name:</strong> {user?.last_name || 'Not set'}</p>
-                <p><strong>Phone:</strong> {user?.phone || 'Not set'}</p>
-                <p><strong>Company:</strong> {user?.company || 'Not set'}</p>
+                <p><strong>Name:</strong> {user?.name || 'Not set'}</p>
+                <p><strong>Phone:</strong> {user?.phone_number || 'Not set'}</p>
+                <p><strong>Company:</strong> {user?.company_name || 'Not set'}</p>
                 <p><strong>VAT Number:</strong> {user?.vat_number || 'Not set'}</p>
               </div>
               
