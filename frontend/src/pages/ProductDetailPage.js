@@ -442,25 +442,20 @@ const ProductDetailPage = ({ onAuthClick }) => {
     const title = product?.title || 'Product';
     const text = `Check out "${title}" on Atomic Rose Tools`;
 
-    console.log('🔗 Share button clicked');
-
     // Check if we're on mobile and native sharing is available
     if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
       try {
-        console.log('🔗 Using native mobile share');
         await navigator.share({
           title: title,
           text: text,
           url: url
         });
       } catch (error) {
-        console.log('🔗 Native share cancelled or failed, falling back to clipboard');
         // Fallback to clipboard if native share fails
         await copyToClipboard(url, title);
       }
     } else {
       // Desktop: just copy to clipboard
-      console.log('🔗 Desktop: copying to clipboard');
       await copyToClipboard(url, title);
     }
   };
