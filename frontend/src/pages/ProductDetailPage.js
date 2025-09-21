@@ -590,7 +590,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
           
           <InfoSection>
             <Title>{product.title}</Title>
-            <Artist>by {product.artist}</Artist>
+            <Artist>by {product.made_by || product.artist || 'Unknown Artist'}</Artist>
             <Price>${product.price}</Price>
             <Description>{product.description}</Description>
             

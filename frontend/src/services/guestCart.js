@@ -81,7 +81,7 @@ class GuestCartService {
       const newItem = {
         id: product.id,
         title: product.title,
-        artist: product.artist,
+        artist: product.made_by || product.artist || 'Unknown Artist',
         price: product.price,
         cover_image_url: product.cover_image_url,
         quantity: 1,

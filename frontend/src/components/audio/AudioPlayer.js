@@ -232,7 +232,7 @@ const AudioPlayer = ({ product }) => {
       <PlayerHeader>
         <TrackInfo>
           <TrackTitle>{product.title}</TrackTitle>
-          <TrackArtist>by {product.artist}</TrackArtist>
+          <TrackArtist>by {product.made_by || product.artist || 'Unknown Artist'}</TrackArtist>
         </TrackInfo>
         
         <PlayerControls>

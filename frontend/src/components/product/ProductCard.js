@@ -568,7 +568,7 @@ const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggl
         <Header>
           <Genre>{product.genre}</Genre>
           <Title to={`/product/${product.id}`}>{product.title}</Title>
-          <Artist>by {product.artist}</Artist>
+          <Artist>by {product.made_by || product.artist || 'Unknown Artist'}</Artist>
         </Header>
 
         <Description>{product.description}</Description>
