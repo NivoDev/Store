@@ -200,6 +200,7 @@ def format_product_for_frontend(product_doc: Dict[str, Any]) -> Dict[str, Any]:
         "purchase_count": product_doc.get("purchase_count", 0),
         "is_free": product_doc.get("is_free", False),
         "made_by": product_doc.get("made_by"),
+        "artist": product_doc.get("made_by"),  # Map made_by to artist for frontend compatibility
         "created_at": product_doc.get("created_at").isoformat() if product_doc.get("created_at") else None,
         "release_date": product_doc.get("release_date").isoformat() if product_doc.get("release_date") else None,
         "savings": product_doc.get("original_price", 0) - product_doc.get("price", 0) if product_doc.get("original_price") and product_doc.get("original_price") > product_doc.get("price", 0) else 0
