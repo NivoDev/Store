@@ -62,7 +62,7 @@ def get_validation_rules() -> Dict[str, Dict]:
         },
         'phone_number': {
             'max_length': 20,
-            'pattern': r'^[\+]?[1-9][\d]{0,15}$'
+            'pattern': r'^[\+]?[0-9][\d]{0,15}$'
         },
         'vat_number': {
             'max_length': 50,
