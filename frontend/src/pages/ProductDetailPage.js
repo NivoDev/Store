@@ -231,16 +231,19 @@ const ShareButton = styled(Button)`
 
 const ShareDropdown = styled.div`
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   right: 0;
-  background: ${theme.colors.dark[800]};
-  border: 1px solid ${theme.colors.dark[700]};
-  border-radius: ${theme.borderRadius.md};
-  padding: ${theme.spacing[2]};
-  margin-top: ${theme.spacing[1]};
+  background: #1f2937;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  padding: 12px;
   min-width: 200px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
   z-index: 9999;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition: all 0.2s ease;
   
   @media (max-width: ${theme.breakpoints.sm}) {
     right: auto;
@@ -252,23 +255,29 @@ const ShareDropdown = styled.div`
 const ShareOption = styled.button`
   display: block;
   width: 100%;
-  padding: ${theme.spacing[2]} ${theme.spacing[3]};
+  padding: 12px 16px;
   background: transparent;
   border: none;
-  color: ${theme.colors.dark[100]};
+  color: #f3f4f6;
   text-align: left;
-  border-radius: ${theme.borderRadius.sm};
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: ${theme.typography.sizes.sm};
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
   
   &:hover {
-    background: ${theme.colors.dark[700]};
-    color: ${theme.colors.primary[400]};
+    background: #374151;
+    color: #60a5fa;
   }
   
-  &:not(:last-child) {
-    margin-bottom: ${theme.spacing[1]};
+  &:active {
+    background: #4b5563;
+  }
+  
+  &:last-child {
+    margin-bottom: 0;
   }
 `;
 
@@ -654,14 +663,30 @@ const ProductDetailPage = ({ onAuthClick }) => {
                   console.log('🔗 Share button clicked, current state:', showShareDropdown);
                   setShowShareDropdown(!showShareDropdown);
                 }}
+                style={{
+                  backgroundColor: showShareDropdown ? '#374151' : 'transparent',
+                  border: showShareDropdown ? '1px solid #60a5fa' : '1px solid transparent'
+                }}
               >
                 <FiShare2 size={20} />
-                Share
+                Share {showShareDropdown ? '▼' : '▶'}
                 {showShareDropdown && (
                   <ShareDropdown>
+                    <div style={{ 
+                      color: '#f3f4f6', 
+                      fontSize: '12px', 
+                      marginBottom: '8px', 
+                      fontWeight: 'bold',
+                      textAlign: 'center',
+                      borderBottom: '1px solid #374151',
+                      paddingBottom: '8px'
+                    }}>
+                      Share this product
+                    </div>
                     <ShareOption onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      console.log('🔗 Twitter option clicked');
                       handleShare('twitter');
                     }}>
                       🐦 Share on Twitter
@@ -669,6 +694,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
                     <ShareOption onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      console.log('🔗 Facebook option clicked');
                       handleShare('facebook');
                     }}>
                       📘 Share on Facebook
@@ -676,6 +702,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
                     <ShareOption onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      console.log('🔗 LinkedIn option clicked');
                       handleShare('linkedin');
                     }}>
                       💼 Share on LinkedIn
@@ -683,6 +710,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
                     <ShareOption onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
+                      console.log('🔗 Copy option clicked');
                       handleShare('copy');
                     }}>
                       📋 Copy Link
