@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import AudioPlayer from '../components/audio/AudioPlayer';
 import Modal from '../components/modals/Modal';
+import guestCartService from '../services/guestCart';
 import { FiShoppingCart, FiHeart, FiShare2, FiPlay, FiPause } from 'react-icons/fi';
 
 const PageContainer = styled.div`
@@ -217,6 +218,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
   const [playingSample, setPlayingSample] = useState(null);
   const [sampleAudio, setSampleAudio] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [isInGuestCart, setIsInGuestCart] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -255,6 +257,34 @@ const ProductDetailPage = ({ onAuthClick }) => {
     };
   }, [sampleAudio]);
 
+  // Check cart status for guest users
+  useEffect(() => {
+    if (!user && product) {
+      const checkCartStatus = () => {
+        const freshCart = guestCartService.loadCart();
+        const inCart = freshCart.items.some(item => item.id === product.id);
+        setIsInGuestCart(inCart);
+      };
+      
+      // Check immediately
+      checkCartStatus();
+      
+      // Listen for storage events (cart changes in other tabs)
+      window.addEventListener('storage', checkCartStatus);
+      
+      // Listen for custom cart change events
+      window.addEventListener('guestCartChanged', checkCartStatus);
+      
+      return () => {
+        window.removeEventListener('storage', checkCartStatus);
+        window.removeEventListener('guestCartChanged', checkCartStatus);
+      };
+    } else {
+      // If user is logged in, make sure guest cart state is false
+      setIsInGuestCart(false);
+    }
+  }, [product?.id, user]);
+
   // Close share dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -289,8 +319,67 @@ const ProductDetailPage = ({ onAuthClick }) => {
     );
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // For authenticated users, check if they already purchased this product
+    if (isAuthenticated && user) {
+      try {
+        const result = await apiService.checkProductPurchased(product.id);
+        if (result.success && result.data.has_purchased) {
+          // User has already purchased this product, show duplicate purchase modal
+          alert('You have already purchased this product. Check your profile for downloads.');
+          return;
+        }
+      } catch (error) {
+        console.error('❌ Error checking product purchase:', error);
+        // Continue with normal flow if check fails
+      }
+    }
+    
+    // Normal add to cart flow
     addItem(product);
+  };
+
+  const handleAddToGuestCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log(`🛒 Adding product ${product.id} to guest cart`);
+    
+    try {
+      const result = guestCartService.addItem(product);
+      console.log(`🛒 AddItem result:`, result);
+      
+      setIsInGuestCart(true);
+      
+      // Trigger a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('guestCartChanged'));
+      
+      console.log(`✅ Product ${product.id} added to guest cart. Cart status: ${guestCartService.isInCart(product.id)}`);
+    } catch (error) {
+      console.error(`❌ Error adding product to guest cart:`, error);
+    }
+  };
+
+  const handleRemoveFromGuestCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log(`🗑️ Removing product ${product.id} from guest cart`);
+    
+    try {
+      guestCartService.removeItem(product.id);
+      setIsInGuestCart(false);
+      
+      // Trigger a custom event to notify other components
+      window.dispatchEvent(new CustomEvent('guestCartChanged'));
+      
+      console.log(`✅ Product ${product.id} removed from guest cart. Cart status: ${guestCartService.isInCart(product.id)}`);
+    } catch (error) {
+      console.error(`❌ Error removing product from guest cart:`, error);
+    }
   };
 
   const handleLike = async () => {
@@ -399,12 +488,34 @@ const ProductDetailPage = ({ onAuthClick }) => {
             
             <Actions>
               <Button 
-                variant={isInCart(product.id) ? "secondary" : "primary"} 
+                variant={user ? (isInCart(product.id) ? "secondary" : "primary") : (isInGuestCart ? "secondary" : "primary")} 
                 size="lg"
-                onClick={handleAddToCart}
+                onClick={(e) => {
+                  console.log(`🔘 Button clicked! User:`, user, `isInGuestCart:`, isInGuestCart);
+                  if (user) {
+                    handleAddToCart(e);
+                  } else if (isInGuestCart) {
+                    handleRemoveFromGuestCart(e);
+                  } else {
+                    handleAddToGuestCart(e);
+                  }
+                }}
+                disabled={user ? isInCart(product.id) : false}
+                title={
+                  user 
+                    ? (isInCart(product.id) ? "Added to cart - view cart to checkout" : "Add to cart")
+                    : isInGuestCart 
+                      ? "Remove from cart"
+                      : "Add to cart"
+                }
               >
                 <FiShoppingCart size={20} />
-                {isInCart(product.id) ? 'In Cart' : 'Add to Cart'}
+                {user 
+                  ? (isInCart(product.id) ? 'Added to Cart' : `Add to Cart - $${product.price}`)
+                  : isInGuestCart
+                    ? 'Remove from Cart'
+                    : `Add to Cart - $${product.price}`
+                }
               </Button>
               <LikeButton 
                 variant="ghost" 
