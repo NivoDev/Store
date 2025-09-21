@@ -650,7 +650,7 @@ const CartPage = () => {
             const product = {
               id: item.id,
               title: item.title,
-              artist: item.artist,
+              artist: item.made_by || item.artist || 'Unknown Artist',
               price: item.price,
               cover_image_url: item.cover_image_url
             };
@@ -721,7 +721,7 @@ const CartPage = () => {
               <CartItemContainer key={item.cartId || item.id}>
                 <CartItemInfo>
                   <CartItemTitle>{item.title}</CartItemTitle>
-                  <CartItemArtist>by {item.artist}</CartItemArtist>
+                  <CartItemArtist>by {item.made_by || item.artist || 'Unknown Artist'}</CartItemArtist>
                   <CartItemPrice>
                     ${item.price} x {item.quantity} = ${(item.price * item.quantity).toFixed(2)}
                   </CartItemPrice>

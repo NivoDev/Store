@@ -258,7 +258,7 @@ class GuestCartService {
       items: this.cart.items.map(item => ({
         productId: item.id,
         title: item.title,
-        artist: item.artist,
+        artist: item.made_by || item.artist || 'Unknown Artist',
         price: item.price,
         quantity: item.quantity
       })),

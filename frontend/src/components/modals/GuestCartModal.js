@@ -387,7 +387,7 @@ const GuestCartModal = ({ isOpen, onClose }) => {
                     />
                     <ItemDetails>
                       <ItemTitle>{item.title}</ItemTitle>
-                      <ItemArtist>{item.artist}</ItemArtist>
+                      <ItemArtist>by {item.made_by || item.artist || 'Unknown Artist'}</ItemArtist>
                       <ItemPrice>${item.price}</ItemPrice>
                     </ItemDetails>
                     <QuantityControls>
