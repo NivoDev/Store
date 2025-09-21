@@ -31,6 +31,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import CookiePolicyPage from './pages/CookiePolicyPage';
 import GuestDownloadPage from './pages/GuestDownloadPage';
+import GuestCheckoutSuccessPage from './pages/GuestCheckoutSuccessPage';
 import GuestEmailVerificationPage from './pages/GuestEmailVerificationPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
@@ -72,7 +73,7 @@ function App() {
                   <Route path="/sample-packs" element={<SamplePacksPage onAuthClick={() => setAuthModalOpen(true)} />} />
                   <Route path="/midi-packs" element={<MidiPacksPage onAuthClick={() => setAuthModalOpen(true)} />} />
                   <Route path="/acapellas" element={<AcapellasPage onAuthClick={() => setAuthModalOpen(true)} />} />
-                  <Route path="/product/:id" element={<ProductDetailPage />} />
+                  <Route path="/product/:id" element={<ProductDetailPage onAuthClick={() => setAuthModalOpen(true)} />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
@@ -81,6 +82,7 @@ function App() {
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/cookies" element={<CookiePolicyPage />} />
                   <Route path="/guest-downloads" element={<GuestDownloadPage />} />
+                  <Route path="/guest-checkout-success" element={<GuestCheckoutSuccessPage />} />
                   <Route path="/verify-guest-email" element={<GuestEmailVerificationPage />} />
                   <Route path="/verify-email" element={<EmailVerificationPage />} />
                   <Route path="/checkout/success" element={<CheckoutSuccessPage />} />

@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/common/Button';
 import AudioPlayer from '../components/audio/AudioPlayer';
+import Modal from '../components/modals/Modal';
 import { FiShoppingCart, FiHeart, FiShare2, FiPlay, FiPause } from 'react-icons/fi';
 
 const PageContainer = styled.div`
@@ -204,7 +205,7 @@ const ShareOption = styled.button`
   }
 `;
 
-const ProductDetailPage = () => {
+const ProductDetailPage = ({ onAuthClick }) => {
   const { id } = useParams();
   const { addItem, isInCart } = useCart();
   const { user, isAuthenticated } = useAuth();
@@ -215,6 +216,7 @@ const ProductDetailPage = () => {
   const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [playingSample, setPlayingSample] = useState(null);
   const [sampleAudio, setSampleAudio] = useState(null);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -293,7 +295,7 @@ const ProductDetailPage = () => {
 
   const handleLike = async () => {
     if (!isAuthenticated) {
-      alert('Please log in to like products');
+      setShowLoginPrompt(true);
       return;
     }
 
@@ -463,6 +465,53 @@ const ProductDetailPage = () => {
           </SamplesGrid>
         </SamplePreviews>
       </Container>
+      
+      {/* Login Prompt Modal */}
+      <Modal
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+        title="Sign In Required"
+      >
+        <div style={{ textAlign: 'center', padding: theme.spacing[6] }}>
+          <div style={{ fontSize: '48px', marginBottom: theme.spacing[4] }}>🔒</div>
+          <h3 style={{ 
+            color: theme.colors.dark[50], 
+            marginBottom: theme.spacing[3],
+            fontSize: theme.typography.sizes.xl
+          }}>
+            Sign in to like products
+          </h3>
+          <p style={{ 
+            color: theme.colors.dark[300], 
+            marginBottom: theme.spacing[6],
+            lineHeight: 1.6
+          }}>
+            Create an account or sign in to save your favorite products and access your personal collection.
+          </p>
+          <div style={{ display: 'flex', gap: theme.spacing[3], justifyContent: 'center' }}>
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowLoginPrompt(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="primary" 
+              onClick={() => {
+                setShowLoginPrompt(false);
+                if (onAuthClick) {
+                  onAuthClick();
+                } else {
+                  // Fallback to URL redirect if no callback provided
+                  window.location.href = '/#auth';
+                }
+              }}
+            >
+              Sign In
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </PageContainer>
   );
 };

@@ -558,11 +558,11 @@ const CheckoutPage = () => {
         // Clear the verified order from session storage
         sessionStorage.removeItem('verifiedGuestOrder');
         
-        // Redirect to guest download page
-        navigate('/guest-download', { 
+        // Redirect to beautiful thank you page
+        navigate('/guest-checkout-success', { 
           state: { 
             orderNumber: orderNumber,
-            message: 'Payment successful! Your download links are ready.'
+            orderData: result.data
           }
         });
         
