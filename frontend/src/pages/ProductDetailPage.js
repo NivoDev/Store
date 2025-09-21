@@ -229,57 +229,6 @@ const ShareButton = styled(Button)`
   position: relative;
 `;
 
-const ShareDropdown = styled.div`
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: #1f2937;
-  border: 2px solid #374151;
-  border-radius: 8px;
-  padding: 12px;
-  min-width: 200px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-  z-index: 9999;
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
-  transition: all 0.2s ease;
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    right: auto;
-    left: 0;
-    min-width: 180px;
-  }
-`;
-
-const ShareOption = styled.button`
-  display: block;
-  width: 100%;
-  padding: 12px 16px;
-  background: transparent;
-  border: none;
-  color: #f3f4f6;
-  text-align: left;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 4px;
-  
-  &:hover {
-    background: #374151;
-    color: #60a5fa;
-  }
-  
-  &:active {
-    background: #4b5563;
-  }
-  
-  &:last-child {
-    margin-bottom: 0;
-  }
-`;
 
 const ProductDetailPage = ({ onAuthClick }) => {
   const { id } = useParams();
@@ -289,7 +238,6 @@ const ProductDetailPage = ({ onAuthClick }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLiked, setIsLiked] = useState(false);
-  const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [playingSample, setPlayingSample] = useState(null);
   const [sampleAudio, setSampleAudio] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
@@ -387,19 +335,6 @@ const ProductDetailPage = ({ onAuthClick }) => {
     loadSamples();
   }, [product?.id]);
 
-  // Close share dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showShareDropdown && !event.target.closest('[data-share-dropdown]')) {
-        setShowShareDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showShareDropdown]);
 
   if (loading) {
     return (
@@ -502,47 +437,96 @@ const ProductDetailPage = ({ onAuthClick }) => {
     }
   };
 
-  const handleShare = (platform) => {
-    console.log('🔗 handleShare called with platform:', platform);
+  const handleShare = async () => {
     const url = window.location.href;
     const title = product?.title || 'Product';
     const text = `Check out "${title}" on Atomic Rose Tools`;
 
-    console.log('🔗 Share data:', { url, title, text });
+    console.log('🔗 Share button clicked');
 
-    switch (platform) {
-      case 'twitter':
-        console.log('🔗 Opening Twitter share');
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'facebook':
-        console.log('🔗 Opening Facebook share');
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'linkedin':
-        console.log('🔗 Opening LinkedIn share');
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'copy':
-        console.log('🔗 Copying to clipboard');
-        navigator.clipboard.writeText(url).then(() => {
-          alert('Link copied to clipboard!');
-        }).catch(() => {
-          // Fallback for older browsers
-          const textArea = document.createElement('textarea');
-          textArea.value = url;
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-          alert('Link copied to clipboard!');
+    // Check if we're on mobile and native sharing is available
+    if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      try {
+        console.log('🔗 Using native mobile share');
+        await navigator.share({
+          title: title,
+          text: text,
+          url: url
         });
-        break;
-      default:
-        console.log('🔗 Unknown platform:', platform);
-        break;
+      } catch (error) {
+        console.log('🔗 Native share cancelled or failed, falling back to clipboard');
+        // Fallback to clipboard if native share fails
+        await copyToClipboard(url, title);
+      }
+    } else {
+      // Desktop: just copy to clipboard
+      console.log('🔗 Desktop: copying to clipboard');
+      await copyToClipboard(url, title);
     }
-    setShowShareDropdown(false);
+  };
+
+  const copyToClipboard = async (url, title) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      // Show a nice toast message instead of alert
+      showToast(`🔗 Link copied! Share "${title}" with friends`);
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showToast(`🔗 Link copied! Share "${title}" with friends`);
+    }
+  };
+
+  const showToast = (message) => {
+    // Create a simple toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 300px;
+      animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = message;
+    
+    // Add slide-in animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(toast);
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+      toast.style.animation = 'slideIn 0.3s ease reverse';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+        if (style.parentNode) {
+          style.parentNode.removeChild(style);
+        }
+      }, 300);
+    }, 3000);
   };
 
   const handleSamplePlay = async (sample) => {
@@ -656,67 +640,14 @@ const ProductDetailPage = ({ onAuthClick }) => {
               <ShareButton 
                 variant="ghost" 
                 size="lg"
-                data-share-dropdown
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('🔗 Share button clicked, current state:', showShareDropdown);
-                  setShowShareDropdown(!showShareDropdown);
-                }}
-                style={{
-                  backgroundColor: showShareDropdown ? '#374151' : 'transparent',
-                  border: showShareDropdown ? '1px solid #60a5fa' : '1px solid transparent'
+                  handleShare();
                 }}
               >
                 <FiShare2 size={20} />
-                Share {showShareDropdown ? '▼' : '▶'}
-                {showShareDropdown && (
-                  <ShareDropdown>
-                    <div style={{ 
-                      color: '#f3f4f6', 
-                      fontSize: '12px', 
-                      marginBottom: '8px', 
-                      fontWeight: 'bold',
-                      textAlign: 'center',
-                      borderBottom: '1px solid #374151',
-                      paddingBottom: '8px'
-                    }}>
-                      Share this product
-                    </div>
-                    <ShareOption onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🔗 Twitter option clicked');
-                      handleShare('twitter');
-                    }}>
-                      🐦 Share on Twitter
-                    </ShareOption>
-                    <ShareOption onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🔗 Facebook option clicked');
-                      handleShare('facebook');
-                    }}>
-                      📘 Share on Facebook
-                    </ShareOption>
-                    <ShareOption onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🔗 LinkedIn option clicked');
-                      handleShare('linkedin');
-                    }}>
-                      💼 Share on LinkedIn
-                    </ShareOption>
-                    <ShareOption onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('🔗 Copy option clicked');
-                      handleShare('copy');
-                    }}>
-                      📋 Copy Link
-                    </ShareOption>
-                  </ShareDropdown>
-                )}
+                Share
               </ShareButton>
             </Actions>
           </InfoSection>
