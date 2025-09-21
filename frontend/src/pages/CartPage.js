@@ -672,14 +672,46 @@ const CartPage = () => {
             <h3 style={{ color: theme.colors.dark[50], marginBottom: theme.spacing[4] }}>
               Order Summary
             </h3>
+            
+            {/* Subtotal */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              marginBottom: theme.spacing[2],
+              color: theme.colors.dark[300]
+            }}>
+              <span>Subtotal:</span>
+              <span style={{ color: theme.colors.dark[50] }}>
+                ${(total / 1.18).toFixed(2)}
+              </span>
+            </div>
+            
+            {/* VAT */}
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               marginBottom: theme.spacing[4],
               color: theme.colors.dark[300]
             }}>
+              <span>VAT (18%):</span>
+              <span style={{ color: theme.colors.dark[50] }}>
+                ${(total - (total / 1.18)).toFixed(2)}
+              </span>
+            </div>
+            
+            {/* Total */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              marginBottom: theme.spacing[4],
+              color: theme.colors.dark[50],
+              fontWeight: 'bold',
+              fontSize: theme.typography.sizes.lg,
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              paddingTop: theme.spacing[3]
+            }}>
               <span>Total:</span>
-              <span style={{ color: theme.colors.dark[50], fontWeight: 'bold' }}>
+              <span style={{ color: theme.colors.primary[400] }}>
                 ${total.toFixed(2)}
               </span>
             </div>

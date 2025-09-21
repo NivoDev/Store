@@ -1727,6 +1727,12 @@ async def purchase_product(order_data: dict, current_user: dict = Depends(get_cu
             {"$addToSet": {"purchased_products": product_oid}}
         )
 
+        # Calculate totals with tax
+        subtotal = product.get("price", 0)
+        tax_rate = 0.18  # Israel VAT rate 2025: 18%
+        tax_amount = subtotal * tax_rate
+        total_amount = subtotal + tax_amount
+        
         # Create order record
         order = {
             "user_id": ObjectId(user_id),
@@ -1736,7 +1742,10 @@ async def purchase_product(order_data: dict, current_user: dict = Depends(get_cu
                 "quantity": 1,
                 "price": product.get("price", 0),
             }],
-            "total_amount": product.get("price", 0),
+            "subtotal": subtotal,
+            "tax_rate": tax_rate,
+            "tax_amount": tax_amount,
+            "total_amount": total_amount,
             "status": "completed",
             "payment_method": "mock",
             "payment_id": f"mock_{datetime.utcnow().timestamp()}",
@@ -1823,7 +1832,7 @@ async def create_user_order(order_data: dict, current_user: dict = Depends(get_c
             raise HTTPException(status_code=400, detail="No items in order")
         
         # Validate all products exist and calculate total
-        total_amount = 0
+        subtotal = 0
         validated_items = []
         product_ids = []
         
@@ -1840,7 +1849,7 @@ async def create_user_order(order_data: dict, current_user: dict = Depends(get_c
             quantity = item.get("quantity", 1)
             price = product.get("price", 0)
             item_total = price * quantity
-            total_amount += item_total
+            subtotal += item_total
             
             validated_items.append({
                 "product_id": product_oid,
@@ -1851,6 +1860,11 @@ async def create_user_order(order_data: dict, current_user: dict = Depends(get_c
             })
             
             product_ids.append(product_oid)
+        
+        # Calculate totals with tax
+        tax_rate = 0.18  # Israel VAT rate 2025: 18%
+        tax_amount = subtotal * tax_rate
+        total_amount = subtotal + tax_amount
         
         # Add all products to user's purchased products
         await db.users.update_one(
@@ -1867,9 +1881,10 @@ async def create_user_order(order_data: dict, current_user: dict = Depends(get_c
             "order_number": order_number,
             "customer_info": customer,
             "items": validated_items,
+            "subtotal": subtotal,
+            "tax_rate": tax_rate,
+            "tax_amount": tax_amount,
             "total_amount": total_amount,
-            "subtotal": order_data.get("subtotal", total_amount),
-            "tax": order_data.get("tax", 0),
             "status": "completed",
             "payment_method": "mock",
             "payment_id": f"mock_{datetime.utcnow().timestamp()}",
@@ -1984,12 +1999,21 @@ async def guest_checkout(checkout_data: dict):
         verification_token = secrets.token_urlsafe(32)
         otp_code = ''.join(secrets.choice('0123456789') for _ in range(6))
         
+        # Calculate totals with tax
+        subtotal = sum(item["price"] * item["quantity"] for item in items)
+        tax_rate = 0.18  # Israel VAT rate 2025: 18%
+        tax_amount = subtotal * tax_rate
+        total_amount = subtotal + tax_amount
+        
         # Create guest order
         order = {
             "order_number": f"GUEST-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
             "guest_email": email,
             "items": items,
-            "total_amount": sum(item["price"] * item["quantity"] for item in items),
+            "subtotal": subtotal,
+            "tax_rate": tax_rate,
+            "tax_amount": tax_amount,
+            "total_amount": total_amount,
             "status": "pending_verification",
             "verification_token": verification_token,
             "otp_code": otp_code,

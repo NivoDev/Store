@@ -448,8 +448,8 @@ const CheckoutPage = () => {
   };
 
   const calculateTax = () => {
-    // Simple tax calculation (8.5% for US)
-    return calculateTotal() * 0.085;
+    // Israel VAT rate 2025: 18%
+    return calculateTotal() * 0.18;
   };
 
   const handleSubmit = async (e) => {
@@ -911,7 +911,7 @@ const CheckoutPage = () => {
             <SummaryValue>${calculateTotal().toFixed(2)}</SummaryValue>
           </SummaryRow>
           <SummaryRow>
-            <SummaryLabel>Tax (8.5%)</SummaryLabel>
+            <SummaryLabel>VAT (18%)</SummaryLabel>
             <SummaryValue>${calculateTax().toFixed(2)}</SummaryValue>
           </SummaryRow>
           <SummaryRow className="total">
