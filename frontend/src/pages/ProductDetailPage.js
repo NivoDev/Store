@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
-import { theme } from '../theme';
+import { theme } from '../theme/index';
 import apiService from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -159,13 +159,13 @@ const SampleDuration = styled.span`
 
 const LikeButton = styled(Button)`
   ${props => props.isLiked && `
-    background: ${theme.colors.red[600]};
+    background: ${theme.colors.error};
     color: white;
-    border-color: ${theme.colors.red[600]};
+    border-color: ${theme.colors.error};
     
     &:hover {
-      background: ${theme.colors.red[700]};
-      border-color: ${theme.colors.red[700]};
+      background: #dc2626;
+      border-color: #dc2626;
     }
   `}
 `;
