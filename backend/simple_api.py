@@ -112,8 +112,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Configure rate limiter with memory storage
+limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -1956,6 +1956,29 @@ async def guest_checkout(checkout_data: dict):
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         if not re.match(email_pattern, email):
             raise HTTPException(status_code=400, detail="Invalid email format")
+        
+        # Validate product IDs and check if products exist
+        for item in items:
+            product_id = item.get("product_id")
+            if not product_id:
+                raise HTTPException(status_code=400, detail="Product ID is required for all items")
+            
+            # Validate ObjectId format
+            if not ObjectId.is_valid(product_id):
+                raise HTTPException(status_code=400, detail=f"Invalid product ID format: {product_id}")
+            
+            # Check if product exists
+            product = await db.products.find_one({"_id": ObjectId(product_id)})
+            if not product:
+                raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
+            
+            # Validate price (prevent price manipulation)
+            if item.get("price", 0) != product.get("price", 0):
+                raise HTTPException(status_code=400, detail=f"Price mismatch for product {product_id}")
+            
+            # Validate quantity
+            if item.get("quantity", 0) <= 0:
+                raise HTTPException(status_code=400, detail="Quantity must be greater than 0")
         
         # Generate verification token and OTP code
         verification_token = secrets.token_urlsafe(32)

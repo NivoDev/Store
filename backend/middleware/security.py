@@ -13,9 +13,17 @@ def sanitize_input(data: Any) -> Any:
     elif isinstance(data, list):
         return [sanitize_input(item) for item in data]
     elif isinstance(data, str):
-        # Remove HTML tags and encode special characters
-        cleaned = re.sub(r'<[^>]+>', '', data)  # Remove HTML tags
-        return html.escape(cleaned)
+        # Aggressive HTML tag removal and entity escaping
+        # Remove all HTML tags including script, img, iframe, etc.
+        cleaned = re.sub(r'<[^>]*>', '', data)  # Remove HTML tags
+        # Remove javascript: and data: protocols
+        cleaned = re.sub(r'javascript:', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'data:', '', cleaned, flags=re.IGNORECASE)
+        # Remove any remaining suspicious patterns
+        cleaned = re.sub(r'on\w+\s*=', '', cleaned, flags=re.IGNORECASE)
+        # Escape special characters
+        cleaned = html.escape(cleaned)
+        return cleaned.strip()
     return data
 
 def validate_input(data: Dict[str, Any], field_rules: Dict[str, Dict]) -> None:
@@ -53,7 +61,7 @@ def get_validation_rules() -> Dict[str, Dict]:
     return {
         'name': {
             'max_length': 100,
-            'pattern': r'^[a-zA-Z0-9\s\-\.]+$',
+            'pattern': r'^[a-zA-Z\s\-\.\']+$',
             'required_chars': r'[a-zA-Z]'
         },
         'company_name': {
