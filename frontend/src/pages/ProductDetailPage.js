@@ -234,30 +234,41 @@ const ShareDropdown = styled.div`
   top: 100%;
   right: 0;
   background: ${theme.colors.dark[800]};
-  border: 1px solid ${theme.colors.dark[600]};
+  border: 1px solid ${theme.colors.dark[700]};
   border-radius: ${theme.borderRadius.md};
   padding: ${theme.spacing[2]};
+  margin-top: ${theme.spacing[1]};
   min-width: 200px;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: ${theme.shadows.lg};
+  z-index: ${theme.zIndex.dropdown};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    right: auto;
+    left: 0;
+    min-width: 180px;
+  }
 `;
 
 const ShareOption = styled.button`
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing[2]};
+  display: block;
   width: 100%;
-  padding: ${theme.spacing[2]};
-  background: none;
+  padding: ${theme.spacing[2]} ${theme.spacing[3]};
+  background: transparent;
   border: none;
   color: ${theme.colors.dark[100]};
   text-align: left;
-  cursor: pointer;
   border-radius: ${theme.borderRadius.sm};
-  transition: background 0.2s ease;
-
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: ${theme.typography.sizes.sm};
+  
   &:hover {
     background: ${theme.colors.dark[700]};
+    color: ${theme.colors.primary[400]};
+  }
+  
+  &:not(:last-child) {
+    margin-bottom: ${theme.spacing[1]};
   }
 `;
 
@@ -498,8 +509,18 @@ const ProductDetailPage = ({ onAuthClick }) => {
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
         break;
       case 'copy':
-        navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
+        navigator.clipboard.writeText(url).then(() => {
+          alert('Link copied to clipboard!');
+        }).catch(() => {
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = url;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          alert('Link copied to clipboard!');
+        });
         break;
       default:
         break;
