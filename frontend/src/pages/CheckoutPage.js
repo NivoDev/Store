@@ -447,11 +447,6 @@ const CheckoutPage = () => {
     return effectiveItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const calculateTax = () => {
-    // Israel VAT rate 2025: 18%
-    return calculateTotal() * 0.18;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -490,8 +485,8 @@ const CheckoutPage = () => {
             cover_image_url: item.cover_image_url
           })),
           subtotal: calculateTotal(),
-          tax: calculateTax(),
-          total: calculateTotal() + calculateTax(),
+          tax: 0, // No tax
+          total: calculateTotal(),
           requestInvoice: formData.requestInvoice
         };
         
@@ -910,13 +905,9 @@ const CheckoutPage = () => {
             <SummaryLabel>Subtotal</SummaryLabel>
             <SummaryValue>${calculateTotal().toFixed(2)}</SummaryValue>
           </SummaryRow>
-          <SummaryRow>
-            <SummaryLabel>VAT (18%)</SummaryLabel>
-            <SummaryValue>${calculateTax().toFixed(2)}</SummaryValue>
-          </SummaryRow>
           <SummaryRow className="total">
             <SummaryLabel>Total</SummaryLabel>
-            <TotalValue>${(calculateTotal() + calculateTax()).toFixed(2)}</TotalValue>
+            <TotalValue>${calculateTotal().toFixed(2)}</TotalValue>
           </SummaryRow>
         </OrderSummary>
       </Content>

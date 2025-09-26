@@ -16,7 +16,6 @@ import {
 import { theme } from '../../theme';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { useAudio } from '../../contexts/AudioContext';
 import Button from '../common/Button';
 import Modal from '../modals/Modal';
 import apiService from '../../services/api';
@@ -252,7 +251,7 @@ const Actions = styled.div`
   gap: ${theme.spacing[2]};
 `;
 
-const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, onAuthClick, onAddToCart }) => {
+const ProductCard = ({ product, onPlay, isPlaying, className, showDownload, onDownload, onLikeToggle, showDownloadButton, isDownloading, canDownload = true, downloadsRemaining = 0, onAuthClick, onAddToCart }) => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -264,7 +263,6 @@ const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggl
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const { addItem, isInCart } = useCart();
   const { user, isAuthenticated } = useAuth();
-  const { playTrack, isCurrentTrack, isTrackPlaying } = useAudio();
   const navigate = useNavigate();
 
   // Check if item is in guest cart on mount and when cart changes
@@ -413,7 +411,7 @@ const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggl
   const handlePlay = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    playTrack(product);
+    onPlay(product);
   };
 
   const handleAddToGuestCart = (e) => {
@@ -542,7 +540,7 @@ const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggl
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >
-            {isTrackPlaying(product.id) ? <FiPause size={24} /> : <FiPlay size={24} />}
+            {isPlaying ? <FiPause size={24} /> : <FiPlay size={24} />}
           </PlayButton>
         </ImageOverlay>
 
@@ -567,8 +565,8 @@ const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggl
       <Content>
         <Header>
           <Genre>{product.genre}</Genre>
-          <Title to={`/product/${product.id}`}>{product.title}</Title>
-          <Artist>by {product.made_by || product.artist || 'Unknown Artist'}</Artist>
+          <Title to={`/product/${product.slug || product.id}`}>{product.title}</Title>
+          <Artist>by {product.artist}</Artist>
         </Header>
 
         <Description>{product.description}</Description>
@@ -607,10 +605,13 @@ const ProductCard = ({ product, className, showDownload, onDownload, onLikeToggl
               size="sm"
               fullWidth
               onClick={onDownload}
-              disabled={isDownloading}
+              disabled={isDownloading || !canDownload}
+              title={!canDownload ? `No downloads remaining (${downloadsRemaining}/3 used)` : undefined}
             >
               <FiDownload size={16} />
-              {isDownloading ? 'Generating...' : 'Download'}
+              {isDownloading ? 'Generating...' : 
+               !canDownload ? `No Downloads Left (${downloadsRemaining}/3)` :
+               `Download (${downloadsRemaining} left)`}
             </Button>
           ) : showDownload ? (
             <Button

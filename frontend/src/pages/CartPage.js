@@ -336,18 +336,14 @@ const CartPage = () => {
   const { user, isAuthenticated } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Calculate correct tax values
+  // Calculate correct values (no tax)
   const calculateSubtotal = () => {
     const items = isAuthenticated ? regularItems : guestCart.items;
     return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
-  const calculateTax = () => {
-    return calculateSubtotal() * 0.18; // Israel VAT rate 2025: 18%
-  };
-
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateTax();
+    return calculateSubtotal(); // No tax
   };
   
   // Guest cart state
@@ -794,32 +790,6 @@ const CartPage = () => {
             <h3 style={{ color: theme.colors.dark[50], marginBottom: theme.spacing[4] }}>
               Order Summary
             </h3>
-            
-            {/* Subtotal */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              marginBottom: theme.spacing[2],
-              color: theme.colors.dark[300]
-            }}>
-              <span>Subtotal:</span>
-              <span style={{ color: theme.colors.dark[50] }}>
-                ${calculateSubtotal().toFixed(2)}
-              </span>
-            </div>
-            
-            {/* VAT */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              marginBottom: theme.spacing[4],
-              color: theme.colors.dark[300]
-            }}>
-              <span>VAT (18%):</span>
-              <span style={{ color: theme.colors.dark[50] }}>
-                ${calculateTax().toFixed(2)}
-              </span>
-            </div>
             
             {/* Total */}
             <div style={{ 

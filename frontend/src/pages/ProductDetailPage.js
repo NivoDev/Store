@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
-import { theme } from '../theme/index';
+import { theme } from '../theme';
 import apiService from '../services/api';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,14 +14,6 @@ import { FiShoppingCart, FiHeart, FiShare2, FiPlay, FiPause } from 'react-icons/
 const PageContainer = styled.div`
   min-height: 100vh;
   padding: ${theme.spacing[8]} ${theme.spacing[6]};
-  
-  @media (max-width: ${theme.breakpoints.md}) {
-    padding: ${theme.spacing[4]} ${theme.spacing[3]};
-  }
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    padding: ${theme.spacing[3]} ${theme.spacing[2]};
-  }
 `;
 
 const Container = styled.div`
@@ -34,17 +26,9 @@ const ProductGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: ${theme.spacing[12]};
   
-  @media (max-width: ${theme.breakpoints.lg}) {
-    gap: ${theme.spacing[8]};
-  }
-  
   @media (max-width: ${theme.breakpoints.md}) {
     grid-template-columns: 1fr;
-    gap: ${theme.spacing[6]};
-  }
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    gap: ${theme.spacing[4]};
+    gap: ${theme.spacing[8]};
   }
 `;
 
@@ -57,12 +41,6 @@ const ProductImage = styled.img`
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: ${theme.borderRadius.xl};
-  max-width: 100%;
-  height: auto;
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    border-radius: ${theme.borderRadius.lg};
-  }
 `;
 
 const InfoSection = styled.div``;
@@ -73,14 +51,6 @@ const Title = styled.h1`
   font-weight: ${theme.typography.weights.bold};
   color: ${theme.colors.dark[50]};
   margin-bottom: ${theme.spacing[2]};
-  
-  @media (max-width: ${theme.breakpoints.md}) {
-    font-size: ${theme.typography.sizes['3xl']};
-  }
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    font-size: ${theme.typography.sizes['2xl']};
-  }
 `;
 
 const Artist = styled.div`
@@ -106,11 +76,6 @@ const Actions = styled.div`
   display: flex;
   gap: ${theme.spacing[3]};
   margin-bottom: ${theme.spacing[8]};
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    flex-direction: column;
-    gap: ${theme.spacing[2]};
-  }
 `;
 
 const SamplePreviews = styled.div`
@@ -119,16 +84,6 @@ const SamplePreviews = styled.div`
   background: ${theme.colors.dark[800]};
   border-radius: ${theme.borderRadius.lg};
   border: 1px solid ${theme.colors.dark[700]};
-  
-  @media (max-width: ${theme.breakpoints.md}) {
-    padding: ${theme.spacing[4]};
-    margin-top: ${theme.spacing[6]};
-  }
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    padding: ${theme.spacing[3]};
-    margin-top: ${theme.spacing[4]};
-  }
 `;
 
 const SamplePreviewsTitle = styled.h3`
@@ -149,16 +104,6 @@ const SamplesGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: ${theme.spacing[4]};
-  
-  @media (max-width: ${theme.breakpoints.md}) {
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: ${theme.spacing[3]};
-  }
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    grid-template-columns: 1fr;
-    gap: ${theme.spacing[2]};
-  }
 `;
 
 const SampleItem = styled.div`
@@ -214,13 +159,13 @@ const SampleDuration = styled.span`
 
 const LikeButton = styled(Button)`
   ${props => props.isLiked && `
-    background: ${theme.colors.error};
+    background: ${theme.colors.red[600]};
     color: white;
-    border-color: ${theme.colors.error};
+    border-color: ${theme.colors.red[600]};
     
     &:hover {
-      background: #dc2626;
-      border-color: #dc2626;
+      background: ${theme.colors.red[700]};
+      border-color: ${theme.colors.red[700]};
     }
   `}
 `;
@@ -229,27 +174,57 @@ const ShareButton = styled(Button)`
   position: relative;
 `;
 
+const ShareDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: ${theme.colors.dark[800]};
+  border: 1px solid ${theme.colors.dark[600]};
+  border-radius: ${theme.borderRadius.md};
+  padding: ${theme.spacing[2]};
+  min-width: 200px;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+`;
+
+const ShareOption = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing[2]};
+  width: 100%;
+  padding: ${theme.spacing[2]};
+  background: none;
+  border: none;
+  color: ${theme.colors.dark[100]};
+  text-align: left;
+  cursor: pointer;
+  border-radius: ${theme.borderRadius.sm};
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: ${theme.colors.dark[700]};
+  }
+`;
 
 const ProductDetailPage = ({ onAuthClick }) => {
-  const { id } = useParams();
+  const { slug } = useParams();
   const { addItem, isInCart } = useCart();
   const { user, isAuthenticated } = useAuth();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLiked, setIsLiked] = useState(false);
+  const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [playingSample, setPlayingSample] = useState(null);
   const [sampleAudio, setSampleAudio] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [isInGuestCart, setIsInGuestCart] = useState(false);
-  const [samples, setSamples] = useState([]);
-  const [loadingSamples, setLoadingSamples] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
       try {
         setLoading(true);
-        const result = await apiService.getProduct(id);
+        const result = await apiService.getProduct(slug);
         if (result.success) {
           setProduct(result.data);
           // Check if product is liked by current user
@@ -267,10 +242,10 @@ const ProductDetailPage = ({ onAuthClick }) => {
       }
     };
 
-    if (id) {
+    if (slug) {
       loadProduct();
     }
-  }, [id, user]);
+  }, [slug, user]);
 
   // Cleanup audio on unmount
   useEffect(() => {
@@ -310,31 +285,19 @@ const ProductDetailPage = ({ onAuthClick }) => {
     }
   }, [product?.id, user]);
 
-  // Load samples when product loads
+  // Close share dropdown when clicking outside
   useEffect(() => {
-    const loadSamples = async () => {
-      if (!product?.id) return;
-      
-      try {
-        setLoadingSamples(true);
-        const result = await apiService.getProductSamples(product.id);
-        if (result.success) {
-          setSamples(result.data || []);
-        } else {
-          console.error('Failed to load samples:', result.error);
-          setSamples([]);
-        }
-      } catch (error) {
-        console.error('Error loading samples:', error);
-        setSamples([]);
-      } finally {
-        setLoadingSamples(false);
+    const handleClickOutside = (event) => {
+      if (showShareDropdown && !event.target.closest('[data-share-dropdown]')) {
+        setShowShareDropdown(false);
       }
     };
 
-    loadSamples();
-  }, [product?.id]);
-
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showShareDropdown]);
 
   if (loading) {
     return (
@@ -437,94 +400,32 @@ const ProductDetailPage = ({ onAuthClick }) => {
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = (platform) => {
     const url = window.location.href;
-    const title = product?.title || 'Product';
+    const title = product.title;
     const text = `Check out "${title}" on Atomic Rose Tools`;
 
-    // Check if we're on mobile and native sharing is available
-    if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-      try {
-        await navigator.share({
-          title: title,
-          text: text,
-          url: url
-        });
-      } catch (error) {
-        // Fallback to clipboard if native share fails
-        await copyToClipboard(url, title);
-      }
-    } else {
-      // Desktop: just copy to clipboard
-      await copyToClipboard(url, title);
+    switch (platform) {
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'linkedin':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+        break;
+      default:
+        break;
     }
+    setShowShareDropdown(false);
   };
 
-  const copyToClipboard = async (url, title) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      // Show a nice toast message instead of alert
-      showToast(`🔗 Link copied! Share "${title}" with friends`);
-    } catch (error) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = url;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      showToast(`🔗 Link copied! Share "${title}" with friends`);
-    }
-  };
-
-  const showToast = (message) => {
-    // Create a simple toast notification
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #1f2937;
-      color: #f3f4f6;
-      padding: 12px 20px;
-      border-radius: 8px;
-      border: 1px solid #374151;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      z-index: 10000;
-      font-size: 14px;
-      font-weight: 500;
-      max-width: 300px;
-      animation: slideIn 0.3s ease;
-    `;
-    toast.textContent = message;
-    
-    // Add slide-in animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-    `;
-    document.head.appendChild(style);
-    
-    document.body.appendChild(toast);
-    
-    // Remove toast after 3 seconds
-    setTimeout(() => {
-      toast.style.animation = 'slideIn 0.3s ease reverse';
-      setTimeout(() => {
-        if (toast.parentNode) {
-          toast.parentNode.removeChild(toast);
-        }
-        if (style.parentNode) {
-          style.parentNode.removeChild(style);
-        }
-      }, 300);
-    }, 3000);
-  };
-
-  const handleSamplePlay = async (sample) => {
+  const handleSamplePlay = (sample) => {
     if (playingSample === sample.id) {
       // Stop current sample
       if (sampleAudio) {
@@ -539,34 +440,27 @@ const ProductDetailPage = ({ onAuthClick }) => {
         sampleAudio.src = '';
       }
 
-      try {
-        // Get presigned URL for the sample
-        const result = await apiService.getSamplePreview(sample.id, product.id);
-        if (result.success) {
-          const audio = new Audio(result.data.preview_url);
-          audio.addEventListener('ended', () => {
-            setPlayingSample(null);
-            setSampleAudio(null);
-          });
-          audio.addEventListener('error', (e) => {
-            console.error('Error playing sample:', e);
-            setPlayingSample(null);
-            setSampleAudio(null);
-          });
-          audio.play();
-          setSampleAudio(audio);
-          setPlayingSample(sample.id);
-        } else {
-          console.error('Failed to get sample preview:', result.error);
-        }
-      } catch (error) {
-        console.error('Error playing sample:', error);
-      }
+      // Play new sample
+      const audio = new Audio(sample.url);
+      audio.addEventListener('ended', () => {
+        setPlayingSample(null);
+        setSampleAudio(null);
+      });
+      audio.play();
+      setSampleAudio(audio);
+      setPlayingSample(sample.id);
     }
   };
 
-  // Use real sample data from the API
-  const samplePreviews = samples;
+  // Sample data - in a real app, this would come from the product data
+  const samplePreviews = [
+    { id: 1, title: 'Arc Light', duration: '0:15', url: product?.audio_url || '' },
+    { id: 2, title: 'Crystal', duration: '0:12', url: product?.audio_url || '' },
+    { id: 3, title: 'Lunar Pulse', duration: '0:18', url: product?.audio_url || '' },
+    { id: 4, title: 'Argent', duration: '0:14', url: product?.audio_url || '' },
+    { id: 5, title: 'Electric Mist', duration: '0:16', url: product?.audio_url || '' },
+    { id: 6, title: 'Midnight Circuit', duration: '0:13', url: product?.audio_url || '' },
+  ];
 
 
   return (
@@ -585,7 +479,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
           
           <InfoSection>
             <Title>{product.title}</Title>
-            <Artist>by {product.made_by || product.artist || 'Unknown Artist'}</Artist>
+            <Artist>by {product.artist}</Artist>
             <Price>${product.price}</Price>
             <Description>{product.description}</Description>
             
@@ -635,49 +529,52 @@ const ProductDetailPage = ({ onAuthClick }) => {
               <ShareButton 
                 variant="ghost" 
                 size="lg"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleShare();
-                }}
+                data-share-dropdown
+                onClick={() => setShowShareDropdown(!showShareDropdown)}
               >
                 <FiShare2 size={20} />
                 Share
+                {showShareDropdown && (
+                  <ShareDropdown>
+                    <ShareOption onClick={() => handleShare('twitter')}>
+                      🐦 Share on Twitter
+                    </ShareOption>
+                    <ShareOption onClick={() => handleShare('facebook')}>
+                      📘 Share on Facebook
+                    </ShareOption>
+                    <ShareOption onClick={() => handleShare('linkedin')}>
+                      💼 Share on LinkedIn
+                    </ShareOption>
+                    <ShareOption onClick={() => handleShare('copy')}>
+                      📋 Copy Link
+                    </ShareOption>
+                  </ShareDropdown>
+                )}
               </ShareButton>
             </Actions>
           </InfoSection>
         </ProductGrid>
 
-                {/* Sample Previews Section */}
-                <SamplePreviews>
-                  <SamplePreviewsTitle>Sample Previews</SamplePreviewsTitle>
-                  <SamplePreviewsDescription>
-                    Preview individual samples from this pack. Each sample is carefully crafted to showcase the unique character and quality of this collection.
-                  </SamplePreviewsDescription>
-                  {loadingSamples ? (
-                    <div style={{ textAlign: 'center', padding: theme.spacing[8], color: theme.colors.dark[300] }}>
-                      Loading samples...
-                    </div>
-                  ) : samplePreviews.length > 0 ? (
-                    <SamplesGrid>
-                      {samplePreviews.map((sample) => (
-                        <SampleItem key={sample.id} onClick={() => handleSamplePlay(sample)}>
-                          <SampleTitle>{sample.title}</SampleTitle>
-                          <SamplePlayer>
-                            <PlayButton>
-                              {playingSample === sample.id ? <FiPause size={16} /> : <FiPlay size={16} />}
-                            </PlayButton>
-                            <SampleDuration>{sample.duration}</SampleDuration>
-                          </SamplePlayer>
-                        </SampleItem>
-                      ))}
-                    </SamplesGrid>
-                  ) : (
-                    <div style={{ textAlign: 'center', padding: theme.spacing[8], color: theme.colors.dark[300] }}>
-                      No samples available for preview
-                    </div>
-                  )}
-                </SamplePreviews>
+        {/* Sample Previews Section */}
+        <SamplePreviews>
+          <SamplePreviewsTitle>Sample Previews</SamplePreviewsTitle>
+          <SamplePreviewsDescription>
+            Preview individual samples from this pack. Each sample is carefully crafted to showcase the unique character and quality of this collection.
+          </SamplePreviewsDescription>
+          <SamplesGrid>
+            {samplePreviews.map((sample) => (
+              <SampleItem key={sample.id} onClick={() => handleSamplePlay(sample)}>
+                <SampleTitle>{sample.title}</SampleTitle>
+                <SamplePlayer>
+                  <PlayButton>
+                    {playingSample === sample.id ? <FiPause size={16} /> : <FiPlay size={16} />}
+                  </PlayButton>
+                  <SampleDuration>{sample.duration}</SampleDuration>
+                </SamplePlayer>
+              </SampleItem>
+            ))}
+          </SamplesGrid>
+        </SamplePreviews>
       </Container>
       
       {/* Login Prompt Modal */}

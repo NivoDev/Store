@@ -112,7 +112,7 @@ const DuplicatePurchaseModal = ({
             />
             <ProductDetails>
               <ProductTitle>{product.title}</ProductTitle>
-              <ProductArtist>by {product.made_by || product.artist || 'Unknown Artist'}</ProductArtist>
+              <ProductArtist>by {product.artist}</ProductArtist>
               <ProductPrice>${product.price}</ProductPrice>
             </ProductDetails>
           </ProductInfo>

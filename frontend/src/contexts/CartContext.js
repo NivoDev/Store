@@ -101,15 +101,13 @@ const calculateTotals = (state) => {
     }
   }
   
-  const taxableAmount = subtotal - discountAmount;
-  const tax = taxableAmount * 0.18; // Israel VAT rate 2025: 18%
-  const total = taxableAmount + tax + state.shipping;
+  const total = subtotal - discountAmount + state.shipping;
   
   return {
     ...state,
     subtotal,
     discountAmount,
-    tax,
+    tax: 0, // No tax
     total: Math.max(0, total),
     itemCount
   };

@@ -73,7 +73,7 @@ function App() {
                   <Route path="/sample-packs" element={<SamplePacksPage onAuthClick={() => setAuthModalOpen(true)} />} />
                   <Route path="/midi-packs" element={<MidiPacksPage onAuthClick={() => setAuthModalOpen(true)} />} />
                   <Route path="/acapellas" element={<AcapellasPage onAuthClick={() => setAuthModalOpen(true)} />} />
-                  <Route path="/product/:id" element={<ProductDetailPage onAuthClick={() => setAuthModalOpen(true)} />} />
+                  <Route path="/product/:slug" element={<ProductDetailPage onAuthClick={() => setAuthModalOpen(true)} />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/profile" element={<ProfilePage />} />

@@ -11,16 +11,6 @@ const PlayerContainer = styled.div`
   border-radius: ${theme.borderRadius.lg};
   padding: ${theme.spacing[6]};
   margin: ${theme.spacing[6]} 0;
-  
-  @media (max-width: ${theme.breakpoints.md}) {
-    padding: ${theme.spacing[4]};
-    margin: ${theme.spacing[4]} 0;
-  }
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    padding: ${theme.spacing[3]};
-    margin: ${theme.spacing[3]} 0;
-  }
 `;
 
 const PlayerHeader = styled.div`
@@ -28,12 +18,6 @@ const PlayerHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   margin-bottom: ${theme.spacing[4]};
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: ${theme.spacing[2]};
-  }
 `;
 
 const TrackInfo = styled.div`
@@ -45,10 +29,6 @@ const TrackTitle = styled.h3`
   font-size: ${theme.typography.sizes.lg};
   font-weight: ${theme.typography.weights.semibold};
   margin: 0 0 ${theme.spacing[1]};
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    font-size: ${theme.typography.sizes.md};
-  }
 `;
 
 const TrackArtist = styled.p`
@@ -232,7 +212,7 @@ const AudioPlayer = ({ product }) => {
       <PlayerHeader>
         <TrackInfo>
           <TrackTitle>{product.title}</TrackTitle>
-          <TrackArtist>by {product.made_by || product.artist || 'Unknown Artist'}</TrackArtist>
+          <TrackArtist>by {product.artist}</TrackArtist>
         </TrackInfo>
         
         <PlayerControls>
