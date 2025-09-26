@@ -487,7 +487,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
     }
   };
 
-  // Use real samples from API instead of hardcoded data
+  // Use real samples from API
   const samplePreviews = samples;
 
 
@@ -583,18 +583,14 @@ const ProductDetailPage = ({ onAuthClick }) => {
           </InfoSection>
         </ProductGrid>
 
-        {/* Sample Previews Section */}
-        <SamplePreviews>
-          <SamplePreviewsTitle>Sample Previews</SamplePreviewsTitle>
-          <SamplePreviewsDescription>
-            Preview individual samples from this pack. Each sample is carefully crafted to showcase the unique character and quality of this collection.
-          </SamplePreviewsDescription>
-          
-          {loadingSamples ? (
-            <div style={{ textAlign: 'center', padding: theme.spacing[8] }}>
-              <div style={{ color: theme.colors.dark[300] }}>Loading samples...</div>
-            </div>
-          ) : samplePreviews.length > 0 ? (
+        {/* Sample Previews Section - Only show if samples are available */}
+        {!loadingSamples && samplePreviews.length > 0 && (
+          <SamplePreviews>
+            <SamplePreviewsTitle>Sample Previews</SamplePreviewsTitle>
+            <SamplePreviewsDescription>
+              Preview individual samples from this pack. Each sample is carefully crafted to showcase the unique character and quality of this collection.
+            </SamplePreviewsDescription>
+            
             <SamplesGrid>
               {samplePreviews.map((sample) => (
                 <SampleItem key={sample.id} onClick={() => handleSamplePlay(sample)}>
@@ -608,12 +604,8 @@ const ProductDetailPage = ({ onAuthClick }) => {
                 </SampleItem>
               ))}
             </SamplesGrid>
-          ) : (
-            <div style={{ textAlign: 'center', padding: theme.spacing[8] }}>
-              <div style={{ color: theme.colors.dark[300] }}>No samples available</div>
-            </div>
-          )}
-        </SamplePreviews>
+          </SamplePreviews>
+        )}
       </Container>
       
       {/* Login Prompt Modal */}
