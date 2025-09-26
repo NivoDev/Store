@@ -1108,11 +1108,19 @@ async def auto_login(token: str, redirect: str = "/"):
         # Create new access token
         access_token = create_access_token(data={"sub": str(user["_id"])})
         
-        # Return redirect response with token
+        # Format user for frontend
+        user_response = format_user_for_frontend(user)
+        user_response["id"] = str(user["_id"])
+        user_response["email"] = user.get("email", "")
+        user_response["email_verified"] = user.get("email_verified", False)
+        user_response["status"] = user.get("status", "active")
+        
+        # Return redirect response with token and user data
         return {
             "message": "Auto-login successful",
             "redirect_url": f"{redirect}?token={access_token}",
-            "access_token": access_token
+            "access_token": access_token,
+            "user": user_response
         }
         
     except jwt.ExpiredSignatureError:

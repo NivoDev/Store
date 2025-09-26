@@ -68,7 +68,7 @@ const ErrorMessage = styled.div`
 const AutoLoginPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { loginWithOAuth } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -91,20 +91,20 @@ const AutoLoginPage = () => {
           method: 'GET'
         });
 
-        if (response.access_token) {
+        if (response.access_token && response.user) {
           console.log('✅ Auto-login successful');
           
           // Store the new token
           localStorage.setItem('access_token', response.access_token);
           
-          // Update auth context
-          await login(response.access_token);
+          // Update auth context using OAuth login method
+          await loginWithOAuth(response.user, response.access_token);
           
           // Redirect to the intended page
           console.log('🔄 Redirecting to:', redirect);
           navigate(redirect, { replace: true });
         } else {
-          setError('Auto-login failed: No access token received');
+          setError('Auto-login failed: No access token or user data received');
           setLoading(false);
         }
       } catch (error) {
@@ -115,7 +115,7 @@ const AutoLoginPage = () => {
     };
 
     handleAutoLogin();
-  }, [searchParams, navigate, login]);
+  }, [searchParams, navigate, loginWithOAuth]);
 
   if (loading) {
     return (
