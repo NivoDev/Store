@@ -159,51 +159,19 @@ const SampleDuration = styled.span`
 
 const LikeButton = styled(Button)`
   ${props => props.isLiked && `
-    background: ${theme.colors.red[600]};
+    background: ${theme.colors.error};
     color: white;
-    border-color: ${theme.colors.red[600]};
+    border-color: ${theme.colors.error};
     
     &:hover {
-      background: ${theme.colors.red[700]};
-      border-color: ${theme.colors.red[700]};
+      background: #dc2626;
+      border-color: #dc2626;
     }
   `}
 `;
 
 const ShareButton = styled(Button)`
   position: relative;
-`;
-
-const ShareDropdown = styled.div`
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: ${theme.colors.dark[800]};
-  border: 1px solid ${theme.colors.dark[600]};
-  border-radius: ${theme.borderRadius.md};
-  padding: ${theme.spacing[2]};
-  min-width: 200px;
-  z-index: 10;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-`;
-
-const ShareOption = styled.button`
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing[2]};
-  width: 100%;
-  padding: ${theme.spacing[2]};
-  background: none;
-  border: none;
-  color: ${theme.colors.dark[100]};
-  text-align: left;
-  cursor: pointer;
-  border-radius: ${theme.borderRadius.sm};
-  transition: background 0.2s ease;
-
-  &:hover {
-    background: ${theme.colors.dark[700]};
-  }
 `;
 
 const ProductDetailPage = ({ onAuthClick }) => {
@@ -214,10 +182,10 @@ const ProductDetailPage = ({ onAuthClick }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLiked, setIsLiked] = useState(false);
-  const [showShareDropdown, setShowShareDropdown] = useState(false);
   const [playingSample, setPlayingSample] = useState(null);
   const [sampleAudio, setSampleAudio] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [isInGuestCart, setIsInGuestCart] = useState(false);
   const [samples, setSamples] = useState([]);
   const [loadingSamples, setLoadingSamples] = useState(false);
 
@@ -286,19 +254,6 @@ const ProductDetailPage = ({ onAuthClick }) => {
     }
   }, [product?.id, user]);
 
-  // Close share dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (showShareDropdown && !event.target.closest('[data-share-dropdown]')) {
-        setShowShareDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showShareDropdown]);
 
   // Load samples from API
   useEffect(() => {
@@ -426,29 +381,91 @@ const ProductDetailPage = ({ onAuthClick }) => {
     }
   };
 
-  const handleShare = (platform) => {
+  const handleShare = async () => {
     const url = window.location.href;
-    const title = product.title;
+    const title = product?.title || 'Product';
     const text = `Check out "${title}" on Atomic Rose Tools`;
 
-    switch (platform) {
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'linkedin':
-        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
-        break;
-      case 'copy':
-        navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
-        break;
-      default:
-        break;
+    // Check if we're on mobile and native sharing is available
+    if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      try {
+        await navigator.share({
+          title: title,
+          text: text,
+          url: url
+        });
+      } catch (error) {
+        // Fallback to clipboard if native share fails
+        await copyToClipboard(url, title);
+      }
+    } else {
+      // Desktop: just copy to clipboard
+      await copyToClipboard(url, title);
     }
-    setShowShareDropdown(false);
+  };
+
+  const copyToClipboard = async (url, title) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      // Show a nice toast message instead of alert
+      showToast(`🔗 Link copied! Share "${title}" with friends`);
+    } catch (error) {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showToast(`🔗 Link copied! Share "${title}" with friends`);
+    }
+  };
+
+  const showToast = (message) => {
+    // Create a simple toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #1f2937;
+      color: #f3f4f6;
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      max-width: 300px;
+      animation: slideIn 0.3s ease;
+    `;
+    toast.textContent = message;
+    
+    // Add slide-in animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(toast);
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+      toast.style.animation = 'slideIn 0.3s ease reverse';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+        if (style.parentNode) {
+          style.parentNode.removeChild(style);
+        }
+      }, 300);
+    }, 3000);
   };
 
   const handleSamplePlay = async (sample) => {
@@ -557,27 +574,10 @@ const ProductDetailPage = ({ onAuthClick }) => {
               <ShareButton 
                 variant="ghost" 
                 size="lg"
-                data-share-dropdown
-                onClick={() => setShowShareDropdown(!showShareDropdown)}
+                onClick={handleShare}
               >
                 <FiShare2 size={20} />
                 Share
-                {showShareDropdown && (
-                  <ShareDropdown>
-                    <ShareOption onClick={() => handleShare('twitter')}>
-                      🐦 Share on Twitter
-                    </ShareOption>
-                    <ShareOption onClick={() => handleShare('facebook')}>
-                      📘 Share on Facebook
-                    </ShareOption>
-                    <ShareOption onClick={() => handleShare('linkedin')}>
-                      💼 Share on LinkedIn
-                    </ShareOption>
-                    <ShareOption onClick={() => handleShare('copy')}>
-                      📋 Copy Link
-                    </ShareOption>
-                  </ShareDropdown>
-                )}
               </ShareButton>
             </Actions>
           </InfoSection>

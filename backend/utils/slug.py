@@ -42,3 +42,4 @@ def extract_id_from_slug(slug: str) -> Optional[str]:
         return slug
     
     return None
+

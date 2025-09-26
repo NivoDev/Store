@@ -109,3 +109,4 @@ async def update_product_with_slug():
 
 if __name__ == "__main__":
     asyncio.run(update_product_with_slug())
+

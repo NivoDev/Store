@@ -104,3 +104,4 @@ async def generate_product_slugs():
 
 if __name__ == "__main__":
     asyncio.run(generate_product_slugs())
+
