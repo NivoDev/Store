@@ -488,11 +488,32 @@ async def register(request: Request, user_data: dict):
                         detail="Email service is currently unavailable. Please try again later or contact support@atomicrosetools.com"
                     )
                 
+                # Handle newsletter subscription if requested (for re-registration)
+                newsletter_success = False
+                if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
+                    try:
+                        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                        async with httpx.AsyncClient() as client:
+                            response = await client.post(
+                                NEWSLETTER_API_ENDPOINT,
+                                json=newsletter_data,
+                                timeout=10.0
+                            )
+                            if response.status_code == 200:
+                                newsletter_success = True
+                                print(f"✅ Newsletter subscription successful (re-registration): {email}")
+                            else:
+                                print(f"⚠️ Newsletter subscription failed (re-registration): {response.status_code}")
+                    except Exception as e:
+                        print(f"⚠️ Newsletter subscription error (re-registration): {e}")
+                        # Don't fail re-registration if newsletter fails
+                
                 return {
                     "message": "New verification code sent! Please check your email.",
                     "email": email,
                     "verification_required": True,
-                    "email_sent": email_sent
+                    "email_sent": email_sent,
+                    "newsletter_subscribed": newsletter_success
                 }
             else:
                 # User exists and is verified
@@ -555,10 +576,7 @@ async def register(request: Request, user_data: dict):
         newsletter_success = False
         if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
             try:
-                newsletter_data = {
-                    "tabId": "0",  # Default sheet tab
-                    "data": [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
-                }
+                newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         NEWSLETTER_API_ENDPOINT,
@@ -754,30 +772,39 @@ async def subscribe_newsletter(request: dict):
     Expected format: {"name": "John Doe", "email": "john@example.com"}
     """
     try:
+        print(f"📧 Newsletter subscription request: {request}")
         name = request.get("name", "").strip()
         email = request.get("email", "").strip().lower()
         
+        print(f"📧 Newsletter - Name: {name}, Email: {email}")
+        
         if not email or not name:
+            print("❌ Newsletter - Missing name or email")
             raise HTTPException(status_code=400, detail="Name and email are required")
         
         if not NEWSLETTER_API_ENDPOINT:
             print("⚠️ Newsletter API endpoint not configured")
             raise HTTPException(status_code=503, detail="Newsletter service is currently unavailable")
         
+        print(f"📧 Newsletter API endpoint: {NEWSLETTER_API_ENDPOINT}")
+        
         # Prepare data for Google Sheets (matching your sheet structure)
-        # NoCodeAPI Google Sheets format with tabId and data array
-        newsletter_data = {
-            "tabId": "0",  # Default sheet tab
-            "data": [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
-        }
+        # NoCodeAPI Google Sheets expects just the 2D array directly
+        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+        
+        print(f"📧 Newsletter data to send: {newsletter_data}")
         
         # Send to newsletter API
         async with httpx.AsyncClient() as client:
+            print(f"📧 Sending request to: {NEWSLETTER_API_ENDPOINT}")
             response = await client.post(
                 NEWSLETTER_API_ENDPOINT,
                 json=newsletter_data,
                 timeout=10.0
             )
+            
+            print(f"📧 Newsletter API response status: {response.status_code}")
+            print(f"📧 Newsletter API response text: {response.text}")
             
             if response.status_code == 200:
                 print(f"✅ Newsletter subscription successful: {email}")
