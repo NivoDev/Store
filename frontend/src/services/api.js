@@ -281,9 +281,9 @@ class APIService {
     }
   }
 
-  async getSamplePreview(sampleId, productId) {
+  async getSamplePreview(sampleId, productSlug) {
     try {
-      const response = await this.request(`/samples/${sampleId}/preview?product_id=${productId}`);
+      const response = await this.request(`/samples/${sampleId}/preview?product_slug=${productSlug}`);
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Failed to get sample preview:', error);
