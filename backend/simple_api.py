@@ -1115,6 +1115,8 @@ async def auto_login(token: str, redirect: str = "/"):
         user_response["email_verified"] = user.get("email_verified", False)
         user_response["status"] = user.get("status", "active")
         
+        print(f"🔍 Auto-login debug - User data: {user_response}")
+        
         # Return redirect response with token and user data
         return {
             "message": "Auto-login successful",
