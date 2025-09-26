@@ -2332,11 +2332,24 @@ async def guest_checkout(checkout_data: dict):
         tax_amount = 0
         total_amount = subtotal
         
-        # Create guest order
+        # Create guest order with enhanced items including artist info
+        enhanced_items = []
+        for item in items:
+            # Get product details to ensure we have artist information
+            product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
+            enhanced_item = {
+                "product_id": item["product_id"],
+                "title": item["title"],
+                "made_by": item.get("made_by", product.get("artist", "Unknown Artist") if product else "Unknown Artist"),
+                "price": item["price"],
+                "quantity": item["quantity"]
+            }
+            enhanced_items.append(enhanced_item)
+        
         order = {
             "order_number": f"GUEST-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
             "guest_email": email,
-            "items": items,
+            "items": enhanced_items,
             "subtotal": subtotal,
             "tax_rate": tax_rate,
             "tax_amount": tax_amount,
@@ -2718,7 +2731,11 @@ async def complete_guest_order(order_data: dict):
             "order_number": order_number,
             "guest_email": order["guest_email"],
             "status": "completed",
-            "message": "Order completed successfully"
+            "message": "Order completed successfully",
+            "total_amount": order.get("total_amount", 0),
+            "subtotal": order.get("subtotal", 0),
+            "tax": order.get("tax", 0),
+            "items": order.get("items", [])
         }
         
     except HTTPException:

@@ -472,6 +472,7 @@ const CartPage = () => {
       const checkoutItems = items.map(item => ({
         product_id: item.id,
         title: item.title,
+        made_by: item.made_by || item.artist || 'Unknown Artist',
         price: item.price,
         quantity: item.quantity
       }));
