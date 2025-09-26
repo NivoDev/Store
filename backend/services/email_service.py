@@ -232,25 +232,13 @@ class EmailService:
                 .otp-text { font: 700 24px/1.2 'Courier New', Courier, monospace; color: #00ffff; letter-spacing: 4px; }
                 .btn { background: #ff2a6d; color: #0b0b10; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
                 .muted { color: #9aa0a6; }
-                .benefits { background: rgba(0,255,255,0.05); border: 1px solid rgba(0,255,255,0.2); border-radius: 8px; padding: 20px; margin: 20px 0; }
             </style>
         </head>
         <body>
             <div class="card">
-                <h1>Welcome to Atomic Rose Tools! 🎵</h1>
+                <h1>Verify Your Email</h1>
                 <p>Hi {{FIRST_NAME}}, thanks for signing up!</p>
                 <p>Please verify your email address to complete your registration and access all features.</p>
-                
-                <div class="benefits">
-                    <h3>🎯 What you'll get:</h3>
-                    <ul>
-                        <li><strong>3 downloads per product</strong> (vs 1 for guests)</li>
-                        <li>Access to your <strong>purchased products</strong> anytime</li>
-                        <li>Download history and management</li>
-                        <li>Exclusive content and updates</li>
-                    </ul>
-                </div>
-                
                 <a href="{{VERIFY_URL}}" class="btn">Verify Email</a>
                 
                 <div class="otp-code">
