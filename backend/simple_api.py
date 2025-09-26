@@ -789,7 +789,7 @@ async def subscribe_newsletter(request: dict):
         print(f"📧 Newsletter API endpoint: {NEWSLETTER_API_ENDPOINT}")
         
         # Prepare data for Google Sheets (matching your sheet structure)
-        # NoCodeAPI Google Sheets expects just the 2D array directly
+        # NoCodeAPI Google Sheets expects just the 2D array directly (tabId is configured in NoCodeAPI)
         newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
         
         print(f"📧 Newsletter data to send: {newsletter_data}")
