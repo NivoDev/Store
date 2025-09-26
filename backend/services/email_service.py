@@ -230,7 +230,6 @@ class EmailService:
                 .card { background: #161622; border: 1px solid #26263a; border-radius: 12px; padding: 32px; margin: 20px 0; }
                 .otp-code { background: #1a1a2e; border: 2px solid #00ffff; border-radius: 8px; padding: 16px 24px; text-align: center; margin: 20px 0; }
                 .otp-text { font: 700 24px/1.2 'Courier New', Courier, monospace; color: #00ffff; letter-spacing: 4px; }
-                .btn { background: #ff2a6d; color: #0b0b10; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; }
                 .muted { color: #9aa0a6; }
             </style>
         </head>
@@ -239,12 +238,10 @@ class EmailService:
                 <h1>Verify Your Email</h1>
                 <p>Hi {{FIRST_NAME}}, thanks for signing up!</p>
                 <p>Please verify your email address to complete your registration and access all features.</p>
-                <a href="{{VERIFY_URL}}" class="btn">Verify Email</a>
                 
                 <div class="otp-code">
-                    <p class="muted">Or copy and paste this verification code:</p>
+                    <p class="muted">Please enter this verification code in the app:</p>
                     <div class="otp-text">{{OTP_CODE}}</div>
-                    <p class="muted">This code expires in {{EXPIRES_IN_MINUTES}} minutes</p>
                 </div>
                 
                 <p class="muted">If you didn't request this, you can ignore this email.</p>
