@@ -335,6 +335,48 @@ async def api_health_check():
     """API health check endpoint for frontend"""
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
+@app.post("/api/v1/admin/fix-r2-paths")
+async def fix_r2_paths():
+    """Fix R2 file paths in database to match actual R2 structure"""
+    try:
+        updated_count = 0
+        
+        async for product in db.products.find({}):
+            product_id = str(product["_id"])
+            title = product.get("title")
+            current_file_path = product.get("file_path")
+            
+            if not current_file_path:
+                continue
+                
+            # Fix the file path based on R2 structure
+            new_file_path = None
+            
+            if current_file_path == "products:Psychedelic_Horizons_Sample_Pack.zip":
+                # Convert to slash format to match R2 structure
+                new_file_path = "products/Psychedelic_Horizons_Sample_Pack.zip"
+            elif current_file_path.startswith("products:"):
+                # Convert other products:file.zip to products/file.zip
+                new_file_path = current_file_path.replace("products:", "products/", 1)
+            
+            if new_file_path and new_file_path != current_file_path:
+                await db.products.update_one(
+                    {"_id": product["_id"]},
+                    {"$set": {"file_path": new_file_path}}
+                )
+                print(f"✅ Updated {title}: {current_file_path} → {new_file_path}")
+                updated_count += 1
+        
+        return {
+            "success": True,
+            "message": f"Fixed R2 file paths for {updated_count} products",
+            "updated_count": updated_count
+        }
+        
+    except Exception as e:
+        print(f"❌ Error fixing R2 paths: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fix R2 paths")
+
 @app.post("/api/v1/test-email")
 async def test_email(test_data: dict):
     """Test email sending endpoint"""
@@ -1348,10 +1390,10 @@ def _normalize_r2_key(raw_key: str) -> str:
 
     key = key.lstrip("/")
 
-    # For R2, keep colons as they are since files are stored with colons
-    # Don't convert colons to slashes for R2 compatibility
-    # if ":" in key and "/" not in key.split(":")[0]:
-    #     key = key.replace(":", "/", 1)
+    # Convert colons to slashes for R2 compatibility
+    # This handles cases where DB stores "products:file.zip" but R2 has "products/file.zip"
+    if ":" in key and "/" not in key.split(":")[0]:
+        key = key.replace(":", "/", 1)
 
     return key
 
@@ -2488,6 +2530,7 @@ async def complete_guest_order(order_data: dict):
         
         return {
             "order_number": order_number,
+            "guest_email": order["guest_email"],
             "status": "completed",
             "message": "Order completed successfully"
         }

@@ -228,7 +228,7 @@ const GuestCheckoutSuccessPage = () => {
               </OrderDetailRow>
               <OrderDetailRow>
                 <OrderDetailLabel>Email:</OrderDetailLabel>
-                <OrderDetailValue>{orderData.guest_email || orderData.customer?.email}</OrderDetailValue>
+                <OrderDetailValue>{orderData.guest_email}</OrderDetailValue>
               </OrderDetailRow>
               <OrderDetailRow>
                 <OrderDetailLabel>Total:</OrderDetailLabel>
