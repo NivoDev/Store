@@ -1032,7 +1032,6 @@ async def get_product(product_slug: str):
     """Get a specific product by slug or ID with proper error handling"""
     try:
         from utils.errors import validate_object_id, handle_product_not_found
-        from utils.slug import extract_id_from_slug
         from config.logging import secure_logger
         
         collection = db.products
