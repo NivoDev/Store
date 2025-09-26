@@ -500,6 +500,23 @@ const CheckoutPage = () => {
         
         console.log('✅ User order created successfully:', result.data);
         
+        // Handle newsletter subscription if requested
+        if (formData.acceptMarketing) {
+          try {
+            const newsletterResult = await apiService.subscribeNewsletter(
+              `${formData.firstName} ${formData.lastName}`.trim(),
+              formData.email
+            );
+            if (newsletterResult.success) {
+              console.log('✅ Newsletter subscription successful');
+            } else {
+              console.warn('⚠️ Newsletter subscription failed:', newsletterResult.error);
+            }
+          } catch (err) {
+            console.warn('⚠️ Newsletter subscription error:', err);
+          }
+        }
+        
         // Clear cart and redirect to profile with success message
         clearCart();
         navigate('/profile', { 
@@ -549,6 +566,23 @@ const CheckoutPage = () => {
         }
         
         console.log('✅ Guest order completed successfully:', result.data);
+        
+        // Handle newsletter subscription if requested
+        if (formData.acceptMarketing) {
+          try {
+            const newsletterResult = await apiService.subscribeNewsletter(
+              `${formData.firstName} ${formData.lastName}`.trim(),
+              formData.email
+            );
+            if (newsletterResult.success) {
+              console.log('✅ Newsletter subscription successful');
+            } else {
+              console.warn('⚠️ Newsletter subscription failed:', newsletterResult.error);
+            }
+          } catch (err) {
+            console.warn('⚠️ Newsletter subscription error:', err);
+          }
+        }
         
         // Clear the verified order from session storage
         sessionStorage.removeItem('verifiedGuestOrder');

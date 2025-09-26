@@ -30,6 +30,9 @@ import httpx
 # Load environment variables
 load_dotenv()
 
+# Newsletter API configuration
+NEWSLETTER_API_ENDPOINT = os.getenv("NEWSLETTER_API_ENDPOINT")
+
 # Database connection status (defined early)
 mongodb_connected = False
 
@@ -430,8 +433,9 @@ async def register(request: Request, user_data: dict):
         email = user_data.get("email", "").lower().strip()
         password = user_data.get("password", "")
         name = user_data.get("name", "").strip()
+        newsletter_subscribe = user_data.get("newsletter", False)
 
-        print(f"📧 Email: {email}, Name: {name}")
+        print(f"📧 Email: {email}, Name: {name}, Newsletter: {newsletter_subscribe}")
 
         # Validation
         if not email or not password or not name:
@@ -443,10 +447,56 @@ async def register(request: Request, user_data: dict):
         if len(name) < 2:
             raise HTTPException(status_code=400, detail="Name must be at least 2 characters")
 
-        # Existing user?
+        # Check for existing user
         existing_user = await db.users.find_one({"email": email})
         if existing_user:
-            raise HTTPException(status_code=400, detail="User already exists")
+            # If user exists but email is not verified, allow re-registration with new code
+            if not existing_user.get("email_verified", False):
+                print(f"🔄 User {email} exists but unverified, sending new verification code")
+                # Generate new verification materials
+                verification_token = secrets.token_urlsafe(32)
+                otp_code = ''.join(secrets.choice('0123456789') for _ in range(6))
+                
+                # Update user with new verification data
+                await db.users.update_one(
+                    {"email": email},
+                    {
+                        "$set": {
+                            "password_hash": pwd_context.hash(password),
+                            "verification_token": verification_token,
+                            "verification_expires": datetime.utcnow() + timedelta(hours=24),
+                            "updated_at": datetime.utcnow(),
+                            "name": name
+                        }
+                    }
+                )
+                
+                # Send new verification email
+                try:
+                    from services.email_service import email_service
+                    email_sent = email_service.send_user_verification_email(
+                        email=email,
+                        name=name,
+                        verification_token=verification_token,
+                        otp_code=otp_code
+                    )
+                    print(f"📧 New verification email sent: {email_sent}")
+                except Exception as e:
+                    print(f"❌ Critical: Error sending new verification email to {email}: {e}")
+                    raise HTTPException(
+                        status_code=503, 
+                        detail="Email service is currently unavailable. Please try again later or contact support@atomicrosetools.com"
+                    )
+                
+                return {
+                    "message": "New verification code sent! Please check your email.",
+                    "email": email,
+                    "verification_required": True,
+                    "email_sent": email_sent
+                }
+            else:
+                # User exists and is verified
+                raise HTTPException(status_code=400, detail="User already exists")
 
         # Hash password
         password_hash = pwd_context.hash(password)
@@ -478,9 +528,7 @@ async def register(request: Request, user_data: dict):
             "last_login": None
         }
 
-        result = await db.users.insert_one(user_doc)
-
-        # Send verification email (best-effort)
+        # Send verification email first (mandatory for registration)
         try:
             from services.email_service import email_service
             email_sent = email_service.send_user_verification_email(
@@ -491,15 +539,44 @@ async def register(request: Request, user_data: dict):
             )
             print(f"📧 User verification email sent: {email_sent}")
         except Exception as e:
-            print(f"⚠️ Warning: Error sending user verification email to {email}: {e}")
+            print(f"❌ Critical: Error sending user verification email to {email}: {e}")
             import traceback; traceback.print_exc()
-            email_sent = False
+            
+            # Return error message to user - no database insertion
+            raise HTTPException(
+                status_code=503, 
+                detail="Email service is currently unavailable. Please try again later or contact support@atomicrosetools.com"
+            )
+
+        # Only insert user into database after email is successfully sent
+        result = await db.users.insert_one(user_doc)
+
+        # Handle newsletter subscription if requested
+        newsletter_success = False
+        if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
+            try:
+                newsletter_data = [name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(
+                        NEWSLETTER_API_ENDPOINT,
+                        json=newsletter_data,
+                        timeout=10.0
+                    )
+                    if response.status_code == 200:
+                        newsletter_success = True
+                        print(f"✅ Newsletter subscription successful: {email}")
+                    else:
+                        print(f"⚠️ Newsletter subscription failed: {response.status_code}")
+            except Exception as e:
+                print(f"⚠️ Newsletter subscription error: {e}")
+                # Don't fail registration if newsletter fails
 
         return {
             "message": "Registration successful! Please check your email to verify your account.",
             "email": email,
             "verification_required": True,
-            "email_sent": email_sent
+            "email_sent": email_sent,
+            "newsletter_subscribed": newsletter_success
         }
 
     except HTTPException:
@@ -537,7 +614,7 @@ async def login(request: Request, credentials: dict):
         if not user.get("email_verified", False):
             raise HTTPException(
                 status_code=403,
-                detail="Please verify your email before logging in. Check your inbox for a verification code."
+                detail="Email not verified. Please check your inbox for verification code or sign up again to get a new code."
             )
 
         # Verify password
@@ -666,6 +743,48 @@ async def verify_user_email_token(verification_token: str):
     except Exception as e:
         print(f"❌ Error verifying user email token: {e}")
         raise HTTPException(status_code=500, detail="Email verification failed")
+
+@app.post("/api/v1/newsletter/subscribe")
+async def subscribe_newsletter(request: dict):
+    """
+    Subscribe user to newsletter and add to Google Sheets.
+    Expected format: {"name": "John Doe", "email": "john@example.com"}
+    """
+    try:
+        name = request.get("name", "").strip()
+        email = request.get("email", "").strip().lower()
+        
+        if not email or not name:
+            raise HTTPException(status_code=400, detail="Name and email are required")
+        
+        if not NEWSLETTER_API_ENDPOINT:
+            print("⚠️ Newsletter API endpoint not configured")
+            raise HTTPException(status_code=503, detail="Newsletter service is currently unavailable")
+        
+        # Prepare data for Google Sheets (matching your sheet structure)
+        newsletter_data = [name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]
+        
+        # Send to newsletter API
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                NEWSLETTER_API_ENDPOINT,
+                json=newsletter_data,
+                timeout=10.0
+            )
+            
+            if response.status_code == 200:
+                print(f"✅ Newsletter subscription successful: {email}")
+                return {"message": "Successfully subscribed to newsletter!", "success": True}
+            else:
+                print(f"❌ Newsletter API error: {response.status_code} - {response.text}")
+                raise HTTPException(status_code=503, detail="Newsletter service is currently unavailable")
+                
+    except httpx.TimeoutException:
+        print(f"⏰ Newsletter API timeout for {email}")
+        raise HTTPException(status_code=503, detail="Newsletter service is currently unavailable")
+    except Exception as e:
+        print(f"❌ Newsletter subscription error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to subscribe to newsletter")
 
 @app.post("/api/v1/auth/verify-email")
 async def verify_user_email(verification_data: dict):

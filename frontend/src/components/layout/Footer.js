@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -8,9 +8,12 @@ import {
   FiTwitter, 
   FiFacebook,
   FiYoutube,
-  FiHeart
+  FiHeart,
+  FiCheck,
+  FiX
 } from 'react-icons/fi';
 import { theme } from '../../theme';
+import apiService from '../../services/api';
 
 const FooterContainer = styled.footer`
   background: ${theme.colors.gradients.card};
@@ -130,10 +133,21 @@ const NewsletterDescription = styled.p`
 
 const NewsletterForm = styled.form`
   display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing[3]};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    gap: ${theme.spacing[2]};
+  }
+`;
+
+const NewsletterInputRow = styled.div`
+  display: flex;
   gap: ${theme.spacing[3]};
   
   @media (max-width: ${theme.breakpoints.sm}) {
     flex-direction: column;
+    gap: ${theme.spacing[2]};
   }
 `;
 
@@ -209,10 +223,42 @@ const LegalLinks = styled.div`
 `;
 
 const Footer = () => {
-  const handleNewsletterSubmit = (e) => {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
-    // Handle newsletter signup
-    // Newsletter signup functionality would be implemented here
+    
+    if (!email || !name) {
+      setMessage('Please enter both name and email');
+      setIsSuccess(false);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setMessage('');
+
+    try {
+      const result = await apiService.subscribeNewsletter(name, email);
+      
+      if (result.success) {
+        setMessage('Successfully subscribed to newsletter!');
+        setIsSuccess(true);
+        setEmail('');
+        setName('');
+      } else {
+        setMessage(result.error || 'Failed to subscribe to newsletter');
+        setIsSuccess(false);
+      }
+    } catch (error) {
+      setMessage('Failed to subscribe to newsletter');
+      setIsSuccess(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -285,19 +331,48 @@ const Footer = () => {
             Get notified about new releases, exclusive deals, and behind-the-scenes content.
           </NewsletterDescription>
           <NewsletterForm onSubmit={handleNewsletterSubmit}>
-            <NewsletterInput
-              type="email"
-              placeholder="Enter your email address"
-              required
-            />
+            <NewsletterInputRow>
+              <NewsletterInput
+                type="text"
+                placeholder="Your name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+              <NewsletterInput
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </NewsletterInputRow>
             <NewsletterButton
               type="submit"
+              disabled={isSubmitting}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              Subscribe
+              {isSubmitting ? 'Subscribing...' : 'Subscribe'}
             </NewsletterButton>
           </NewsletterForm>
+          {message && (
+            <div style={{
+              marginTop: theme.spacing[3],
+              padding: theme.spacing[2],
+              borderRadius: theme.borderRadius.lg,
+              backgroundColor: isSuccess ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              border: `1px solid ${isSuccess ? theme.colors.success[500] : theme.colors.error}`,
+              color: isSuccess ? theme.colors.success[400] : theme.colors.error,
+              fontSize: theme.typography.sizes.sm,
+              display: 'flex',
+              alignItems: 'center',
+              gap: theme.spacing[2]
+            }}>
+              {isSuccess ? <FiCheck size={16} /> : <FiX size={16} />}
+              {message}
+            </div>
+          )}
         </NewsletterSection>
 
         <FooterBottom>
