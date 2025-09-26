@@ -10,11 +10,11 @@ class SecureStorage {
 
   // Generate or retrieve encryption key
   getOrCreateKey() {
-    let key = sessionStorage.getItem('app_session_key');
+    let key = localStorage.getItem('app_persistent_key');
     if (!key) {
-      // Generate a simple key for session-based encryption
+      // Generate a simple key for persistent encryption
       key = btoa(Math.random().toString(36).substring(2) + Date.now().toString(36));
-      sessionStorage.setItem('app_session_key', key);
+      localStorage.setItem('app_persistent_key', key);
     }
     return key;
   }
