@@ -1,6 +1,6 @@
 [build]
-  # Build from the CRA backup folder
-  base = "frontend-csr-backup"
+  # Build from the frontend folder
+  base = "frontend"
   command = "npm ci && npm run build"
   # CRA outputs to /build (relative to base)
   publish = "build"
