@@ -32,6 +32,9 @@ load_dotenv()
 
 # Newsletter API configuration
 NEWSLETTER_API_ENDPOINT = os.getenv("NEWSLETTER_API_ENDPOINT")
+# Ensure tabId is included in the endpoint URL
+if NEWSLETTER_API_ENDPOINT and "tabId=" not in NEWSLETTER_API_ENDPOINT:
+    NEWSLETTER_API_ENDPOINT += "?tabId=Sheet1"
 
 # Database connection status (defined early)
 mongodb_connected = False
