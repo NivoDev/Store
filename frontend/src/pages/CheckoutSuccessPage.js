@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { FiCheckCircle, FiDownload, FiMail, FiUser, FiArrowRight, FiHome } from 'react-icons/fi';
+import { FiCheckCircle, FiDownload, FiMail, FiHome } from 'react-icons/fi';
 import { theme } from '../theme';
 import Button from '../components/common/Button';
 

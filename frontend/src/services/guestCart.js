@@ -165,6 +165,12 @@ class GuestCartService {
     this.cart = { items: [], total: 0, count: 0 };
     this.deleteCookie(GUEST_CART_KEY);
     console.log(`🧹 Cart cleared successfully`);
+    
+    // Dispatch custom event to notify components
+    window.dispatchEvent(new CustomEvent('guestCartChanged', { 
+      detail: { cart: this.cart, action: 'clear', productId: null }
+    }));
+    
     return this.cart;
   }
 

@@ -152,8 +152,6 @@ const LoadingMessage = styled.div`
 
 const AudioPlayer = ({ product }) => {
   const {
-    currentTrack,
-    isPlaying,
     isLoading,
     error,
     duration,

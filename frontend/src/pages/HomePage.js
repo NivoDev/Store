@@ -13,8 +13,7 @@ import {
 } from 'react-icons/fi';
 import { theme } from '../theme';
 import apiService from '../services/api';
-import { useAudio } from '../contexts/AudioContext';
-import { useAuth } from '../contexts/AuthContext';
+// Audio and auth hooks removed as they're not used in this component
 import ProductCard from '../components/product/ProductCard';
 import Button from '../components/common/Button';
 import SEOHead from '../components/common/SEOHead';
@@ -262,8 +261,7 @@ const CategoryCount = styled.div`
 const HomePage = ({ onAuthClick }) => {
   const navigate = useNavigate();
   const productsRef = useRef(null);
-  const { isCurrentTrack, isTrackPlaying } = useAudio();
-  const { isAuthenticated } = useAuth();
+  // Audio and auth hooks removed as they're not used in this component
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
@@ -274,19 +272,14 @@ const HomePage = ({ onAuthClick }) => {
     acapellas: 0
   });
 
-  // Clear guest cart on page load only for non-authenticated users
+  // Listen for cart changes (don't clear guest cart on homepage)
   useEffect(() => {
     console.log('🧹 HomePage useEffect running');
     console.log('🧹 guestCartService available:', !!guestCartService);
     
     try {
-      // Only clear guest cart if user is not authenticated
-      if (!isAuthenticated) {
-        console.log('🧹 Clearing guest cart on page load (user not authenticated)');
-        guestCartService.clearCart();
-      } else {
-        console.log('🧹 User is authenticated, not clearing guest cart');
-      }
+      // Don't clear guest cart on homepage - this was causing bad UX
+      console.log('🧹 HomePage loaded - preserving guest cart state');
       
       // Listen for cart changes
       const handleCartChange = (event) => {
@@ -301,7 +294,7 @@ const HomePage = ({ onAuthClick }) => {
     } catch (error) {
       console.error('❌ Error in HomePage useEffect:', error);
     }
-  }, [isAuthenticated]);
+  }, []);
 
   // Load products from API with fallback to mock data
   useEffect(() => {
@@ -384,19 +377,6 @@ const HomePage = ({ onAuthClick }) => {
     }
   };
 
-  const fetchCategoryCounts = async () => {
-    try {
-      const result = await apiService.getCategoryCounts();
-      if (result.success) {
-        setCategoryCounts(result.data);
-        console.log('📊 Category counts loaded:', result.data);
-      } else {
-        console.error('❌ Failed to load category counts:', result.error);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching category counts:', error);
-    }
-  };
 
   const categories = [
     {

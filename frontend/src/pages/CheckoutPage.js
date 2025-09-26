@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { FiCreditCard, FiUser, FiMapPin, FiMail, FiPhone, FiBuilding, FiFileText, FiLock, FiArrowLeft, FiCheck } from 'react-icons/fi';
+import { FiCreditCard, FiUser, FiMapPin, FiFileText, FiLock, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import { theme } from '../theme';
 import Button from '../components/common/Button';
 import { useCart } from '../contexts/CartContext';
