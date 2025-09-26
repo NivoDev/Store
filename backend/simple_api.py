@@ -200,6 +200,9 @@ def format_product_for_frontend(product_doc: Dict[str, Any]) -> Dict[str, Any]:
         "purchase_count": product_doc.get("purchase_count", 0),
         "is_free": product_doc.get("is_free", False),
         "made_by": product_doc.get("made_by"),
+        "artist": product_doc.get("made_by"),  # Map made_by to artist for frontend compatibility
+        "file_path": product_doc.get("file_path"),  # Add file_path for download links
+        "sample_files": product_doc.get("sample_files", []),  # Add sample_files for previews
         "created_at": product_doc.get("created_at").isoformat() if product_doc.get("created_at") else None,
         "release_date": product_doc.get("release_date").isoformat() if product_doc.get("release_date") else None,
         "savings": product_doc.get("original_price", 0) - product_doc.get("price", 0) if product_doc.get("original_price") and product_doc.get("original_price") > product_doc.get("price", 0) else 0
@@ -1059,10 +1062,98 @@ async def get_product(product_slug: str):
         secure_logger.error("Error getting product", {"product_slug": product_slug, "error": str(e)})
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@app.get("/api/v1/products/featured")
-async def get_featured_products():
-    """Get featured products"""
-    return await get_products(featured=True, limit=10)
+@app.get("/api/v1/products/{product_slug}/samples")
+async def get_product_samples(product_slug: str):
+    """Get sample files for a product"""
+    try:
+        # Validate ObjectId or find by slug
+        collection = db.products
+        product = None
+        
+        # First try to find by slug
+        product = await collection.find_one({"slug": product_slug})
+        
+        # If not found by slug, try by ObjectId (backward compatibility)
+        if not product:
+            try:
+                from utils.errors import validate_object_id
+                product_oid = validate_object_id(product_slug)
+                product = await collection.find_one({"_id": product_oid})
+            except:
+                pass
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Get sample files
+        sample_files = product.get("sample_files", [])
+        
+        return {
+            "success": True,
+            "data": sample_files,
+            "total": len(sample_files)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting product samples: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get product samples")
+
+@app.get("/api/v1/samples/{sample_id}/preview")
+async def get_sample_preview(sample_id: str, product_slug: str):
+    """Get presigned URL for sample preview"""
+    try:
+        # Validate ObjectId or find by slug
+        collection = db.products
+        product = None
+        
+        # First try to find by slug
+        product = await collection.find_one({"slug": product_slug})
+        
+        # If not found by slug, try by ObjectId (backward compatibility)
+        if not product:
+            try:
+                from utils.errors import validate_object_id
+                product_oid = validate_object_id(product_slug)
+                product = await collection.find_one({"_id": product_oid})
+            except:
+                pass
+        
+        if not product:
+            raise HTTPException(status_code=404, detail="Product not found")
+        
+        # Find the specific sample
+        sample_files = product.get("sample_files", [])
+        sample = next((s for s in sample_files if s.get("id") == sample_id), None)
+        
+        if not sample:
+            raise HTTPException(status_code=404, detail="Sample not found")
+        
+        # Generate presigned URL
+        r2_key = sample.get("r2_key")
+        if not r2_key:
+            raise HTTPException(status_code=404, detail="Sample file not found")
+        
+        # Generate presigned URL (1 hour expiry for previews)
+        preview_url = generate_download_url(r2_key, expiration=3600)
+        
+        return {
+            "success": True,
+            "data": {
+                "sample_id": sample_id,
+                "title": sample.get("title"),
+                "duration": sample.get("duration"),
+                "preview_url": preview_url,
+                "expires_in": 3600
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error getting sample preview: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get sample preview")
 
 @app.get("/api/v1/products/bestsellers")
 async def get_bestseller_products():
