@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
@@ -8,12 +8,10 @@ import {
   FiTwitter, 
   FiFacebook,
   FiYoutube,
-  FiHeart,
-  FiCheck,
-  FiX
+  FiHeart
 } from 'react-icons/fi';
 import { theme } from '../../theme';
-import apiService from '../../services/api';
+import NewsletterSignup from '../common/NewsletterSignup';
 
 const FooterContainer = styled.footer`
   background: ${theme.colors.gradients.card};
@@ -106,89 +104,6 @@ const SocialLink = styled(motion.a)`
   }
 `;
 
-const NewsletterSection = styled.div`
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: ${theme.borderRadius.xl};
-  padding: ${theme.spacing[6]};
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    padding: ${theme.spacing[4]};
-  }
-`;
-
-const NewsletterTitle = styled.h3`
-  font-family: ${theme.typography.fonts.heading};
-  font-size: ${theme.typography.sizes.xl};
-  font-weight: ${theme.typography.weights.semibold};
-  color: ${theme.colors.dark[50]};
-  margin-bottom: ${theme.spacing[2]};
-`;
-
-const NewsletterDescription = styled.p`
-  color: ${theme.colors.dark[300]};
-  font-size: ${theme.typography.sizes.sm};
-  margin-bottom: ${theme.spacing[4]};
-`;
-
-const NewsletterForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: ${theme.spacing[3]};
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    gap: ${theme.spacing[2]};
-  }
-`;
-
-const NewsletterInputRow = styled.div`
-  display: flex;
-  gap: ${theme.spacing[3]};
-  
-  @media (max-width: ${theme.breakpoints.sm}) {
-    flex-direction: column;
-    gap: ${theme.spacing[2]};
-  }
-`;
-
-const NewsletterInput = styled.input`
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: ${theme.borderRadius.lg};
-  padding: ${theme.spacing[3]} ${theme.spacing[4]};
-  color: ${theme.colors.dark[100]};
-  font-size: ${theme.typography.sizes.sm};
-  transition: all ${theme.animation.durations.fast} ${theme.animation.easings.easeInOut};
-  
-  &::placeholder {
-    color: ${theme.colors.dark[400]};
-  }
-  
-  &:focus {
-    outline: none;
-    border-color: ${theme.colors.primary[500]};
-    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-  }
-`;
-
-const NewsletterButton = styled(motion.button)`
-  background: ${theme.colors.gradients.button};
-  border: none;
-  border-radius: ${theme.borderRadius.lg};
-  padding: ${theme.spacing[3]} ${theme.spacing[6]};
-  color: white;
-  font-size: ${theme.typography.sizes.sm};
-  font-weight: ${theme.typography.weights.semibold};
-  cursor: pointer;
-  transition: all ${theme.animation.durations.fast} ${theme.animation.easings.easeInOut};
-  
-  &:hover {
-    background: ${theme.colors.gradients.hover};
-    box-shadow: ${theme.shadows.neon};
-  }
-`;
-
 const FooterBottom = styled.div`
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: ${theme.spacing[6]};
@@ -223,44 +138,6 @@ const LegalLinks = styled.div`
 `;
 
 const Footer = () => {
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
-  const [isSuccess, setIsSuccess] = useState(false);
-
-  const handleNewsletterSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!email || !name) {
-      setMessage('Please enter both name and email');
-      setIsSuccess(false);
-      return;
-    }
-
-    setIsSubmitting(true);
-    setMessage('');
-
-    try {
-      const result = await apiService.subscribeNewsletter(name, email);
-      
-      if (result.success) {
-        setMessage('Successfully subscribed to newsletter!');
-        setIsSuccess(true);
-        setEmail('');
-        setName('');
-      } else {
-        setMessage(result.error || 'Failed to subscribe to newsletter');
-        setIsSuccess(false);
-      }
-    } catch (error) {
-      setMessage('Failed to subscribe to newsletter');
-      setIsSuccess(false);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <FooterContainer>
       <FooterContent>
@@ -325,55 +202,11 @@ const Footer = () => {
           </FooterSection>
         </FooterGrid>
 
-        <NewsletterSection>
-          <NewsletterTitle>Stay in the Loop</NewsletterTitle>
-          <NewsletterDescription>
-            Get notified about new releases, exclusive deals, and behind-the-scenes content.
-          </NewsletterDescription>
-          <NewsletterForm onSubmit={handleNewsletterSubmit}>
-            <NewsletterInputRow>
-              <NewsletterInput
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              <NewsletterInput
-                type="email"
-                placeholder="Enter your email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </NewsletterInputRow>
-            <NewsletterButton
-              type="submit"
-              disabled={isSubmitting}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {isSubmitting ? 'Subscribing...' : 'Subscribe'}
-            </NewsletterButton>
-          </NewsletterForm>
-          {message && (
-            <div style={{
-              marginTop: theme.spacing[3],
-              padding: theme.spacing[2],
-              borderRadius: theme.borderRadius.lg,
-              backgroundColor: isSuccess ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              border: `1px solid ${isSuccess ? theme.colors.success[500] : theme.colors.error}`,
-              color: isSuccess ? theme.colors.success[400] : theme.colors.error,
-              fontSize: theme.typography.sizes.sm,
-              display: 'flex',
-              alignItems: 'center',
-              gap: theme.spacing[2]
-            }}>
-              {isSuccess ? <FiCheck size={16} /> : <FiX size={16} />}
-              {message}
-            </div>
-          )}
-        </NewsletterSection>
+        <NewsletterSignup 
+          title="Stay in the Loop"
+          description="Get notified about new releases, exclusive deals, and behind-the-scenes content."
+          compact={true}
+        />
 
         <FooterBottom>
           <Copyright>
