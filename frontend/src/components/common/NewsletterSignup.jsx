@@ -184,6 +184,26 @@ const NewsletterSignup = ({ title = "Sign up to our newsletter", compact = false
     );
   }
 
+  if (error) {
+    return (
+      <NewsletterContainer>
+        <NewsletterTitle>{title}</NewsletterTitle>
+        <div style={{
+          color: theme.colors.error,
+          fontSize: theme.typography.sizes.sm,
+          textAlign: 'center',
+          marginTop: theme.spacing[2],
+          padding: theme.spacing[3],
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          border: `1px solid ${theme.colors.error}`,
+          borderRadius: theme.borderRadius.lg
+        }}>
+          {error}
+        </div>
+      </NewsletterContainer>
+    );
+  }
+
   return (
     <NewsletterContainer>
       <NewsletterTitle>{title}</NewsletterTitle>
@@ -226,16 +246,6 @@ const NewsletterSignup = ({ title = "Sign up to our newsletter", compact = false
             </>
           )}
         </SubmitButton>
-        {error && (
-          <div style={{
-            color: theme.colors.error,
-            fontSize: theme.typography.sizes.sm,
-            textAlign: 'center',
-            marginTop: theme.spacing[2]
-          }}>
-            {error}
-          </div>
-        )}
       </NewsletterForm>
     </NewsletterContainer>
   );
