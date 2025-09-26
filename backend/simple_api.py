@@ -500,20 +500,20 @@ async def register(request: Request, user_data: dict):
                     israel_tz = pytz.timezone('Asia/Jerusalem')
                     israel_time = datetime.now(israel_tz)
                     newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose-Signup"]]
-                        async with httpx.AsyncClient() as client:
-                            response = await client.post(
-                                NEWSLETTER_API_ENDPOINT,
-                                json=newsletter_data,
-                                timeout=10.0
-                            )
-                            if response.status_code == 200:
-                                newsletter_success = True
-                                print(f"✅ Newsletter subscription successful (re-registration): {email}")
-                            else:
-                                print(f"⚠️ Newsletter subscription failed (re-registration): {response.status_code}")
-                    except Exception as e:
-                        print(f"⚠️ Newsletter subscription error (re-registration): {e}")
-                        # Don't fail re-registration if newsletter fails
+                    async with httpx.AsyncClient() as client:
+                        response = await client.post(
+                            NEWSLETTER_API_ENDPOINT,
+                            json=newsletter_data,
+                            timeout=10.0
+                        )
+                        if response.status_code == 200:
+                            newsletter_success = True
+                            print(f"✅ Newsletter subscription successful (re-registration): {email}")
+                        else:
+                            print(f"⚠️ Newsletter subscription failed (re-registration): {response.status_code}")
+                except Exception as e:
+                    print(f"⚠️ Newsletter subscription error (re-registration): {e}")
+                    # Don't fail re-registration if newsletter fails
                 
                 return {
                     "message": "New verification code sent! Please check your email.",
