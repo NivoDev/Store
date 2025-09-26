@@ -17,6 +17,7 @@ async function testNewsletterAPI() {
   };
   
   console.log('📤 Sending data:', testData);
+  console.log('📤 Expected format: {tabId: "0", data: [["Name", "Email", "Date", "Source"]]}');
   
   try {
     const response = await fetch(`${API_BASE_URL}/newsletter/subscribe`, {
