@@ -499,7 +499,7 @@ async def register(request: Request, user_data: dict):
                     # Use Israel timezone for Google Sheets
                     israel_tz = pytz.timezone('Asia/Jerusalem')
                     israel_time = datetime.now(israel_tz)
-                    newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                    newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose-Signup"]]
                         async with httpx.AsyncClient() as client:
                             response = await client.post(
                                 NEWSLETTER_API_ENDPOINT,
@@ -586,7 +586,7 @@ async def register(request: Request, user_data: dict):
                 # Use Israel timezone for Google Sheets
                 israel_tz = pytz.timezone('Asia/Jerusalem')
                 israel_time = datetime.now(israel_tz)
-                newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose-Signup"]]
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         NEWSLETTER_API_ENDPOINT,
@@ -779,14 +779,15 @@ async def verify_user_email_token(verification_token: str):
 async def subscribe_newsletter(request: dict):
     """
     Subscribe user to newsletter and add to Google Sheets.
-    Expected format: {"name": "John Doe", "email": "john@example.com"}
+    Expected format: {"name": "John Doe", "email": "john@example.com", "source": "footer|checkout|signup"}
     """
     try:
         print(f"📧 Newsletter subscription request: {request}")
         name = request.get("name", "").strip()
         email = request.get("email", "").strip().lower()
+        source = request.get("source", "footer").strip().lower()
         
-        print(f"📧 Newsletter - Name: {name}, Email: {email}")
+        print(f"📧 Newsletter - Name: {name}, Email: {email}, Source: {source}")
         
         if not email or not name:
             print("❌ Newsletter - Missing name or email")
@@ -798,12 +799,21 @@ async def subscribe_newsletter(request: dict):
         
         print(f"📧 Newsletter API endpoint: {NEWSLETTER_API_ENDPOINT}")
         
+        # Determine source label based on source parameter
+        source_label = "Atomic-Rose"
+        if source == "footer":
+            source_label = "Atomic-Rose-Footer"
+        elif source == "checkout":
+            source_label = "Atomic-Rose-Checkout"
+        elif source == "signup":
+            source_label = "Atomic-Rose-Signup"
+        
         # Prepare data for Google Sheets (matching your sheet structure)
         # NoCodeAPI Google Sheets expects just the 2D array directly (tabId is in URL)
         # Use Israel timezone for Google Sheets
         israel_tz = pytz.timezone('Asia/Jerusalem')
         israel_time = datetime.now(israel_tz)
-        newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+        newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), source_label]]
         
         print(f"📧 Newsletter data to send: {newsletter_data}")
         

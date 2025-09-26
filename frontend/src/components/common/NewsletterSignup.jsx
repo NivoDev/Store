@@ -123,7 +123,7 @@ const SuccessText = styled.p`
   font-size: ${theme.typography.sizes.sm};
 `;
 
-const NewsletterSignup = ({ title = "Sign up to our newsletter", compact = false }) => {
+const NewsletterSignup = ({ title = "Sign up to our newsletter", compact = false, source = "footer" }) => {
   const [formData, setFormData] = useState({
     name: '',
     email: ''
@@ -154,7 +154,7 @@ const NewsletterSignup = ({ title = "Sign up to our newsletter", compact = false
     setError('');
 
     try {
-      const result = await apiService.subscribeNewsletter(formData.name, formData.email);
+      const result = await apiService.subscribeNewsletter(formData.name, formData.email, source);
       
       if (result.success) {
         setIsSubmitted(true);

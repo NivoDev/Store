@@ -206,6 +206,7 @@ const Footer = () => {
           title="Stay in the Loop"
           description="Get notified about new releases, exclusive deals, and behind-the-scenes content."
           compact={true}
+          source="footer"
         />
 
         <FooterBottom>
