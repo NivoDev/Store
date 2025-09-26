@@ -492,7 +492,10 @@ async def register(request: Request, user_data: dict):
                 newsletter_success = False
                 if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
                     try:
-                        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                        newsletter_data = {
+                            "tabId": "Sheet1",  # Your sheet tab name
+                            "data": [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                        }
                         async with httpx.AsyncClient() as client:
                             response = await client.post(
                                 NEWSLETTER_API_ENDPOINT,
@@ -576,7 +579,10 @@ async def register(request: Request, user_data: dict):
         newsletter_success = False
         if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
             try:
-                newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                newsletter_data = {
+                    "tabId": "Sheet1",  # Your sheet tab name
+                    "data": [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                }
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         NEWSLETTER_API_ENDPOINT,
@@ -789,8 +795,11 @@ async def subscribe_newsletter(request: dict):
         print(f"📧 Newsletter API endpoint: {NEWSLETTER_API_ENDPOINT}")
         
         # Prepare data for Google Sheets (matching your sheet structure)
-        # NoCodeAPI Google Sheets expects just the 2D array directly (tabId is configured in NoCodeAPI)
-        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+        # NoCodeAPI Google Sheets format with tabId and data array
+        newsletter_data = {
+            "tabId": "Sheet1",  # Your sheet tab name
+            "data": [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+        }
         
         print(f"📧 Newsletter data to send: {newsletter_data}")
         
