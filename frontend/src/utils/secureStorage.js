@@ -57,11 +57,17 @@ class SecureStorage {
       const serializedData = JSON.stringify(data);
       const encrypted = this.encrypt(serializedData, this.encryptionKey);
       localStorage.setItem(this.prefix + key, encrypted);
+      
+      // Also store in regular localStorage as backup
+      localStorage.setItem(key, serializedData);
     } catch (error) {
       console.warn('SecureStorage: Failed to encrypt data, using fallback');
-      // Fallback to regular storage in development
-      if (process.env.NODE_ENV === 'development') {
+      // Fallback to regular storage
+      try {
         localStorage.setItem(this.prefix + key, JSON.stringify(data));
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch (fallbackError) {
+        console.error('SecureStorage: Failed to store data completely');
       }
     }
   }
@@ -80,6 +86,16 @@ class SecureStorage {
         try {
           return JSON.parse(encryptedData);
         } catch {
+          // If that fails, try regular localStorage as fallback
+          const fallbackData = localStorage.getItem(key);
+          if (fallbackData) {
+            try {
+              return JSON.parse(fallbackData);
+            } catch {
+              this.removeItem(key);
+              return null;
+            }
+          }
           this.removeItem(key);
           return null;
         }
@@ -87,7 +103,16 @@ class SecureStorage {
 
       return JSON.parse(decryptedData);
     } catch (error) {
-      console.warn('SecureStorage: Failed to decrypt data');
+      console.warn('SecureStorage: Failed to decrypt data, trying fallback');
+      // Try regular localStorage as fallback
+      try {
+        const fallbackData = localStorage.getItem(key);
+        if (fallbackData) {
+          return JSON.parse(fallbackData);
+        }
+      } catch (fallbackError) {
+        console.warn('SecureStorage: Fallback also failed');
+      }
       this.removeItem(key);
       return null;
     }
