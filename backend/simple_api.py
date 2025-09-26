@@ -26,6 +26,7 @@ from botocore.config import Config
 from urllib.parse import urlparse, unquote
 import time
 import httpx
+import pytz
 
 # Load environment variables
 load_dotenv()
@@ -491,11 +492,14 @@ async def register(request: Request, user_data: dict):
                         detail="Email service is currently unavailable. Please try again later or contact support@atomicrosetools.com"
                     )
                 
-                # Handle newsletter subscription if requested (for re-registration)
-                newsletter_success = False
-                if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
-                    try:
-                        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+            # Handle newsletter subscription if requested (for re-registration)
+            newsletter_success = False
+            if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
+                try:
+                    # Use Israel timezone for Google Sheets
+                    israel_tz = pytz.timezone('Asia/Jerusalem')
+                    israel_time = datetime.now(israel_tz)
+                    newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
                         async with httpx.AsyncClient() as client:
                             response = await client.post(
                                 NEWSLETTER_API_ENDPOINT,
@@ -579,7 +583,10 @@ async def register(request: Request, user_data: dict):
         newsletter_success = False
         if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
             try:
-                newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                # Use Israel timezone for Google Sheets
+                israel_tz = pytz.timezone('Asia/Jerusalem')
+                israel_time = datetime.now(israel_tz)
+                newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         NEWSLETTER_API_ENDPOINT,
@@ -793,7 +800,10 @@ async def subscribe_newsletter(request: dict):
         
         # Prepare data for Google Sheets (matching your sheet structure)
         # NoCodeAPI Google Sheets expects just the 2D array directly (tabId is in URL)
-        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+        # Use Israel timezone for Google Sheets
+        israel_tz = pytz.timezone('Asia/Jerusalem')
+        israel_time = datetime.now(israel_tz)
+        newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
         
         print(f"📧 Newsletter data to send: {newsletter_data}")
         

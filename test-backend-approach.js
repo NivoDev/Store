@@ -19,7 +19,7 @@ async function testBackendApproach() {
   
   // Test data matching backend format
   const newsletter_data = [
-    ['Backend Test', 'backend@example.com', new Date().toLocaleString(), 'Atomic-Rose']
+    ['Backend Test', 'backend@example.com', new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }), 'Atomic-Rose']
   ];
   
   console.log('📤 Newsletter data to send:', newsletter_data);

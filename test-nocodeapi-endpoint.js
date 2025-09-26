@@ -14,7 +14,7 @@ async function testNoCodeAPIEndpoint() {
   
   // Test data matching your sheet structure
   const testData = [
-    ['Test User', 'test@example.com', new Date().toLocaleString(), 'Atomic-Rose']
+    ['Test User', 'test@example.com', new Date().toLocaleString('en-US', { timeZone: 'Asia/Jerusalem' }), 'Atomic-Rose']
   ];
   
   console.log('📤 Sending data:', testData);
