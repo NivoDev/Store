@@ -67,72 +67,26 @@
                 <tr>
                   <td class="text" style="padding:32px;color:var(--brand-text);font:400 16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
                     <h1 style="margin:0 0 12px;font:700 24px/1.25 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--brand-text);">
-                      Welcome to Atomic Rose Tools! 🎵
+                      Verify Your Email
                     </h1>
                     <p style="margin:0 0 16px;color:var(--muted);">
                       Hi {{FIRST_NAME}}! Thanks for signing up. Please verify your email address to complete your registration and access all features.
                     </p>
 
-                    <!-- Account Benefits Preview -->
-                    <div style="background:rgba(0,255,255,0.05);border:1px solid rgba(0,255,255,0.2);border-radius:8px;padding:20px;margin:20px 0;">
-                      <h3 style="margin:0 0 12px;color:var(--brand-text);font:600 18px/1.2 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                        🎯 What you'll get:
-                      </h3>
-                      <ul style="margin:0;padding-left:20px;color:var(--muted);font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                        <li><strong>3 downloads per product</strong> (vs 1 for guests)</li>
-                        <li>Access to your <strong>purchased products</strong> anytime</li>
-                        <li>Download history and management</li>
-                        <li>Exclusive content and updates</li>
-                        <li>Save your favorite products</li>
-                      </ul>
-                    </div>
-
-                    <!-- CTA Button -->
-                    <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
-                      <tr>
-                        <td>
-                          <!--[if mso]>
-                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="{{VERIFY_URL}}" style="height:48px;v-text-anchor:middle;width:260px;" arcsize="12%" fillcolor="#ff2a6d" strokecolor="#ff2a6d">
-                              <w:anchorlock/>
-                              <center style="color:#0b0b10;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">Verify Email</center>
-                            </v:roundrect>
-                          <![endif]-->
-                          <![if !mso]>
-                          <a href="{{VERIFY_URL}}" target="_blank" rel="noopener noreferrer"
-                             style="display:inline-block;background:var(--brand-accent);color:var(--btn-text);text-decoration:none;font:700 16px/48px system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:0 24px;border-radius:10px;min-width:200px;text-align:center;">
-                            Verify Email
-                          </a>
-                          <![endif]>
-                        </td>
-                      </tr>
-                    </table>
-
                     <!-- OTP Code Section with High Visibility -->
                     <div style="margin:24px 0;padding:20px;background:var(--otp-bg);border:2px solid var(--otp-border);border-radius:12px;text-align:center;">
                       <p style="margin:0 0 12px;color:var(--muted);font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                        Or copy and paste this verification code in the app:
+                        Please enter this verification code in the app:
                       </p>
                       <div style="display:inline-block;background:var(--otp-bg);border:2px solid var(--otp-border);border-radius:8px;padding:16px 24px;margin:8px 0;">
                         <span style="font:700 24px/1.2 'Courier New', Courier, monospace;color:var(--otp-text);letter-spacing:4px;text-shadow:0 0 10px rgba(0,255,255,0.3);">
                           {{OTP_CODE}}
                         </span>
                       </div>
-                      <p style="margin:12px 0 0;color:var(--muted);font:500 12px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                        This code expires in {{EXPIRES_IN_MINUTES}} minutes
-                      </p>
-                    </div>
-
-                    <!-- Security Notice -->
-                    <div style="margin:24px 0;padding:16px;background:rgba(255,193,7,0.1);border:1px solid rgba(255,193,7,0.3);border-radius:8px;">
-                      <p style="margin:0;color:#ffc107;font:500 14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;">
-                        🔒 <strong>Security:</strong> Never share this verification code with anyone. 
-                        If you didn't create this account, you can safely ignore this email.
-                      </p>
                     </div>
 
                     <p class="muted" style="margin:16px 0 0;color:var(--muted);font-size:13px;">
-                      This verification link expires in {{EXPIRES_IN_MINUTES}} minutes. 
-                      If you need a new code, you can request one from the app.
+                      If you didn't request this, you can ignore this email.
                     </p>
                   </td>
                 </tr>
