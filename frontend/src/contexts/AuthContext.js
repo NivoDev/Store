@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import secureStorage from '../utils/secureStorage';
 import apiService from '../services/api';
 
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Function to refresh user data
-  const refreshUserData = async () => {
+  const refreshUserData = useCallback(async () => {
     if (state.isAuthenticated && state.user) {
       try {
         const result = await apiService.getCurrentUser();
@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Error refreshing user data:', error);
       }
     }
-  };
+  }, [state.isAuthenticated, state.user]);
 
   // Listen for user data update events
   useEffect(() => {
@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       window.removeEventListener('userDataUpdated', handleUserDataUpdate);
     };
-  }, [state.isAuthenticated, state.user]);
+  }, [state.isAuthenticated, state.user, refreshUserData]);
 
   // Login function with API integration
   const login = async (email, password) => {

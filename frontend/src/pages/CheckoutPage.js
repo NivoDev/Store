@@ -157,27 +157,27 @@ const Select = styled.select`
   }
 `;
 
-const TextArea = styled.textarea`
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: ${theme.borderRadius.lg};
-  padding: ${theme.spacing[3]} ${theme.spacing[4]};
-  color: ${theme.colors.dark[50]};
-  font-size: ${theme.typography.sizes.base};
-  min-height: 100px;
-  resize: vertical;
-  transition: all 0.2s ease;
+// const TextArea = styled.textarea`
+//   background: rgba(255, 255, 255, 0.05);
+//   border: 1px solid rgba(255, 255, 255, 0.1);
+//   border-radius: ${theme.borderRadius.lg};
+//   padding: ${theme.spacing[3]} ${theme.spacing[4]};
+//   color: ${theme.colors.dark[50]};
+//   font-size: ${theme.typography.sizes.base};
+//   min-height: 100px;
+//   resize: vertical;
+//   transition: all 0.2s ease;
   
-  &:focus {
-    outline: none;
-    border-color: ${theme.colors.primary[500]};
-    background: rgba(255, 255, 255, 0.08);
-  }
+//   &:focus {
+//     outline: none;
+//     border-color: ${theme.colors.primary[500]};
+//     background: rgba(255, 255, 255, 0.08);
+//   }
   
-  &::placeholder {
-    color: ${theme.colors.dark[400]};
-  }
-`;
+//   &::placeholder {
+//     color: ${theme.colors.dark[400]};
+//   }
+// `;
 
 const CheckboxGroup = styled.div`
   display: flex;
@@ -307,7 +307,7 @@ const CheckoutPage = () => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [step, setStep] = useState(1); // 1: Billing, 2: Payment, 3: Confirmation
+  // const [step, setStep] = useState(1); // 1: Billing, 2: Payment, 3: Confirmation
   
   // Form state
   const [formData, setFormData] = useState({
