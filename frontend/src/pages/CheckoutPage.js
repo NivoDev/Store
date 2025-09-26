@@ -439,7 +439,11 @@ const CheckoutPage = () => {
       return transformedItems;
     }
     console.log('🛒 Using cart items:', items);
-    return items;
+    // Ensure cart items have proper artist field
+    return items.map(item => ({
+      ...item,
+      artist: item.made_by || item.artist || 'Unknown Artist'
+    }));
   };
 
   const calculateTotal = () => {
