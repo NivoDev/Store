@@ -218,7 +218,8 @@ const ProductDetailPage = ({ onAuthClick }) => {
   const [playingSample, setPlayingSample] = useState(null);
   const [sampleAudio, setSampleAudio] = useState(null);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [isInGuestCart, setIsInGuestCart] = useState(false);
+  const [samples, setSamples] = useState([]);
+  const [loadingSamples, setLoadingSamples] = useState(false);
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -298,6 +299,31 @@ const ProductDetailPage = ({ onAuthClick }) => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showShareDropdown]);
+
+  // Load samples from API
+  useEffect(() => {
+    const loadSamples = async () => {
+      if (!product?.slug) return;
+      
+      try {
+        setLoadingSamples(true);
+        const result = await apiService.getProductSamples(product.slug);
+        if (result.success) {
+          setSamples(result.data || []);
+        } else {
+          console.error('Failed to load samples:', result.error);
+          setSamples([]);
+        }
+      } catch (error) {
+        console.error('Error loading samples:', error);
+        setSamples([]);
+      } finally {
+        setLoadingSamples(false);
+      }
+    };
+
+    loadSamples();
+  }, [product?.slug]);
 
   if (loading) {
     return (
@@ -425,7 +451,7 @@ const ProductDetailPage = ({ onAuthClick }) => {
     setShowShareDropdown(false);
   };
 
-  const handleSamplePlay = (sample) => {
+  const handleSamplePlay = async (sample) => {
     if (playingSample === sample.id) {
       // Stop current sample
       if (sampleAudio) {
@@ -440,27 +466,29 @@ const ProductDetailPage = ({ onAuthClick }) => {
         sampleAudio.src = '';
       }
 
-      // Play new sample
-      const audio = new Audio(sample.url);
-      audio.addEventListener('ended', () => {
-        setPlayingSample(null);
-        setSampleAudio(null);
-      });
-      audio.play();
-      setSampleAudio(audio);
-      setPlayingSample(sample.id);
+      try {
+        // Get preview URL from API
+        const result = await apiService.getSamplePreview(sample.id, product.slug);
+        if (result.success && result.data.preview_url) {
+          const audio = new Audio(result.data.preview_url);
+          audio.addEventListener('ended', () => {
+            setPlayingSample(null);
+            setSampleAudio(null);
+          });
+          audio.play();
+          setSampleAudio(audio);
+          setPlayingSample(sample.id);
+        } else {
+          console.error('Failed to get sample preview URL:', result.error);
+        }
+      } catch (error) {
+        console.error('Error playing sample:', error);
+      }
     }
   };
 
-  // Sample data - in a real app, this would come from the product data
-  const samplePreviews = [
-    { id: 1, title: 'Arc Light', duration: '0:15', url: product?.audio_url || '' },
-    { id: 2, title: 'Crystal', duration: '0:12', url: product?.audio_url || '' },
-    { id: 3, title: 'Lunar Pulse', duration: '0:18', url: product?.audio_url || '' },
-    { id: 4, title: 'Argent', duration: '0:14', url: product?.audio_url || '' },
-    { id: 5, title: 'Electric Mist', duration: '0:16', url: product?.audio_url || '' },
-    { id: 6, title: 'Midnight Circuit', duration: '0:13', url: product?.audio_url || '' },
-  ];
+  // Use real samples from API instead of hardcoded data
+  const samplePreviews = samples;
 
 
   return (
@@ -561,19 +589,30 @@ const ProductDetailPage = ({ onAuthClick }) => {
           <SamplePreviewsDescription>
             Preview individual samples from this pack. Each sample is carefully crafted to showcase the unique character and quality of this collection.
           </SamplePreviewsDescription>
-          <SamplesGrid>
-            {samplePreviews.map((sample) => (
-              <SampleItem key={sample.id} onClick={() => handleSamplePlay(sample)}>
-                <SampleTitle>{sample.title}</SampleTitle>
-                <SamplePlayer>
-                  <PlayButton>
-                    {playingSample === sample.id ? <FiPause size={16} /> : <FiPlay size={16} />}
-                  </PlayButton>
-                  <SampleDuration>{sample.duration}</SampleDuration>
-                </SamplePlayer>
-              </SampleItem>
-            ))}
-          </SamplesGrid>
+          
+          {loadingSamples ? (
+            <div style={{ textAlign: 'center', padding: theme.spacing[8] }}>
+              <div style={{ color: theme.colors.dark[300] }}>Loading samples...</div>
+            </div>
+          ) : samplePreviews.length > 0 ? (
+            <SamplesGrid>
+              {samplePreviews.map((sample) => (
+                <SampleItem key={sample.id} onClick={() => handleSamplePlay(sample)}>
+                  <SampleTitle>{sample.title}</SampleTitle>
+                  <SamplePlayer>
+                    <PlayButton>
+                      {playingSample === sample.id ? <FiPause size={16} /> : <FiPlay size={16} />}
+                    </PlayButton>
+                    <SampleDuration>{sample.duration}</SampleDuration>
+                  </SamplePlayer>
+                </SampleItem>
+              ))}
+            </SamplesGrid>
+          ) : (
+            <div style={{ textAlign: 'center', padding: theme.spacing[8] }}>
+              <div style={{ color: theme.colors.dark[300] }}>No samples available</div>
+            </div>
+          )}
         </SamplePreviews>
       </Container>
       
