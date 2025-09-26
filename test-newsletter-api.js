@@ -16,6 +16,8 @@ async function testNewsletterAPI() {
     email: 'test@example.com'
   };
   
+  console.log('📤 Sending data:', testData);
+  
   try {
     const response = await fetch(`${API_BASE_URL}/newsletter/subscribe`, {
       method: 'POST',

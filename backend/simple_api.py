@@ -555,7 +555,7 @@ async def register(request: Request, user_data: dict):
         newsletter_success = False
         if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
             try:
-                newsletter_data = [name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]
+                newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         NEWSLETTER_API_ENDPOINT,
@@ -762,7 +762,8 @@ async def subscribe_newsletter(request: dict):
             raise HTTPException(status_code=503, detail="Newsletter service is currently unavailable")
         
         # Prepare data for Google Sheets (matching your sheet structure)
-        newsletter_data = [name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]
+        # Google Sheets API expects a 2D array - each row is an array
+        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
         
         # Send to newsletter API
         async with httpx.AsyncClient() as client:
