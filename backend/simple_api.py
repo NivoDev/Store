@@ -2317,7 +2317,8 @@ async def guest_checkout(checkout_data: dict):
         if not re.match(email_pattern, email):
             raise HTTPException(status_code=400, detail="Invalid email format")
         
-        # Validate product IDs and check if products exist
+        # Validate product IDs and check if products exist, enhance items with product data
+        enhanced_items = []
         for item in items:
             product_id = item.get("product_id")
             if not product_id:
@@ -2332,6 +2333,17 @@ async def guest_checkout(checkout_data: dict):
             if not product:
                 raise HTTPException(status_code=404, detail=f"Product not found: {product_id}")
             
+            # Enhance item with product data
+            enhanced_item = {
+                "product_id": product_id,
+                "title": item.get("title", product.get("title", "Unknown Product")),
+                "price": item.get("price", product.get("price", 0)),
+                "quantity": item.get("quantity", 1),
+                "made_by": product.get("made_by", "Unknown Artist"),  # Add made_by field
+                "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg")
+            }
+            enhanced_items.append(enhanced_item)
+            
             # Validate price (prevent price manipulation)
             if item.get("price", 0) != product.get("price", 0):
                 raise HTTPException(status_code=400, detail=f"Price mismatch for product {product_id}")
@@ -2345,7 +2357,7 @@ async def guest_checkout(checkout_data: dict):
         otp_code = ''.join(secrets.choice('0123456789') for _ in range(6))
         
         # Calculate totals (no tax)
-        subtotal = sum(item["price"] * item["quantity"] for item in items)
+        subtotal = sum(item["price"] * item["quantity"] for item in enhanced_items)
         tax_rate = 0  # No tax
         tax_amount = 0
         total_amount = subtotal
@@ -2354,7 +2366,7 @@ async def guest_checkout(checkout_data: dict):
         order = {
             "order_number": f"GUEST-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
             "guest_email": email,
-            "items": items,
+            "items": enhanced_items,
             "subtotal": subtotal,
             "tax_rate": tax_rate,
             "tax_amount": tax_amount,
@@ -2719,9 +2731,9 @@ async def complete_guest_order(order_data: dict):
                     
                     download_links.append({
                         "title": item["title"],
-                        "artist": product.get("artist", "Unknown Artist"),
+                        "artist": item.get("made_by", product.get("made_by", "Unknown Artist")),
                         "price": f"${item['price']:.2f}",
-                        "cover_image_url": product.get("cover_image_url", "/images/placeholder-product.jpg"),
+                        "cover_image_url": item.get("cover_image_url", product.get("cover_image_url", "/images/placeholder-product.jpg")),
                         "download_url": download_url
                     })
             
