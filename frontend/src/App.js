@@ -39,6 +39,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
 import AutoLoginPage from './pages/AutoLoginPage';
+import SupportPage from './pages/SupportPage';
 
 function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -81,6 +82,7 @@ function App() {
                   <Route path="/privacy" element={<PrivacyPolicyPage />} />
                   <Route path="/terms" element={<TermsOfServicePage />} />
                   <Route path="/cookies" element={<CookiePolicyPage />} />
+                  <Route path="/support" element={<SupportPage />} />
                   <Route path="/guest-downloads" element={<GuestDownloadPage />} />
                   <Route path="/guest-checkout-success" element={<GuestCheckoutSuccessPage />} />
                   <Route path="/verify-guest-email" element={<GuestEmailVerificationPage />} />
