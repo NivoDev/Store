@@ -604,6 +604,18 @@ class EmailService:
         try:
             print(f"📧 Sending newsletter welcome email to {email}")
             
+            # Generate direct R2 download URL for the newsletter gift
+            try:
+                from simple_api import generate_download_url
+                gift_key = "freebies/newsletter-gift/newsletter-Gift.zip"
+                expiration_seconds = 86400  # 24 hours
+                gift_download_url = generate_download_url(gift_key, expiration=expiration_seconds)
+                print(f"✅ Generated direct R2 download URL for newsletter gift")
+            except Exception as e:
+                print(f"❌ Error generating R2 download URL: {e}")
+                # Fallback to API endpoint
+                gift_download_url = f"{self.base_url}/api/v1/newsletter/download-gift?email={email}"
+            
             # Load and customize newsletter welcome template
             html_content = self._load_newsletter_welcome_template()
             html_content = self._customize_newsletter_template(html_content, {
@@ -611,7 +623,7 @@ class EmailService:
                 "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
                 "YEAR": datetime.now().year,
                 "HELP_URL": f"{self.base_url}/support",
-                "GIFT_DOWNLOAD_URL": f"{self.base_url}/api/v1/newsletter/download-gift?email={email}",
+                "GIFT_DOWNLOAD_URL": gift_download_url,
                 "COUPON_CODE": "ATOMIC-ROSE",
                 "DISCOUNT_PERCENT": "10",
                 "MAX_DISCOUNT": "$50",
