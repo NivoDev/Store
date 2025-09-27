@@ -9,7 +9,7 @@ import Button from '../components/common/Button';
 import AudioPlayer from '../components/audio/AudioPlayer';
 import Modal from '../components/modals/Modal';
 import guestCartService from '../services/guestCart';
-import { FiShoppingCart, FiHeart, FiShare2, FiPlay, FiPause } from 'react-icons/fi';
+import { FiShoppingCart, FiHeart, FiShare2, FiPlay, FiPause, FiCheckCircle } from 'react-icons/fi';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -206,6 +206,41 @@ const ShareOption = styled.button`
   }
 `;
 
+const ToastNotification = styled.div`
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: ${theme.colors.success[600]};
+  color: white;
+  padding: ${theme.spacing[3]} ${theme.spacing[4]};
+  border-radius: ${theme.borderRadius.lg};
+  box-shadow: ${theme.shadows.lg};
+  z-index: ${theme.zIndex.toast};
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing[2]};
+  font-weight: ${theme.typography.weights.medium};
+  animation: slideIn 0.3s ease-out;
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    text-align: center;
+  }
+`;
+
 const ProductDetailPage = ({ onAuthClick }) => {
   const { slug } = useParams();
   const { addItem, isInCart } = useCart();
@@ -221,6 +256,8 @@ const ProductDetailPage = ({ onAuthClick }) => {
   const [isInGuestCart, setIsInGuestCart] = useState(false);
   const [samples, setSamples] = useState([]);
   const [loadingSamples, setLoadingSamples] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -427,12 +464,47 @@ const ProductDetailPage = ({ onAuthClick }) => {
     }
   };
 
-  const handleShare = (platform) => {
+  const showToastMessage = (message) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+  };
+
+  const handleShare = async (platform) => {
     const url = window.location.href;
     const title = product.title;
     const text = `Check out "${title}" on Atomic Rose Tools`;
 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const hasWebShare = navigator.share;
+
+    // For mobile devices, try native share first
+    if (isMobile && hasWebShare && platform === 'mobile') {
+      try {
+        await navigator.share({
+          title: title,
+          text: text,
+          url: url
+        });
+        setShowShareDropdown(false);
+        return;
+      } catch (error) {
+        console.log('Web Share API failed, falling back to copy');
+        // Fall through to copy functionality
+      }
+    }
+
     switch (platform) {
+      case 'mobile': // Fallback for mobile if Web Share API fails
+        try {
+          await navigator.clipboard.writeText(url);
+          showToastMessage('Link copied to clipboard!');
+        } catch (error) {
+          showToastMessage('Failed to copy link');
+        }
+        break;
       case 'twitter':
         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
         break;
@@ -442,9 +514,13 @@ const ProductDetailPage = ({ onAuthClick }) => {
       case 'linkedin':
         window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
         break;
-      case 'copy':
-        navigator.clipboard.writeText(url);
-        alert('Link copied to clipboard!');
+      case 'copy': // Desktop copy
+        try {
+          await navigator.clipboard.writeText(url);
+          showToastMessage('Link copied to clipboard!');
+        } catch (error) {
+          showToastMessage('Failed to copy link');
+        }
         break;
       default:
         break;
@@ -565,15 +641,23 @@ const ProductDetailPage = ({ onAuthClick }) => {
                 Share
                 {showShareDropdown && (
                   <ShareDropdown>
-                    <ShareOption onClick={() => handleShare('twitter')}>
-                      🐦 Share on Twitter
-                    </ShareOption>
-                    <ShareOption onClick={() => handleShare('facebook')}>
-                      📘 Share on Facebook
-                    </ShareOption>
-                    <ShareOption onClick={() => handleShare('linkedin')}>
-                      💼 Share on LinkedIn
-                    </ShareOption>
+                    {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? (
+                      <ShareOption onClick={() => handleShare('mobile')}>
+                        📱 Share
+                      </ShareOption>
+                    ) : (
+                      <>
+                        <ShareOption onClick={() => handleShare('twitter')}>
+                          🐦 Share on Twitter
+                        </ShareOption>
+                        <ShareOption onClick={() => handleShare('facebook')}>
+                          📘 Share on Facebook
+                        </ShareOption>
+                        <ShareOption onClick={() => handleShare('linkedin')}>
+                          💼 Share on LinkedIn
+                        </ShareOption>
+                      </>
+                    )}
                     <ShareOption onClick={() => handleShare('copy')}>
                       📋 Copy Link
                     </ShareOption>
@@ -655,6 +739,14 @@ const ProductDetailPage = ({ onAuthClick }) => {
           </div>
         </div>
       </Modal>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <ToastNotification>
+          <FiCheckCircle size={20} />
+          {toastMessage}
+        </ToastNotification>
+      )}
     </PageContainer>
   );
 };
