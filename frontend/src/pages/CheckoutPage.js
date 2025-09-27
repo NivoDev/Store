@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { FiCreditCard, FiUser, FiMapPin, FiMail, FiPhone, FiBuilding, FiFileText, FiLock, FiArrowLeft, FiCheck } from 'react-icons/fi';
+import { FiCreditCard, FiUser, FiMapPin, FiMail, FiPhone, FiBuilding, FiFileText, FiLock, FiArrowLeft, FiCheck, FiTag, FiX } from 'react-icons/fi';
 import { theme } from '../theme';
 import Button from '../components/common/Button';
 import { useCart } from '../contexts/CartContext';
@@ -299,6 +299,94 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+// Coupon components
+const CouponSection = styled.div`
+  margin: ${theme.spacing[6]} 0;
+  padding: ${theme.spacing[4]};
+  background: rgba(34, 197, 94, 0.05);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: ${theme.borderRadius.lg};
+`;
+
+const CouponTitle = styled.h4`
+  font-size: ${theme.typography.sizes.base};
+  font-weight: ${theme.typography.weights.semibold};
+  color: ${theme.colors.dark[50]};
+  margin: 0 0 ${theme.spacing[3]} 0;
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing[2]};
+`;
+
+const CouponInputGroup = styled.div`
+  display: flex;
+  gap: ${theme.spacing[2]};
+  margin-bottom: ${theme.spacing[3]};
+`;
+
+const CouponInput = styled(Input)`
+  flex: 1;
+  text-transform: uppercase;
+`;
+
+const CouponButton = styled(Button)`
+  padding: ${theme.spacing[3]} ${theme.spacing[4]};
+  font-size: ${theme.typography.sizes.sm};
+  min-width: auto;
+`;
+
+const CouponError = styled.div`
+  color: ${theme.colors.error};
+  font-size: ${theme.typography.sizes.sm};
+  margin-top: ${theme.spacing[2]};
+`;
+
+const AppliedCoupons = styled.div`
+  margin-top: ${theme.spacing[3]};
+`;
+
+const AppliedCoupon = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${theme.spacing[2]} ${theme.spacing[3]};
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: ${theme.borderRadius.md};
+  margin-bottom: ${theme.spacing[2]};
+`;
+
+const CouponInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing[2]};
+`;
+
+const CouponCode = styled.span`
+  font-weight: ${theme.typography.weights.semibold};
+  color: ${theme.colors.dark[50]};
+`;
+
+const CouponDiscount = styled.span`
+  color: ${theme.colors.success[500]};
+  font-size: ${theme.typography.sizes.sm};
+`;
+
+const RemoveCouponButton = styled.button`
+  background: none;
+  border: none;
+  color: ${theme.colors.dark[400]};
+  cursor: pointer;
+  padding: ${theme.spacing[1]};
+  border-radius: ${theme.borderRadius.sm};
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: ${theme.colors.error};
+    background: rgba(239, 68, 68, 0.1);
+  }
+`;
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -308,6 +396,13 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1); // 1: Billing, 2: Payment, 3: Confirmation
+  
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupons, setAppliedCoupons] = useState([]);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -445,6 +540,76 @@ const CheckoutPage = () => {
   const calculateTotal = () => {
     const effectiveItems = getEffectiveItems();
     return effectiveItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  const calculateTotalWithDiscount = () => {
+    const subtotal = calculateTotal();
+    const discount = couponDiscount;
+    const tax = (subtotal - discount) * 0.1; // 10% tax on discounted amount
+    return subtotal - discount + tax;
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError('');
+
+    try {
+      const couponData = {
+        coupon_code: couponCode.trim().toUpperCase(),
+        user_email: formData.email || user?.email || '',
+        user_id: user?.id || null,
+        cart_items: getEffectiveItems(),
+        cart_total: calculateTotal()
+      };
+
+      const result = await apiService.applyCoupon(couponData);
+      
+      if (result.success && result.data.success) {
+        setAppliedCoupons(prev => [...prev, result.data.applied_coupons[0]]);
+        setCouponDiscount(prev => prev + result.data.discount_amount);
+        setCouponCode('');
+        setCouponError('');
+        console.log('✅ Coupon applied successfully');
+      } else {
+        setCouponError(result.data?.message || 'Failed to apply coupon');
+      }
+    } catch (error) {
+      console.error('❌ Error applying coupon:', error);
+      setCouponError('Failed to apply coupon');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = async (couponCode) => {
+    try {
+      const couponData = {
+        coupon_code: couponCode,
+        user_email: formData.email || user?.email || '',
+        user_id: user?.id || null
+      };
+
+      const result = await apiService.removeCoupon(couponData);
+      
+      if (result.success && result.data.success) {
+        setAppliedCoupons(prev => prev.filter(c => c.code !== couponCode));
+        // Recalculate discount
+        const remainingDiscount = appliedCoupons
+          .filter(c => c.code !== couponCode)
+          .reduce((total, c) => total + c.discount_amount, 0);
+        setCouponDiscount(remainingDiscount);
+        console.log('✅ Coupon removed successfully');
+      } else {
+        console.error('❌ Failed to remove coupon:', result.data?.message);
+      }
+    } catch (error) {
+      console.error('❌ Error removing coupon:', error);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -907,6 +1072,53 @@ const CheckoutPage = () => {
           </form>
         </CheckoutForm>
 
+        {/* Coupon Section */}
+        <CouponSection>
+          <CouponTitle>
+            <FiTag />
+            Have a coupon code?
+          </CouponTitle>
+          
+          <CouponInputGroup>
+            <CouponInput
+              type="text"
+              placeholder="Enter coupon code"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              onKeyPress={(e) => e.key === 'Enter' && handleApplyCoupon()}
+            />
+            <CouponButton
+              onClick={handleApplyCoupon}
+              disabled={couponLoading || !couponCode.trim()}
+            >
+              {couponLoading ? <LoadingSpinner /> : 'Apply'}
+            </CouponButton>
+          </CouponInputGroup>
+          
+          {couponError && (
+            <CouponError>{couponError}</CouponError>
+          )}
+          
+          {appliedCoupons.length > 0 && (
+            <AppliedCoupons>
+              {appliedCoupons.map((coupon, index) => (
+                <AppliedCoupon key={index}>
+                  <CouponInfo>
+                    <CouponCode>{coupon.code}</CouponCode>
+                    <CouponDiscount>-${coupon.discount_amount.toFixed(2)}</CouponDiscount>
+                  </CouponInfo>
+                  <RemoveCouponButton
+                    onClick={() => handleRemoveCoupon(coupon.code)}
+                    title="Remove coupon"
+                  >
+                    <FiX />
+                  </RemoveCouponButton>
+                </AppliedCoupon>
+              ))}
+            </AppliedCoupons>
+          )}
+        </CouponSection>
+
         {/* Order Summary */}
         <OrderSummary
           initial={{ opacity: 0, x: 20 }}
@@ -939,9 +1151,24 @@ const CheckoutPage = () => {
             <SummaryLabel>Subtotal</SummaryLabel>
             <SummaryValue>${calculateTotal().toFixed(2)}</SummaryValue>
           </SummaryRow>
+          
+          {couponDiscount > 0 && (
+            <SummaryRow>
+              <SummaryLabel>Discount</SummaryLabel>
+              <SummaryValue style={{ color: theme.colors.success[500] }}>
+                -${couponDiscount.toFixed(2)}
+              </SummaryValue>
+            </SummaryRow>
+          )}
+          
+          <SummaryRow>
+            <SummaryLabel>Tax</SummaryLabel>
+            <SummaryValue>${((calculateTotal() - couponDiscount) * 0.1).toFixed(2)}</SummaryValue>
+          </SummaryRow>
+          
           <SummaryRow className="total">
             <SummaryLabel>Total</SummaryLabel>
-            <TotalValue>${calculateTotal().toFixed(2)}</TotalValue>
+            <TotalValue>${calculateTotalWithDiscount().toFixed(2)}</TotalValue>
           </SummaryRow>
         </OrderSummary>
       </Content>

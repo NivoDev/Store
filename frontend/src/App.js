@@ -39,7 +39,6 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import GoogleCallbackPage from './pages/GoogleCallbackPage';
 import AutoLoginPage from './pages/AutoLoginPage';
-import NewsletterGiftPage from './pages/NewsletterGiftPage';
 
 function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -91,7 +90,6 @@ function App() {
                   <Route path="/reset-password" element={<ResetPasswordPage />} />
                   <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
                   <Route path="/auth/auto-login" element={<AutoLoginPage />} />
-                  <Route path="/download-newsletter-gift" element={<NewsletterGiftPage />} />
                 </Routes>
               </main>
 

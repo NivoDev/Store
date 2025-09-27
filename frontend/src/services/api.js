@@ -828,6 +828,62 @@ class APIService {
       return { success: false, error: error.message };
     }
   }
+
+  // Coupon management endpoints
+  async validateCoupon(couponData) {
+    try {
+      const response = await this.request('/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(couponData)
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to validate coupon:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async applyCoupon(couponData) {
+    try {
+      const response = await this.request('/coupons/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(couponData)
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to apply coupon:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async removeCoupon(couponData) {
+    try {
+      const response = await this.request('/coupons/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(couponData)
+      });
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to remove coupon:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getAppliedCoupons(userEmail, userId = null) {
+    try {
+      const params = new URLSearchParams({ user_email: userEmail });
+      if (userId) params.append('user_id', userId);
+      
+      const response = await this.request(`/coupons/applied?${params.toString()}`);
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to get applied coupons:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create and export singleton instance

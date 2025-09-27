@@ -2890,6 +2890,286 @@ async def transfer_guest_orders(current_user: dict = Depends(get_current_user)):
         print(f"❌ Error transferring guest orders: {e}")
         raise HTTPException(status_code=500, detail="Failed to transfer guest orders")
 
+# ============================================================================
+# COUPON MANAGEMENT ENDPOINTS
+# ============================================================================
+
+@app.post("/api/v1/coupons/validate")
+async def validate_coupon(request: dict):
+    """
+    Validate coupon code for current user/cart
+    """
+    try:
+        coupon_code = request.get("coupon_code", "").upper().strip()
+        user_email = request.get("user_email", "").lower().strip()
+        user_id = request.get("user_id")
+        cart_items = request.get("cart_items", [])
+        cart_total = float(request.get("cart_total", 0))
+        
+        if not coupon_code or not user_email:
+            raise HTTPException(status_code=400, detail="Coupon code and user email are required")
+        
+        print(f"🎫 Validating coupon: {coupon_code} for {user_email}")
+        
+        # Find coupon
+        coupon = await db.coupons.find_one({"code": coupon_code})
+        if not coupon:
+            return {
+                "valid": False,
+                "message": "Invalid coupon code",
+                "discount_amount": 0
+            }
+        
+        # Check if active
+        if not coupon.get('is_active', False):
+            return {
+                "valid": False,
+                "message": "Coupon is not active",
+                "discount_amount": 0
+            }
+        
+        # Check expiration
+        now = datetime.utcnow()
+        if coupon.get('valid_until') and coupon['valid_until'] <= now:
+            return {
+                "valid": False,
+                "message": "Coupon has expired",
+                "discount_amount": 0
+            }
+        
+        # Check usage limits
+        if coupon.get('usage_limit', 0) > 0:
+            if coupon.get('usage_count', 0) >= coupon['usage_limit']:
+                return {
+                    "valid": False,
+                    "message": "Coupon usage limit exceeded",
+                    "discount_amount": 0
+                }
+        
+        # Check user limit (has user used this coupon before?)
+        query = {"coupon_id": coupon['_id']}
+        if user_id:
+            query["user_id"] = ObjectId(user_id)
+        else:
+            query["user_email"] = user_email
+        
+        existing_usage = await db.coupon_usage.find_one(query)
+        if existing_usage:
+            return {
+                "valid": False,
+                "message": "You have already used this coupon",
+                "discount_amount": 0
+            }
+        
+        # Check minimum order amount
+        min_order = coupon.get('min_order_amount', 0)
+        if min_order > 0 and cart_total < min_order:
+            return {
+                "valid": False,
+                "message": f"Minimum order amount of ${min_order} required",
+                "discount_amount": 0
+            }
+        
+        # Calculate discount amount
+        discount_amount = 0
+        if coupon.get('type') == 'percentage':
+            percentage = coupon.get('value', 0)
+            discount_amount = (cart_total * percentage) / 100
+            # Apply max discount limit
+            max_discount = coupon.get('max_discount', 0)
+            if max_discount > 0:
+                discount_amount = min(discount_amount, max_discount)
+        elif coupon.get('type') == 'fixed_amount':
+            discount_amount = min(coupon.get('value', 0), cart_total)
+        
+        # Ensure discount doesn't exceed cart total
+        discount_amount = min(discount_amount, cart_total)
+        
+        print(f"✅ Coupon {coupon_code} valid - discount: ${discount_amount:.2f}")
+        
+        return {
+            "valid": True,
+            "message": "Coupon applied successfully",
+            "discount_amount": round(discount_amount, 2),
+            "coupon": {
+                "code": coupon['code'],
+                "name": coupon['name'],
+                "description": coupon['description'],
+                "type": coupon['type'],
+                "value": coupon['value'],
+                "max_discount": coupon.get('max_discount', 0)
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error validating coupon: {e}")
+        raise HTTPException(status_code=500, detail="Failed to validate coupon")
+
+@app.post("/api/v1/coupons/apply")
+async def apply_coupon(request: dict):
+    """
+    Apply coupon to user's cart
+    """
+    try:
+        coupon_code = request.get("coupon_code", "").upper().strip()
+        user_email = request.get("user_email", "").lower().strip()
+        user_id = request.get("user_id")
+        cart_items = request.get("cart_items", [])
+        cart_total = float(request.get("cart_total", 0))
+        
+        if not coupon_code or not user_email:
+            raise HTTPException(status_code=400, detail="Coupon code and user email are required")
+        
+        print(f"🎫 Applying coupon: {coupon_code} for {user_email}")
+        
+        # First validate the coupon
+        validation_result = await validate_coupon(request)
+        if not validation_result["valid"]:
+            return {
+                "success": False,
+                "message": validation_result["message"],
+                "discount_amount": 0,
+                "new_total": cart_total
+            }
+        
+        # Get coupon details
+        coupon = await db.coupons.find_one({"code": coupon_code})
+        discount_amount = validation_result["discount_amount"]
+        
+        # Record coupon usage
+        usage_record = {
+            "coupon_id": coupon['_id'],
+            "user_id": ObjectId(user_id) if user_id else None,
+            "user_email": user_email,
+            "order_id": None,  # Will be updated when order is created
+            "used_at": datetime.utcnow(),
+            "discount_amount": discount_amount,
+            "cart_total": cart_total,
+            "ip_address": "127.0.0.1",  # TODO: Get real IP
+            "status": "applied"
+        }
+        
+        await db.coupon_usage.insert_one(usage_record)
+        
+        # Update coupon usage count
+        await db.coupons.update_one(
+            {"_id": coupon['_id']},
+            {"$inc": {"usage_count": 1}}
+        )
+        
+        # Calculate new total
+        tax = (cart_total - discount_amount) * 0.1  # 10% tax on discounted amount
+        new_total = cart_total - discount_amount + tax
+        
+        print(f"✅ Coupon {coupon_code} applied - new total: ${new_total:.2f}")
+        
+        return {
+            "success": True,
+            "message": "Coupon applied successfully",
+            "discount_amount": discount_amount,
+            "new_total": round(new_total, 2),
+            "applied_coupons": [validation_result["coupon"]]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error applying coupon: {e}")
+        raise HTTPException(status_code=500, detail="Failed to apply coupon")
+
+@app.post("/api/v1/coupons/remove")
+async def remove_coupon(request: dict):
+    """
+    Remove coupon from user's cart
+    """
+    try:
+        coupon_code = request.get("coupon_code", "").upper().strip()
+        user_email = request.get("user_email", "").lower().strip()
+        user_id = request.get("user_id")
+        
+        if not coupon_code or not user_email:
+            raise HTTPException(status_code=400, detail="Coupon code and user email are required")
+        
+        print(f"🎫 Removing coupon: {coupon_code} for {user_email}")
+        
+        # Find and remove usage record
+        query = {"coupon_id": ObjectId()}
+        if user_id:
+            query["user_id"] = ObjectId(user_id)
+        else:
+            query["user_email"] = user_email
+        
+        # First get the coupon to find its ID
+        coupon = await db.coupons.find_one({"code": coupon_code})
+        if not coupon:
+            return {
+                "success": False,
+                "message": "Coupon not found"
+            }
+        
+        query["coupon_id"] = coupon['_id']
+        query["status"] = "applied"  # Only remove applied coupons
+        
+        result = await db.coupon_usage.delete_one(query)
+        
+        if result.deleted_count > 0:
+            # Decrease usage count
+            await db.coupons.update_one(
+                {"_id": coupon['_id']},
+                {"$inc": {"usage_count": -1}}
+            )
+            
+            print(f"✅ Coupon {coupon_code} removed successfully")
+            return {
+                "success": True,
+                "message": "Coupon removed successfully"
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Coupon not found in your cart"
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error removing coupon: {e}")
+        raise HTTPException(status_code=500, detail="Failed to remove coupon")
+
+@app.get("/api/v1/coupons/applied")
+async def get_applied_coupons(user_email: str, user_id: str = None):
+    """
+    Get currently applied coupons for user
+    """
+    try:
+        user_email = user_email.lower().strip()
+        
+        query = {"user_email": user_email, "status": "applied"}
+        if user_id:
+            query["user_id"] = ObjectId(user_id)
+        
+        applied_coupons = []
+        async for usage in db.coupon_usage.find(query):
+            coupon = await db.coupons.find_one({"_id": usage["coupon_id"]})
+            if coupon:
+                applied_coupons.append({
+                    "code": coupon["code"],
+                    "name": coupon["name"],
+                    "discount_amount": usage["discount_amount"],
+                    "applied_at": usage["used_at"]
+                })
+        
+        return {
+            "success": True,
+            "applied_coupons": applied_coupons
+        }
+        
+    except Exception as e:
+        print(f"❌ Error getting applied coupons: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get applied coupons")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

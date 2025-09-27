@@ -611,7 +611,11 @@ class EmailService:
                 "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
                 "YEAR": datetime.now().year,
                 "HELP_URL": f"{self.base_url}/support",
-                "GIFT_DOWNLOAD_URL": f"{self.base_url}/download-newsletter-gift?email={email}"
+                "GIFT_DOWNLOAD_URL": f"{self.base_url}/download-newsletter-gift?email={email}",
+                "COUPON_CODE": "ATOMIC-ROSE",
+                "DISCOUNT_PERCENT": "10",
+                "MAX_DISCOUNT": "$50",
+                "COUPON_LINK": f"{self.base_url}/?coupon=ATOMIC-ROSE"
             })
             
             # Send email
