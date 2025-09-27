@@ -3059,9 +3059,8 @@ async def apply_coupon(request: dict):
             {"$inc": {"usage_count": 1}}
         )
         
-        # Calculate new total
-        tax = (cart_total - discount_amount) * 0.1  # 10% tax on discounted amount
-        new_total = cart_total - discount_amount + tax
+        # Calculate new total (no tax)
+        new_total = cart_total - discount_amount
         
         print(f"✅ Coupon {coupon_code} applied - new total: ${new_total:.2f}")
         

@@ -301,8 +301,8 @@ const LoadingSpinner = styled.div`
 
 // Coupon components
 const CouponSection = styled.div`
-  margin: ${theme.spacing[6]} 0;
-  padding: ${theme.spacing[4]};
+  margin: ${theme.spacing[4]} 0;
+  padding: ${theme.spacing[3]};
   background: rgba(34, 197, 94, 0.05);
   border: 1px solid rgba(34, 197, 94, 0.2);
   border-radius: ${theme.borderRadius.lg};
@@ -312,7 +312,7 @@ const CouponTitle = styled.h4`
   font-size: ${theme.typography.sizes.base};
   font-weight: ${theme.typography.weights.semibold};
   color: ${theme.colors.dark[50]};
-  margin: 0 0 ${theme.spacing[3]} 0;
+  margin: 0 0 ${theme.spacing[2]} 0;
   display: flex;
   align-items: center;
   gap: ${theme.spacing[2]};
@@ -321,7 +321,7 @@ const CouponTitle = styled.h4`
 const CouponInputGroup = styled.div`
   display: flex;
   gap: ${theme.spacing[2]};
-  margin-bottom: ${theme.spacing[3]};
+  margin-bottom: ${theme.spacing[2]};
 `;
 
 const CouponInput = styled(Input)`
@@ -342,7 +342,7 @@ const CouponError = styled.div`
 `;
 
 const AppliedCoupons = styled.div`
-  margin-top: ${theme.spacing[3]};
+  margin-top: ${theme.spacing[2]};
 `;
 
 const AppliedCoupon = styled.div`
@@ -545,8 +545,7 @@ const CheckoutPage = () => {
   const calculateTotalWithDiscount = () => {
     const subtotal = calculateTotal();
     const discount = couponDiscount;
-    const tax = (subtotal - discount) * 0.1; // 10% tax on discounted amount
-    return subtotal - discount + tax;
+    return subtotal - discount; // No tax
   };
 
   const handleApplyCoupon = async () => {
@@ -1160,11 +1159,6 @@ const CheckoutPage = () => {
               </SummaryValue>
             </SummaryRow>
           )}
-          
-          <SummaryRow>
-            <SummaryLabel>Tax</SummaryLabel>
-            <SummaryValue>${((calculateTotal() - couponDiscount) * 0.1).toFixed(2)}</SummaryValue>
-          </SummaryRow>
           
           <SummaryRow className="total">
             <SummaryLabel>Total</SummaryLabel>
