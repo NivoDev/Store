@@ -558,9 +558,28 @@ const CheckoutPage = () => {
     setCouponError('');
 
     try {
+      // Get email from multiple sources for guest orders
+      const guestOrder = location.state?.guestOrder;
+      const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
+      let email = formData.email || user?.email || '';
+      
+      // For guest orders, try to get email from guest order data
+      if (!isAuthenticated) {
+        if (guestOrder?.guest_email) {
+          email = guestOrder.guest_email;
+        } else if (verifiedOrder) {
+          try {
+            const orderData = JSON.parse(verifiedOrder);
+            email = orderData.email || email;
+          } catch (e) {
+            console.warn('Failed to parse verified order:', e);
+          }
+        }
+      }
+
       const couponData = {
         coupon_code: couponCode.trim().toUpperCase(),
-        user_email: formData.email || user?.email || '',
+        user_email: email,
         user_id: user?.id || null,
         cart_items: getEffectiveItems(),
         cart_total: calculateTotal()
@@ -587,9 +606,28 @@ const CheckoutPage = () => {
 
   const handleRemoveCoupon = async (couponCode) => {
     try {
+      // Get email from multiple sources for guest orders
+      const guestOrder = location.state?.guestOrder;
+      const verifiedOrder = sessionStorage.getItem('verifiedGuestOrder');
+      let email = formData.email || user?.email || '';
+      
+      // For guest orders, try to get email from guest order data
+      if (!isAuthenticated) {
+        if (guestOrder?.guest_email) {
+          email = guestOrder.guest_email;
+        } else if (verifiedOrder) {
+          try {
+            const orderData = JSON.parse(verifiedOrder);
+            email = orderData.email || email;
+          } catch (e) {
+            console.warn('Failed to parse verified order:', e);
+          }
+        }
+      }
+
       const couponData = {
         coupon_code: couponCode,
-        user_email: formData.email || user?.email || '',
+        user_email: email,
         user_id: user?.id || null
       };
 
