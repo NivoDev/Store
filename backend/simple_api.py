@@ -2744,6 +2744,10 @@ async def complete_guest_order(order_data: dict):
         return {
             "order_number": order_number,
             "guest_email": order["guest_email"],
+            "total_amount": order.get("total_amount", 0),
+            "subtotal": order.get("subtotal", 0),
+            "tax": order.get("tax", 0),
+            "items": order.get("items", []),
             "status": "completed",
             "message": "Order completed successfully"
         }
