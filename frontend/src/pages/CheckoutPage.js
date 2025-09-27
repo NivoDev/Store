@@ -1106,7 +1106,7 @@ const CheckoutPage = () => {
                 <AppliedCoupon key={index}>
                   <CouponInfo>
                     <CouponCode>{coupon.code}</CouponCode>
-                    <CouponDiscount>-${coupon.discount_amount.toFixed(2)}</CouponDiscount>
+                    <CouponDiscount>-${(coupon.discount_amount || 0).toFixed(2)}</CouponDiscount>
                   </CouponInfo>
                   <RemoveCouponButton
                     onClick={() => handleRemoveCoupon(coupon.code)}
@@ -1143,28 +1143,28 @@ const CheckoutPage = () => {
                 <ProductArtist>{item.artist}</ProductArtist>
               </ProductInfo>
               <ProductPrice>
-                ${(item.price * item.quantity).toFixed(2)}
+                ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
               </ProductPrice>
             </ProductItem>
           ))}
           
           <SummaryRow>
             <SummaryLabel>Subtotal</SummaryLabel>
-            <SummaryValue>${calculateTotal().toFixed(2)}</SummaryValue>
+            <SummaryValue>${(calculateTotal() || 0).toFixed(2)}</SummaryValue>
           </SummaryRow>
           
           {couponDiscount > 0 && (
             <SummaryRow>
               <SummaryLabel>Discount</SummaryLabel>
               <SummaryValue style={{ color: theme.colors.success[500] }}>
-                -${couponDiscount.toFixed(2)}
+                -${(couponDiscount || 0).toFixed(2)}
               </SummaryValue>
             </SummaryRow>
           )}
           
           <SummaryRow className="total">
             <SummaryLabel>Total</SummaryLabel>
-            <TotalValue>${calculateTotalWithDiscount().toFixed(2)}</TotalValue>
+            <TotalValue>${(calculateTotalWithDiscount() || 0).toFixed(2)}</TotalValue>
           </SummaryRow>
         </OrderSummary>
       </Content>

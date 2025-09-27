@@ -3029,6 +3029,7 @@ async def validate_coupon(request: dict):
                 "name": coupon['name'],
                 "description": coupon['description'],
                 "type": coupon['type'],
+                "discount_amount": round(discount_amount, 2),
                 "value": coupon['value'],
                 "max_discount": coupon.get('max_discount', 0)
             }
