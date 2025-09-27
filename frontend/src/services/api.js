@@ -211,11 +211,11 @@ class APIService {
     }
   }
 
-  async subscribeNewsletter(name, email) {
+  async subscribeNewsletter(name, email, source = 'Atomic-Rose-Footer') {
     try {
       const response = await this.request('/newsletter/subscribe', {
         method: 'POST',
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, source }),
       });
       return { success: true, data: response };
     } catch (error) {

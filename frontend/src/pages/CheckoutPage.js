@@ -669,7 +669,8 @@ const CheckoutPage = () => {
           try {
             const newsletterResult = await apiService.subscribeNewsletter(
               `${formData.firstName} ${formData.lastName}`.trim(),
-              formData.email
+              formData.email,
+              'Atomic-Rose-Checkout'
             );
             if (newsletterResult.success) {
               console.log('✅ Newsletter subscription successful');
@@ -736,7 +737,8 @@ const CheckoutPage = () => {
           try {
             const newsletterResult = await apiService.subscribeNewsletter(
               `${formData.firstName} ${formData.lastName}`.trim(),
-              formData.email
+              formData.email,
+              'Atomic-Rose-Checkout'
             );
             if (newsletterResult.success) {
               console.log('✅ Newsletter subscription successful');
