@@ -616,6 +616,9 @@ class EmailService:
                 # Fallback to API endpoint
                 gift_download_url = f"{self.base_url}/api/v1/newsletter/download-gift?email={email}"
             
+            # Get R2 endpoint for image URLs
+            r2_endpoint = os.getenv("R2_ENDPOINT", f"https://{os.getenv('R2_ACCOUNT_ID', '')}.r2.cloudflarestorage.com")
+            
             # Load and customize newsletter welcome template
             html_content = self._load_newsletter_welcome_template()
             html_content = self._customize_newsletter_template(html_content, {
@@ -624,6 +627,7 @@ class EmailService:
                 "YEAR": datetime.now().year,
                 "HELP_URL": f"{self.base_url}/support",
                 "GIFT_DOWNLOAD_URL": gift_download_url,
+                "GIFT_IMAGE_URL": f"{r2_endpoint}/freebies/newsletter-gift/images/newsletter-gift.png",
                 "COUPON_CODE": "ATOMIC-ROSE",
                 "DISCOUNT_PERCENT": "10",
                 "MAX_DISCOUNT": "$50",
