@@ -2231,6 +2231,18 @@ async def create_user_order(order_data: dict, current_user: dict = Depends(get_c
         
         result = await db.orders.insert_one(order)
         
+        # Update coupon usage status to completed
+        try:
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            user_email = user.get("email", "") if user else ""
+            await update_coupon_usage_status(
+                user_email=user_email,
+                user_id=user_id,
+                order_id=str(result.inserted_id)
+            )
+        except Exception as e:
+            print(f"❌ Error updating coupon usage status: {e}")
+        
         # Send thank you email with download links
         try:
             from services.email_service import email_service
@@ -2682,6 +2694,15 @@ async def complete_guest_order(order_data: dict):
             }
         )
         
+        # Update coupon usage status to completed
+        try:
+            await update_coupon_usage_status(
+                user_email=order.get("guest_email", ""),
+                order_id=str(order["_id"])
+            )
+        except Exception as e:
+            print(f"❌ Error updating coupon usage status: {e}")
+        
         # Send thank you email with download links
         try:
             from services.email_service import email_service
@@ -2927,6 +2948,27 @@ async def transfer_guest_orders(current_user: dict = Depends(get_current_user)):
 # COUPON MANAGEMENT ENDPOINTS
 # ============================================================================
 
+async def update_coupon_usage_status(user_email: str, user_id: str = None, order_id: str = None):
+    """Update coupon usage status to completed when order is completed"""
+    try:
+        query = {"user_email": user_email, "status": "applied"}
+        if user_id:
+            query["user_id"] = ObjectId(user_id)
+        
+        update_data = {
+            "status": "completed",
+            "completed_at": datetime.utcnow()
+        }
+        
+        if order_id:
+            update_data["order_id"] = ObjectId(order_id)
+        
+        result = await db.coupon_usage.update_many(query, {"$set": update_data})
+        print(f"✅ Updated {result.modified_count} coupon usage records to completed for {user_email}")
+        
+    except Exception as e:
+        print(f"❌ Error updating coupon usage status: {e}")
+
 @app.post("/api/v1/coupons/validate")
 async def validate_coupon(request: dict):
     """
@@ -2986,6 +3028,8 @@ async def validate_coupon(request: dict):
         else:
             query["user_email"] = user_email
         
+        # Only check for completed/used coupons, not applied ones
+        query["status"] = {"$in": ["completed", "used"]}
         existing_usage = await db.coupon_usage.find_one(query)
         if existing_usage:
             return {
