@@ -817,6 +817,17 @@ class APIService {
       return { success: false, error: error.message };
     }
   }
+
+  // Download newsletter gift
+  async downloadNewsletterGift(email) {
+    try {
+      const response = await this.request(`/newsletter/download-gift?email=${encodeURIComponent(email)}`);
+      return { success: true, data: response };
+    } catch (error) {
+      console.error('❌ API: Failed to get newsletter gift download:', error);
+      return { success: false, error: error.message };
+    }
+  }
 }
 
 // Create and export singleton instance

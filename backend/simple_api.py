@@ -765,6 +765,32 @@ async def verify_user_email_token(verification_token: str):
         print(f"❌ Error verifying user email token: {e}")
         raise HTTPException(status_code=500, detail="Email verification failed")
 
+@app.get("/api/v1/newsletter/download-gift")
+async def download_newsletter_gift(email: str):
+    """
+    Generate download URL for newsletter gift.
+    """
+    try:
+        print(f"🎁 Newsletter gift download request for: {email}")
+        
+        # Generate download URL for the newsletter gift
+        gift_key = "freebies/newsletter-gift/newsletter-Gift.zip"
+        expiration_seconds = 3600  # 1 hour
+        download_url = generate_download_url(gift_key, expiration=expiration_seconds)
+        
+        print(f"✅ Newsletter gift download URL generated for {email}")
+        
+        return {
+            "download_url": download_url,
+            "expires_in": expiration_seconds,
+            "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z",
+            "message": "Newsletter gift download ready!"
+        }
+        
+    except Exception as e:
+        print(f"❌ Error generating newsletter gift download URL: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate download URL")
+
 @app.post("/api/v1/newsletter/subscribe")
 async def subscribe_newsletter(request: dict):
     """
@@ -808,6 +834,18 @@ async def subscribe_newsletter(request: dict):
             
             if response.status_code == 200:
                 print(f"✅ Newsletter subscription successful: {email}")
+                
+                # Send welcome email with gift (only for new subscribers)
+                try:
+                    welcome_email_sent = email_service.send_newsletter_welcome_email(email, name)
+                    if welcome_email_sent:
+                        print(f"✅ Newsletter welcome email sent to {email}")
+                    else:
+                        print(f"⚠️ Failed to send newsletter welcome email to {email}")
+                except Exception as e:
+                    print(f"⚠️ Error sending newsletter welcome email to {email}: {e}")
+                    # Don't fail the subscription if email fails
+                
                 return {"message": "Successfully subscribed to newsletter!", "success": True}
             else:
                 print(f"❌ Newsletter API error: {response.status_code} - {response.text}")

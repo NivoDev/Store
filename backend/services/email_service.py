@@ -590,5 +590,82 @@ class EmailService:
         </html>
         """
 
+    def send_newsletter_welcome_email(self, email: str, name: str) -> bool:
+        """
+        Send newsletter welcome email with free gift.
+        
+        Args:
+            email: Subscriber's email address
+            name: Subscriber's name
+            
+        Returns:
+            bool: True if email sent successfully, False otherwise
+        """
+        try:
+            print(f"📧 Sending newsletter welcome email to {email}")
+            
+            # Load and customize newsletter welcome template
+            html_content = self._load_newsletter_welcome_template()
+            html_content = self._customize_newsletter_template(html_content, {
+                "USER_NAME": name,
+                "EMAIL_DATE": datetime.now().strftime("%B %d, %Y"),
+                "YEAR": datetime.now().year,
+                "HELP_URL": f"{self.base_url}/support",
+                "GIFT_DOWNLOAD_URL": f"{self.base_url}/download-newsletter-gift?email={email}"
+            })
+            
+            # Send email
+            response = resend.Emails.send({
+                "from": self.from_email,
+                "to": [email],
+                "subject": "🎁 Welcome to Our Newsletter - Your Free Gift Awaits!",
+                "html": html_content
+            })
+            
+            print(f"✅ Newsletter welcome email sent successfully to {email}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error sending newsletter welcome email to {email}: {e}")
+            return False
+
+    def _load_newsletter_welcome_template(self) -> str:
+        """Load the newsletter welcome email template."""
+        try:
+            template_path = os.path.join(os.path.dirname(__file__), "templates", "newsletter_welcome_email.html")
+            with open(template_path, "r", encoding="utf-8") as file:
+                return file.read()
+        except Exception as e:
+            print(f"❌ Error loading newsletter welcome template: {e}")
+            return self._get_fallback_newsletter_template()
+
+    def _customize_newsletter_template(self, html_content: str, replacements: Dict[str, str]) -> str:
+        """Customize the newsletter welcome template with dynamic content."""
+        try:
+            for placeholder, value in replacements.items():
+                html_content = html_content.replace(f"{{{{{placeholder}}}}}", str(value))
+            return html_content
+        except Exception as e:
+            print(f"❌ Error customizing newsletter template: {e}")
+            return html_content
+
+    def _get_fallback_newsletter_template(self) -> str:
+        """Fallback newsletter template if file loading fails."""
+        return """
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #0b0b10; color: #f8fafc;">
+            <h1 style="color: #f8fafc;">Welcome to Our Newsletter! 🎉</h1>
+            <p>Hi {{USER_NAME}}! Thank you for your interest in our products.</p>
+            <p>This is the first newsletter from us, and we have a special <strong>FREE GIFT</strong> for you!</p>
+            <div style="background: rgba(14,165,233,0.1); border: 1px solid rgba(14,165,233,0.3); border-radius: 8px; padding: 20px; margin: 20px 0;">
+                <h3 style="color: #f8fafc;">🎁 Your Free Newsletter Gift</h3>
+                <p>A special collection of high-quality samples crafted exclusively for our newsletter subscribers.</p>
+                <a href="{{GIFT_DOWNLOAD_URL}}" style="display: inline-block; background: #0ea5e9; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: bold;">Download Your Free Gift</a>
+            </div>
+            <p>If you have any questions, please contact us at {self.support_email}</p>
+        </body>
+        </html>
+        """
+
 # Create global instance
 email_service = EmailService()
