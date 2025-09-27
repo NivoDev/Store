@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
-import { FiCreditCard, FiUser, FiMapPin, FiFileText, FiLock, FiArrowLeft, FiCheck } from 'react-icons/fi';
+import { FiCreditCard, FiUser, FiMapPin, FiMail, FiPhone, FiBuilding, FiFileText, FiLock, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import { theme } from '../theme';
 import Button from '../components/common/Button';
 import { useCart } from '../contexts/CartContext';
@@ -157,27 +157,27 @@ const Select = styled.select`
   }
 `;
 
-// const TextArea = styled.textarea`
-//   background: rgba(255, 255, 255, 0.05);
-//   border: 1px solid rgba(255, 255, 255, 0.1);
-//   border-radius: ${theme.borderRadius.lg};
-//   padding: ${theme.spacing[3]} ${theme.spacing[4]};
-//   color: ${theme.colors.dark[50]};
-//   font-size: ${theme.typography.sizes.base};
-//   min-height: 100px;
-//   resize: vertical;
-//   transition: all 0.2s ease;
+const TextArea = styled.textarea`
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: ${theme.borderRadius.lg};
+  padding: ${theme.spacing[3]} ${theme.spacing[4]};
+  color: ${theme.colors.dark[50]};
+  font-size: ${theme.typography.sizes.base};
+  min-height: 100px;
+  resize: vertical;
+  transition: all 0.2s ease;
   
-//   &:focus {
-//     outline: none;
-//     border-color: ${theme.colors.primary[500]};
-//     background: rgba(255, 255, 255, 0.08);
-//   }
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.primary[500]};
+    background: rgba(255, 255, 255, 0.08);
+  }
   
-//   &::placeholder {
-//     color: ${theme.colors.dark[400]};
-//   }
-// `;
+  &::placeholder {
+    color: ${theme.colors.dark[400]};
+  }
+`;
 
 const CheckboxGroup = styled.div`
   display: flex;
@@ -307,7 +307,7 @@ const CheckoutPage = () => {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // const [step, setStep] = useState(1); // 1: Billing, 2: Payment, 3: Confirmation
+  const [step, setStep] = useState(1); // 1: Billing, 2: Payment, 3: Confirmation
   
   // Form state
   const [formData, setFormData] = useState({
@@ -439,11 +439,7 @@ const CheckoutPage = () => {
       return transformedItems;
     }
     console.log('🛒 Using cart items:', items);
-    // Ensure cart items have proper artist field
-    return items.map(item => ({
-      ...item,
-      artist: item.made_by || item.artist || 'Unknown Artist'
-    }));
+    return items;
   };
 
   const calculateTotal = () => {
@@ -509,8 +505,7 @@ const CheckoutPage = () => {
           try {
             const newsletterResult = await apiService.subscribeNewsletter(
               `${formData.firstName} ${formData.lastName}`.trim(),
-              formData.email,
-              'checkout'
+              formData.email
             );
             if (newsletterResult.success) {
               console.log('✅ Newsletter subscription successful');
@@ -577,8 +572,7 @@ const CheckoutPage = () => {
           try {
             const newsletterResult = await apiService.subscribeNewsletter(
               `${formData.firstName} ${formData.lastName}`.trim(),
-              formData.email,
-              'checkout'
+              formData.email
             );
             if (newsletterResult.success) {
               console.log('✅ Newsletter subscription successful');

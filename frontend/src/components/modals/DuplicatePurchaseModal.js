@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
-import { FiShoppingCart, FiDownload } from 'react-icons/fi';
+import { motion } from 'framer-motion';
+import { FiShoppingCart, FiUser, FiDownload } from 'react-icons/fi';
 import { theme } from '../../theme';
 import Modal from './Modal';
 import Button from '../common/Button';

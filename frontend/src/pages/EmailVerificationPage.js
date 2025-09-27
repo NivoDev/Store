@@ -95,7 +95,7 @@ const UserInfoRow = styled.div`
 const EmailVerificationPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginWithOAuth } = useAuth();
+  const { login } = useAuth();
   const token = searchParams.get('token');
   
   const [verificationStatus, setVerificationStatus] = useState('verifying'); // 'verifying', 'success', 'already_verified', 'error'
@@ -115,18 +115,12 @@ const EmailVerificationPage = () => {
           
           // Auto-login the user if verification was successful
           if (result.data.access_token) {
-            // Use the proper OAuth login function from AuthContext
-            const loginResult = await loginWithOAuth(result.data.user, result.data.access_token);
-            if (loginResult.success) {
-              console.log('✅ User auto-logged in after email verification');
-              // Redirect to profile after successful login
-              setTimeout(() => {
-                navigate('/profile');
-              }, 2000);
-            } else {
-              console.error('❌ Auto-login failed after email verification');
-              // Still show success but let user manually login
-            }
+            // Store the token and user data
+            localStorage.setItem('auth_token', result.data.access_token);
+            localStorage.setItem('user', JSON.stringify(result.data.user));
+            
+            // Trigger a page reload to update the auth context
+            window.location.reload();
           }
         }
       } else {
@@ -138,7 +132,7 @@ const EmailVerificationPage = () => {
       setVerificationStatus('error');
       setError('Email verification failed. Please try again.');
     }
-  }, [loginWithOAuth, navigate]);
+  }, []);
 
   useEffect(() => {
     if (token) {

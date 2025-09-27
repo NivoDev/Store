@@ -14,11 +14,9 @@ class GuestCartService {
 
   // Load cart from cookies
   loadCart() {
-    let cartData;
     try {
-      cartData = this.getCookie(GUEST_CART_KEY);
+      const cartData = this.getCookie(GUEST_CART_KEY);
       console.log(`📥 Loading cart from cookies:`, cartData);
-      console.log(`📥 All cookies:`, document.cookie);
       
       if (cartData) {
         const parsed = JSON.parse(cartData);
@@ -27,8 +25,6 @@ class GuestCartService {
         // Check if cart has expired
         if (parsed.expiresAt && new Date() > new Date(parsed.expiresAt)) {
           console.log(`📥 Cart expired, clearing it`);
-          console.log(`📥 Expiration date:`, parsed.expiresAt);
-          console.log(`📥 Current date:`, new Date().toISOString());
           this.clearCart();
           return { items: [], total: 0, count: 0 };
         }
@@ -42,8 +38,6 @@ class GuestCartService {
       }
     } catch (error) {
       console.warn('Error loading guest cart:', error);
-      console.warn('Error details:', error.message);
-      console.warn('Cart data that failed to parse:', cartData);
       this.clearCart();
     }
     return { items: [], total: 0, count: 0 };
@@ -60,7 +54,6 @@ class GuestCartService {
       console.log(`💾 Saving cart to cookies:`, cartData);
       this.setCookie(GUEST_CART_KEY, JSON.stringify(cartData), CART_EXPIRY_DAYS);
       console.log(`💾 Cart saved successfully`);
-      console.log(`💾 All cookies after save:`, document.cookie);
     } catch (error) {
       console.error('Error saving guest cart:', error);
     }
@@ -172,28 +165,18 @@ class GuestCartService {
     this.cart = { items: [], total: 0, count: 0 };
     this.deleteCookie(GUEST_CART_KEY);
     console.log(`🧹 Cart cleared successfully`);
-    
-    // Dispatch custom event to notify components
-    window.dispatchEvent(new CustomEvent('guestCartChanged', { 
-      detail: { cart: this.cart, action: 'clear', productId: null }
-    }));
-    
     return this.cart;
   }
 
   // Clean invalid items from cart
   cleanInvalidItems() {
     console.log(`🧹 GuestCart.cleanInvalidItems called`);
-    console.log(`🧹 Current cart before cleaning:`, this.cart);
     
     if (!this.cart) {
-      console.log(`🧹 Cart not initialized, initializing...`);
       this.cart = { items: [], total: 0, count: 0 };
     }
     
     const originalCount = this.cart.items.length;
-    console.log(`🧹 Original item count:`, originalCount);
-    
     const validItems = this.cart.items.filter(item => {
       const isValidId = /^[0-9a-fA-F]{24}$/.test(item.id);
       if (!isValidId) {
@@ -201,8 +184,6 @@ class GuestCartService {
       }
       return isValidId;
     });
-    
-    console.log(`🧹 Valid items after filtering:`, validItems.length);
     
     if (validItems.length !== originalCount) {
       console.log(`🧹 Cleaned ${originalCount - validItems.length} invalid items from cart`);
@@ -214,11 +195,8 @@ class GuestCartService {
       window.dispatchEvent(new CustomEvent('guestCartChanged', { 
         detail: { cart: this.cart, action: 'clean' }
       }));
-    } else {
-      console.log(`🧹 No invalid items found, cart unchanged`);
     }
     
-    console.log(`🧹 Final cart after cleaning:`, this.cart);
     return this.cart;
   }
 
@@ -232,27 +210,17 @@ class GuestCartService {
   setCookie(name, value, days) {
     const expires = new Date();
     expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-    const cookieString = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
-    console.log(`🍪 Setting cookie:`, cookieString);
-    document.cookie = cookieString;
-    console.log(`🍪 Cookie set, all cookies now:`, document.cookie);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
   }
 
   getCookie(name) {
     const nameEQ = name + "=";
     const ca = document.cookie.split(';');
-    console.log(`🍪 Looking for cookie "${name}" in:`, document.cookie);
-    console.log(`🍪 Split cookies:`, ca);
     for (let i = 0; i < ca.length; i++) {
       let c = ca[i];
       while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) {
-        const value = c.substring(nameEQ.length, c.length);
-        console.log(`🍪 Found cookie "${name}":`, value);
-        return value;
-      }
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
     }
-    console.log(`🍪 Cookie "${name}" not found`);
     return null;
   }
 

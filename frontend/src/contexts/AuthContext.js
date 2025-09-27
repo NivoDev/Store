@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import secureStorage from '../utils/secureStorage';
 import apiService from '../services/api';
 
@@ -89,31 +89,23 @@ export const AuthProvider = ({ children }) => {
 
   // Load user from secure storage on mount
   useEffect(() => {
-    console.log('🔍 AuthContext - Loading user from secureStorage...');
     const savedUser = secureStorage.getItem('user');
-    console.log('🔍 AuthContext - Saved user retrieved:', savedUser);
-    console.log('🔍 AuthContext - Saved user name:', savedUser?.name);
-    
     if (savedUser) {
       // Validate user data structure
       if (savedUser.id && savedUser.email) {
-        console.log('🔍 AuthContext - Valid user data, dispatching LOGIN_SUCCESS');
         dispatch({
           type: AUTH_ACTIONS.LOGIN_SUCCESS,
           payload: savedUser
         });
       } else {
-        console.log('🔍 AuthContext - Invalid user data, clearing storage');
         // Invalid user data, clear it
         secureStorage.removeItem('user');
       }
-    } else {
-      console.log('🔍 AuthContext - No saved user found');
     }
   }, []);
 
   // Function to refresh user data
-  const refreshUserData = useCallback(async () => {
+  const refreshUserData = async () => {
     if (state.isAuthenticated && state.user) {
       try {
         const result = await apiService.getCurrentUser();
@@ -129,7 +121,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Error refreshing user data:', error);
       }
     }
-  }, [state.isAuthenticated, state.user]);
+  };
 
   // Listen for user data update events
   useEffect(() => {
@@ -141,7 +133,7 @@ export const AuthProvider = ({ children }) => {
     return () => {
       window.removeEventListener('userDataUpdated', handleUserDataUpdate);
     };
-  }, [state.isAuthenticated, state.user, refreshUserData]);
+  }, [state.isAuthenticated, state.user]);
 
   // Login function with API integration
   const login = async (email, password) => {
@@ -278,17 +270,9 @@ export const AuthProvider = ({ children }) => {
   // OAuth login function for Google, Facebook, etc.
   const loginWithOAuth = async (user, accessToken) => {
     try {
-      console.log('🔍 loginWithOAuth - User data received:', user);
-      console.log('🔍 loginWithOAuth - User name:', user?.name);
-      
       // Store user data and token securely
       secureStorage.setItem('user', user);
       secureStorage.setItem('token', accessToken);
-      
-      // Verify storage worked
-      const storedUser = secureStorage.getItem('user');
-      console.log('🔍 loginWithOAuth - Stored user retrieved:', storedUser);
-      console.log('🔍 loginWithOAuth - Stored user name:', storedUser?.name);
       
       // Update auth state
       dispatch({

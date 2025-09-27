@@ -440,6 +440,7 @@ const CartPage = () => {
 
   // Use appropriate cart based on authentication status
   const items = isAuthenticated ? regularItems : guestCart.items;
+  const total = calculateTotal(); // Use our corrected calculation
   const itemCount = isAuthenticated ? regularItemCount : guestCart.count;
   const clearCart = isAuthenticated ? clearRegularCart : () => {
     guestCartService.clearCart();
@@ -472,7 +473,6 @@ const CartPage = () => {
       const checkoutItems = items.map(item => ({
         product_id: item.id,
         title: item.title,
-        made_by: item.made_by || item.artist || 'Unknown Artist',
         price: item.price,
         quantity: item.quantity
       }));

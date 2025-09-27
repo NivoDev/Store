@@ -8,7 +8,7 @@ import apiService from '../services/api';
 import ProductCard from '../components/product/ProductCard';
 import Button from '../components/common/Button';
 import SEOHead from '../components/common/SEOHead';
-// Audio hook removed as it's not used in this component
+import { useAudio } from '../contexts/AudioContext';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -188,7 +188,7 @@ const ProductGrid = styled.div`
 
 const SamplePacksPage = ({ onAuthClick }) => {
   const navigate = useNavigate();
-  // Audio hooks removed as they're not used in this component
+  const { playTrack, isCurrentTrack, isTrackPlaying } = useAudio();
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
@@ -272,6 +272,9 @@ const SamplePacksPage = ({ onAuthClick }) => {
     return filtered;
   }, [samplePacks, searchTerm, filters]);
 
+  const handlePlay = (product) => {
+    playTrack(product);
+  };
 
   const handleAddToCart = (product) => {
     console.log('Product added to cart:', product);

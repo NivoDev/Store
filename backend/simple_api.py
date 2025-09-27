@@ -26,16 +26,12 @@ from botocore.config import Config
 from urllib.parse import urlparse, unquote
 import time
 import httpx
-import pytz
 
 # Load environment variables
 load_dotenv()
 
 # Newsletter API configuration
 NEWSLETTER_API_ENDPOINT = os.getenv("NEWSLETTER_API_ENDPOINT")
-# Ensure tabId is included in the endpoint URL
-if NEWSLETTER_API_ENDPOINT and "tabId=" not in NEWSLETTER_API_ENDPOINT:
-    NEWSLETTER_API_ENDPOINT += "?tabId=Sheet1"
 
 # Database connection status (defined early)
 mongodb_connected = False
@@ -492,28 +488,25 @@ async def register(request: Request, user_data: dict):
                         detail="Email service is currently unavailable. Please try again later or contact support@atomicrosetools.com"
                     )
                 
-            # Handle newsletter subscription if requested (for re-registration)
-            newsletter_success = False
-            if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
-                try:
-                    # Use Israel timezone for Google Sheets
-                    israel_tz = pytz.timezone('Asia/Jerusalem')
-                    israel_time = datetime.now(israel_tz)
-                    newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose-Signup"]]
-                    async with httpx.AsyncClient() as client:
-                        response = await client.post(
-                            NEWSLETTER_API_ENDPOINT,
-                            json=newsletter_data,
-                            timeout=10.0
-                        )
-                        if response.status_code == 200:
-                            newsletter_success = True
-                            print(f"✅ Newsletter subscription successful (re-registration): {email}")
-                        else:
-                            print(f"⚠️ Newsletter subscription failed (re-registration): {response.status_code}")
-                except Exception as e:
-                    print(f"⚠️ Newsletter subscription error (re-registration): {e}")
-                    # Don't fail re-registration if newsletter fails
+                # Handle newsletter subscription if requested (for re-registration)
+                newsletter_success = False
+                if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
+                    try:
+                        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
+                        async with httpx.AsyncClient() as client:
+                            response = await client.post(
+                                NEWSLETTER_API_ENDPOINT,
+                                json=newsletter_data,
+                                timeout=10.0
+                            )
+                            if response.status_code == 200:
+                                newsletter_success = True
+                                print(f"✅ Newsletter subscription successful (re-registration): {email}")
+                            else:
+                                print(f"⚠️ Newsletter subscription failed (re-registration): {response.status_code}")
+                    except Exception as e:
+                        print(f"⚠️ Newsletter subscription error (re-registration): {e}")
+                        # Don't fail re-registration if newsletter fails
                 
                 return {
                     "message": "New verification code sent! Please check your email.",
@@ -583,10 +576,7 @@ async def register(request: Request, user_data: dict):
         newsletter_success = False
         if newsletter_subscribe and NEWSLETTER_API_ENDPOINT:
             try:
-                # Use Israel timezone for Google Sheets
-                israel_tz = pytz.timezone('Asia/Jerusalem')
-                israel_time = datetime.now(israel_tz)
-                newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose-Signup"]]
+                newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
                 async with httpx.AsyncClient() as client:
                     response = await client.post(
                         NEWSLETTER_API_ENDPOINT,
@@ -779,15 +769,14 @@ async def verify_user_email_token(verification_token: str):
 async def subscribe_newsletter(request: dict):
     """
     Subscribe user to newsletter and add to Google Sheets.
-    Expected format: {"name": "John Doe", "email": "john@example.com", "source": "footer|checkout|signup"}
+    Expected format: {"name": "John Doe", "email": "john@example.com"}
     """
     try:
         print(f"📧 Newsletter subscription request: {request}")
         name = request.get("name", "").strip()
         email = request.get("email", "").strip().lower()
-        source = request.get("source", "footer").strip().lower()
         
-        print(f"📧 Newsletter - Name: {name}, Email: {email}, Source: {source}")
+        print(f"📧 Newsletter - Name: {name}, Email: {email}")
         
         if not email or not name:
             print("❌ Newsletter - Missing name or email")
@@ -799,21 +788,9 @@ async def subscribe_newsletter(request: dict):
         
         print(f"📧 Newsletter API endpoint: {NEWSLETTER_API_ENDPOINT}")
         
-        # Determine source label based on source parameter
-        source_label = "Atomic-Rose"
-        if source == "footer":
-            source_label = "Atomic-Rose-Footer"
-        elif source == "checkout":
-            source_label = "Atomic-Rose-Checkout"
-        elif source == "signup":
-            source_label = "Atomic-Rose-Signup"
-        
         # Prepare data for Google Sheets (matching your sheet structure)
         # NoCodeAPI Google Sheets expects just the 2D array directly (tabId is in URL)
-        # Use Israel timezone for Google Sheets
-        israel_tz = pytz.timezone('Asia/Jerusalem')
-        israel_time = datetime.now(israel_tz)
-        newsletter_data = [[name, email, israel_time.strftime("%m/%d/%Y, %I:%M:%S %p"), source_label]]
+        newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
         
         print(f"📧 Newsletter data to send: {newsletter_data}")
         
@@ -1128,21 +1105,11 @@ async def auto_login(token: str, redirect: str = "/"):
         # Create new access token
         access_token = create_access_token(data={"sub": str(user["_id"])})
         
-        # Format user for frontend
-        user_response = format_user_for_frontend(user)
-        user_response["id"] = str(user["_id"])
-        user_response["email"] = user.get("email", "")
-        user_response["email_verified"] = user.get("email_verified", False)
-        user_response["status"] = user.get("status", "active")
-        
-        print(f"🔍 Auto-login debug - User data: {user_response}")
-        
-        # Return redirect response with token and user data
+        # Return redirect response with token
         return {
             "message": "Auto-login successful",
             "redirect_url": f"{redirect}?token={access_token}",
-            "access_token": access_token,
-            "user": user_response
+            "access_token": access_token
         }
         
     except jwt.ExpiredSignatureError:
@@ -1637,7 +1604,8 @@ async def find_user_order_for_product(user_id: str, product_id: str) -> dict:
         # Return the most recent order with downloads remaining
         for order in orders:
             downloads_remaining = order.get("downloads_remaining", 0)
-            if downloads_remaining > 0:
+            # -1 means unlimited downloads for signed-in users
+            if downloads_remaining > 0 or downloads_remaining == -1:
                 return {
                     "order": order,
                     "downloads_remaining": downloads_remaining,
@@ -1713,23 +1681,9 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         if ObjectId(product_id) not in purchased_products:
             raise HTTPException(status_code=403, detail="Product not purchased")
         
-        # Find the order for this product and check download limit
-        order_info = await find_user_order_for_product(user_id, product_id)
-        if not order_info["can_download"]:
-            if order_info["order"] is None:
-                raise HTTPException(status_code=404, detail="No order found for this product")
-            else:
-                print(f"🚫 No downloads remaining for product {product_id}")
-                raise HTTPException(
-                    status_code=429, 
-                    detail={
-                        "message": "No downloads remaining for this product",
-                        "downloads_remaining": 0,
-                        "order_number": order_info["order"].get("order_number")
-                    }
-                )
-        
-        print(f"✅ Download check passed: {order_info['downloads_remaining']} downloads remaining for order {order_info['order'].get('order_number')}")
+        # For signed-in users, we allow unlimited downloads
+        # Just verify they have purchased the product (already checked above)
+        print(f"✅ Signed-in user download authorized for product {product_id}")
         
         # Get product details
         product = await db.products.find_one({"_id": ObjectId(product_id)})
@@ -1749,22 +1703,10 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         download_url = generate_download_url(object_key, expiration=expiration_seconds)
         print(f"✅ Download URL generated: {download_url}")
         
-        # Decrement the order's download counter
-        order = order_info["order"]
-        await db.orders.update_one(
-            {"_id": order["_id"]},
-            {
-                "$inc": {"downloads_remaining": -1},
-                "$set": {"updated_at": datetime.utcnow()}
-            }
-        )
-        
-        # Log download event
+        # Log download event (no counter decrement for signed-in users)
         download_event = {
             "user_id": ObjectId(user_id),
             "product_id": ObjectId(product_id),
-            "order_id": order["_id"],
-            "order_number": order.get("order_number"),
             "download_url": download_url,
             "ip_address": "127.0.0.1",  # In production, get from request
             "user_agent": "Atomic Rose Tools App",
@@ -1772,21 +1714,14 @@ async def get_download_url(product_id: str, current_user: dict = Depends(get_cur
         }
         
         await db.download_events.insert_one(download_event)
-        print(f"📝 Download event logged for order {order.get('order_number')}")
-        
-        # Get updated download info for this order
-        updated_downloads_remaining = order_info["downloads_remaining"] - 1
+        print(f"📝 Download event logged for signed-in user")
         
         return {
             "download_url": download_url,
             "expires_in": expiration_seconds,
             "expires_at": (datetime.utcnow() + timedelta(seconds=expiration_seconds)).isoformat() + "Z",
             "product_title": product.get("title", "Unknown Product"),
-            "order_number": order.get("order_number"),
-            "download_info": {
-                "downloads_remaining": updated_downloads_remaining,
-                "order_id": str(order["_id"])
-            }
+            "downloads_remaining": "unlimited"  # Signed-in users have unlimited downloads
         }
         
     except HTTPException:
@@ -2220,7 +2155,7 @@ async def create_user_order(order_data: dict, current_user: dict = Depends(get_c
             "completed_at": datetime.utcnow(),
             "is_fulfilled": True,
             "fulfillment_date": datetime.utcnow(),
-            "downloads_remaining": 3
+            "downloads_remaining": -1  # -1 means unlimited downloads for signed-in users
         }
         
         result = await db.orders.insert_one(order)
@@ -2332,24 +2267,11 @@ async def guest_checkout(checkout_data: dict):
         tax_amount = 0
         total_amount = subtotal
         
-        # Create guest order with enhanced items including artist info
-        enhanced_items = []
-        for item in items:
-            # Get product details to ensure we have artist information
-            product = await db.products.find_one({"_id": ObjectId(item["product_id"])})
-            enhanced_item = {
-                "product_id": item["product_id"],
-                "title": item["title"],
-                "made_by": item.get("made_by", product.get("artist", "Unknown Artist") if product else "Unknown Artist"),
-                "price": item["price"],
-                "quantity": item["quantity"]
-            }
-            enhanced_items.append(enhanced_item)
-        
+        # Create guest order
         order = {
             "order_number": f"GUEST-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
             "guest_email": email,
-            "items": enhanced_items,
+            "items": items,
             "subtotal": subtotal,
             "tax_rate": tax_rate,
             "tax_amount": tax_amount,
@@ -2731,11 +2653,7 @@ async def complete_guest_order(order_data: dict):
             "order_number": order_number,
             "guest_email": order["guest_email"],
             "status": "completed",
-            "message": "Order completed successfully",
-            "total_amount": order.get("total_amount", 0),
-            "subtotal": order.get("subtotal", 0),
-            "tax": order.get("tax", 0),
-            "items": order.get("items", [])
+            "message": "Order completed successfully"
         }
         
     except HTTPException:

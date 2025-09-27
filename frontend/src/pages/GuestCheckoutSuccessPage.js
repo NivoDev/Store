@@ -148,17 +148,11 @@ const GuestCheckoutSuccessPage = () => {
   const { orderNumber, orderData } = location.state || {};
 
   useEffect(() => {
-    // Debug order data
-    console.log('🎯 GuestCheckoutSuccessPage - orderNumber:', orderNumber);
-    console.log('🎯 GuestCheckoutSuccessPage - orderData:', orderData);
-    console.log('🎯 GuestCheckoutSuccessPage - total_amount:', orderData?.total_amount);
-    console.log('🎯 GuestCheckoutSuccessPage - total:', orderData?.total);
-    
     // Redirect to home if no order data
     if (!orderNumber) {
       navigate('/');
     }
-  }, [navigate, orderNumber, orderData]);
+  }, [navigate, orderNumber]);
 
   if (!orderNumber) {
     return null;
@@ -238,7 +232,7 @@ const GuestCheckoutSuccessPage = () => {
               </OrderDetailRow>
               <OrderDetailRow>
                 <OrderDetailLabel>Total:</OrderDetailLabel>
-                <OrderDetailValue>${orderData.total_amount?.toFixed(2) || orderData.total?.toFixed(2) || '0.00'}</OrderDetailValue>
+                <OrderDetailValue>${orderData.total_amount?.toFixed(2) || '0.00'}</OrderDetailValue>
               </OrderDetailRow>
               <OrderDetailRow>
                 <OrderDetailLabel>Status:</OrderDetailLabel>
