@@ -494,8 +494,14 @@ async def register(request: Request, user_data: dict):
                     try:
                         newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
                         async with httpx.AsyncClient() as client:
+                            # Ensure tabId is in the URL
+                            api_url = NEWSLETTER_API_ENDPOINT
+                            if 'tabId=' not in api_url:
+                                separator = '&' if '?' in api_url else '?'
+                                api_url = f"{api_url}{separator}tabId=Sheet1"
+                            
                             response = await client.post(
-                                NEWSLETTER_API_ENDPOINT,
+                                api_url,
                                 json=newsletter_data,
                                 timeout=10.0
                             )
@@ -578,8 +584,14 @@ async def register(request: Request, user_data: dict):
             try:
                 newsletter_data = [[name, email, datetime.utcnow().strftime("%m/%d/%Y, %I:%M:%S %p"), "Atomic-Rose"]]
                 async with httpx.AsyncClient() as client:
+                    # Ensure tabId is in the URL
+                    api_url = NEWSLETTER_API_ENDPOINT
+                    if 'tabId=' not in api_url:
+                        separator = '&' if '?' in api_url else '?'
+                        api_url = f"{api_url}{separator}tabId=Sheet1"
+                    
                     response = await client.post(
-                        NEWSLETTER_API_ENDPOINT,
+                        api_url,
                         json=newsletter_data,
                         timeout=10.0
                     )
@@ -822,9 +834,15 @@ async def subscribe_newsletter(request: dict):
         
         # Send to newsletter API
         async with httpx.AsyncClient() as client:
-            print(f"📧 Sending request to: {NEWSLETTER_API_ENDPOINT}")
+            # Ensure tabId is in the URL
+            api_url = NEWSLETTER_API_ENDPOINT
+            if 'tabId=' not in api_url:
+                separator = '&' if '?' in api_url else '?'
+                api_url = f"{api_url}{separator}tabId=Sheet1"
+            
+            print(f"📧 Sending request to: {api_url}")
             response = await client.post(
-                NEWSLETTER_API_ENDPOINT,
+                api_url,
                 json=newsletter_data,
                 timeout=10.0
             )
