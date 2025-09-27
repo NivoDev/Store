@@ -262,7 +262,7 @@ const CategoryCount = styled.div`
 const HomePage = ({ onAuthClick }) => {
   const navigate = useNavigate();
   const productsRef = useRef(null);
-  const { isCurrentTrack, isTrackPlaying } = useAudio();
+  const { playTrack, isCurrentTrack, isTrackPlaying } = useAudio();
   const { isAuthenticated } = useAuth();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [bestsellers, setBestsellers] = useState([]);
@@ -373,6 +373,11 @@ const HomePage = ({ onAuthClick }) => {
 
   const handleDownload = (productId) => {
     console.log('Download:', productId);
+  };
+
+  const handlePlay = (product) => {
+    console.log('Playing product:', product);
+    playTrack(product);
   };
 
   const handleExploreCatalog = () => {
@@ -572,6 +577,8 @@ const HomePage = ({ onAuthClick }) => {
               <ProductCard
                 key={product.id}
                 product={product}
+                onPlay={handlePlay}
+                isPlaying={isCurrentTrack(product.id) && isTrackPlaying(product.id)}
                 onLikeToggle={handleLikeToggle}
                 onAddToCart={handleAddToCart}
                 onDownload={handleDownload}

@@ -411,6 +411,8 @@ const SamplePacksPage = ({ onAuthClick }) => {
             <ProductCard
               key={product.id}
               product={product}
+              onPlay={handlePlay}
+              isPlaying={isCurrentTrack(product.id) && isTrackPlaying(product.id)}
               onAuthClick={onAuthClick}
               onAddToCart={handleAddToCart}
             />

@@ -5,6 +5,7 @@ import { theme } from '../theme';
 import apiService from '../services/api';
 import ProductCard from '../components/product/ProductCard';
 import SEOHead from '../components/common/SEOHead';
+import { useAudio } from '../contexts/AudioContext';
 
 const PageContainer = styled.div`
   min-height: 100vh;
@@ -33,7 +34,8 @@ const ProductGrid = styled.div`
 
 const AcapellasPage = ({ onAuthClick }) => {
   const navigate = useNavigate();
-    const [acapellas, setAcapellas] = useState([]);
+  const { playTrack, isCurrentTrack, isTrackPlaying } = useAudio();
+  const [acapellas, setAcapellas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -62,6 +64,11 @@ const AcapellasPage = ({ onAuthClick }) => {
     console.log('Product added to cart:', product);
     // Redirect to cart page
     navigate('/cart');
+  };
+
+  const handlePlay = (product) => {
+    console.log('Playing product:', product);
+    playTrack(product);
   };
 
   return (
@@ -93,6 +100,8 @@ const AcapellasPage = ({ onAuthClick }) => {
               <ProductCard
                 key={product.id}
                 product={product}
+                onPlay={handlePlay}
+                isPlaying={isCurrentTrack(product.id) && isTrackPlaying(product.id)}
                 onAuthClick={onAuthClick}
                 onAddToCart={handleAddToCart}
               />

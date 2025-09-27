@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { motion } from 'framer-motion';
 import { theme } from '../theme';
 import { useAuth } from '../contexts/AuthContext';
+import { useAudio } from '../contexts/AudioContext';
 import apiService from '../services/api';
 import ProductCard from '../components/product/ProductCard';
 import { FiHeart, FiShoppingBag, FiMail } from 'react-icons/fi';
@@ -194,6 +195,7 @@ const LoadingSpinner = styled.div`
 
 const ProfilePage = () => {
   const { user, isAuthenticated } = useAuth();
+  const { playTrack, isCurrentTrack, isTrackPlaying } = useAudio();
   const [activeTab, setActiveTab] = useState('liked');
   const [likedProducts, setLikedProducts] = useState([]);
   const [purchasedProducts, setPurchasedProducts] = useState([]);
@@ -260,6 +262,11 @@ const ProfilePage = () => {
     } finally {
       setDownloading(prev => ({ ...prev, [productId]: false }));
     }
+  };
+
+  const handlePlay = (product) => {
+    console.log('Playing product:', product);
+    playTrack(product);
   };
 
   if (!isAuthenticated) {
@@ -358,6 +365,8 @@ const ProfilePage = () => {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  onPlay={handlePlay}
+                  isPlaying={isCurrentTrack(product.id) && isTrackPlaying(product.id)}
                   onLikeToggle={handleLikeToggle}
                   showDownloadButton={activeTab === 'purchased'}
                   onDownload={() => handleDownload(product.id)}
