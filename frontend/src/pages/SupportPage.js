@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { motion } from 'framer-motion';
-import { FiMail, FiMessageSquare, FiSend, FiCheckCircle, FiAlertCircle, FiHeadphones, FiHelpCircle, FiZap } from 'react-icons/fi';
+import { FiMail, FiMessageSquare, FiSend, FiCheckCircle, FiAlertCircle, FiHeadphones, FiHelpCircle, FiZap, FiShield } from 'react-icons/fi';
 import emailjs from '@emailjs/browser';
 import { theme } from '../theme';
 import Button from '../components/common/Button';
@@ -363,6 +363,25 @@ const LoadingSpinner = styled.div`
   }
 `;
 
+const RecaptchaContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  margin: ${theme.spacing[4]} 0;
+  padding: ${theme.spacing[4]};
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: ${theme.borderRadius.lg};
+  border: 1px solid rgba(255, 255, 255, 0.05);
+`;
+
+const RecaptchaInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing[2]};
+  color: ${theme.colors.dark[300]};
+  font-size: ${theme.typography.sizes.sm};
+  margin-bottom: ${theme.spacing[2]};
+`;
+
 const SupportPage = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -373,6 +392,30 @@ const SupportPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState(null); // 'success', 'error', null
+  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
+  const recaptchaRef = useRef(null);
+
+  // Load reCAPTCHA script
+  useEffect(() => {
+    const loadRecaptcha = () => {
+      if (window.grecaptcha) {
+        setRecaptchaLoaded(true);
+        return;
+      }
+
+      const siteKey = process.env.REACT_APP_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+      const script = document.createElement('script');
+      script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        setRecaptchaLoaded(true);
+      };
+      document.head.appendChild(script);
+    };
+
+    loadRecaptcha();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -388,6 +431,13 @@ const SupportPage = () => {
     setStatus(null);
 
     try {
+      // Get reCAPTCHA token
+      let recaptchaToken = '';
+      if (recaptchaLoaded && window.grecaptcha) {
+        const siteKey = process.env.REACT_APP_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+        recaptchaToken = await window.grecaptcha.execute(siteKey, { action: 'submit' });
+      }
+
       // EmailJS configuration
       const serviceId = process.env.REACT_APP_EMAILJS_SERVICE_ID || 'service_xxxxxxx';
       const templateId = process.env.REACT_APP_EMAILJS_TEMPLATE_ID || 'template_xxxxxxx';
@@ -400,7 +450,8 @@ const SupportPage = () => {
         subject: formData.subject,
         category: formData.category,
         message: formData.message,
-        to_email: 'atomicrosetools@gmail.com'
+        to_email: 'atomicrosetools@gmail.com',
+        'g-recaptcha-response': recaptchaToken // Add reCAPTCHA token
       };
 
       // Send email using EmailJS
@@ -604,9 +655,23 @@ const SupportPage = () => {
                   />
                 </FormGroup>
 
+                {/* reCAPTCHA */}
+                <RecaptchaContainer>
+                  <div>
+                <RecaptchaInfo>
+                  <FiShield />
+                  {process.env.REACT_APP_RECAPTCHA_SITE_KEY === '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI' ? 
+                    '🔧 Test Mode: Using reCAPTCHA test key for development' :
+                    'This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.'
+                  }
+                </RecaptchaInfo>
+                    <div ref={recaptchaRef} id="recaptcha-container"></div>
+                  </div>
+                </RecaptchaContainer>
+
                 <SubmitButton
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !recaptchaLoaded}
                 >
                   {isSubmitting ? (
                     <>
